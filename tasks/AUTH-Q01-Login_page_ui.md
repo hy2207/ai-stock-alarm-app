@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] AUTH-Q01: 로그인 페이지 UI 구현"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, priority:high'
 assignees: ''
 ---
 
@@ -18,7 +18,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F10 REQ-FUNC-090 요구사항과 AUTH-Q01 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: AUTH-C01
+- [ ] 선행 태스크 상태 확인: AUTH-C01, UX-005, UX-014
 - [ ] NextAuth.js 인증 라우트, 세션, 보호 로직의 파일 위치와 공개 인터페이스 결정
 - [ ] 로그인 페이지 UI 구현 구현에 필요한 NextAuth.js 설정과 라우트/미들웨어 경계 정의
 - [ ] 인증 성공, 실패, 만료, 미인증 접근 흐름 처리
@@ -30,7 +30,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(AUTH-C01)가 완료되어 있음
+- Given: 선행 태스크(AUTH-C01, UX-005, UX-014)가 완료되어 있음
 - When: 로그인 페이지 UI 구현 작업을 실행함
 - Then: SRS §F10 REQ-FUNC-090 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -46,7 +46,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: AUTH-Q01는 [Query/UI] 로그인 페이지 UI 구현 — OAuth 버튼(Google/Kakao), 이메일 로그인, shadcn/ui 기반에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: AUTH-C01 완료 상태를 전제로 한다.
+- 의존성: AUTH-C01, UX-005, UX-014 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 - 보안: 보호 경로는 미인증 접근 시 `/login`으로 유도해야 한다.
 - 세션: JWT 기반 세션 정책과 NextAuth.js App Router 호환성을 유지한다.
@@ -58,5 +58,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: AUTH-C01
+- Depends on: AUTH-C01, UX-005, UX-014
 - Blocks: None identified in `task-list-v1.md`

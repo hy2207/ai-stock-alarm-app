@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] TRUST-Q03: 한 줄 이유(reasonLine) 표시 검증"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, priority:high'
 assignees: ''
 ---
 
@@ -18,7 +18,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F5 REQ-FUNC-040 요구사항과 TRUST-Q03 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: REC-Q03, EVT-C01
+- [ ] 선행 태스크 상태 확인: REC-Q03, EVT-C01, UX-011, UX-015
 - [ ] 성과 이력 및 신뢰 레이어 UI/쿼리의 파일 위치와 공개 인터페이스 결정
 - [ ] 한 줄 이유(reasonLine) 표시 검증 조회 또는 렌더링 로직 작성
 - [ ] 최근 30건 또는 30일 기준과 성공/실패 동시 표시 보장
@@ -30,7 +30,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(REC-Q03, EVT-C01)가 완료되어 있음
+- Given: 선행 태스크(REC-Q03, EVT-C01, UX-011, UX-015)가 완료되어 있음
 - When: 한 줄 이유(reasonLine) 표시 검증 작업을 실행함
 - Then: SRS §F5 REQ-FUNC-040 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -46,7 +46,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: TRUST-Q03는 [Query/UI] 한 줄 이유(reasonLine) 표시 검증 — 160자 이하 비공백 문자열 렌더링, reason_expand 클릭 시 PostHog 이벤트에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: REC-Q03, EVT-C01 완료 상태를 전제로 한다.
+- 의존성: REC-Q03, EVT-C01, UX-011, UX-015 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 - 신뢰성: 성공 기록과 실패 기록을 모두 표시할 수 있어야 한다.
 - 성능: 최근 30건 또는 30일 제한으로 상세 렌더 p95 ≤ 700ms 목표를 지원한다.
@@ -58,5 +58,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: REC-Q03, EVT-C01
+- Depends on: REC-Q03, EVT-C01, UX-011, UX-015
 - Blocks: None identified in `task-list-v1.md`

@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] PUSH-Q01: 푸시 수신 딥링크 랜딩 처리"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, priority:high'
 assignees: ''
 ---
 
@@ -18,7 +18,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F6 REQ-FUNC-051 요구사항과 PUSH-Q01 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: PUSH-C01, REC-Q01, EVT-C01
+- [ ] 선행 태스크 상태 확인: PUSH-C01, REC-Q01, EVT-C01, UX-013, UX-015
 - [ ] OneSignal Web SDK, Cron, 딥링크 처리의 파일 위치와 공개 인터페이스 결정
 - [ ] 푸시 수신 딥링크 랜딩 처리 관련 OneSignal SDK/REST/Cron/딥링크 흐름 구현
 - [ ] `consentPush`와 공급자 구독 상태를 함께 고려
@@ -30,7 +30,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(PUSH-C01, REC-Q01, EVT-C01)가 완료되어 있음
+- Given: 선행 태스크(PUSH-C01, REC-Q01, EVT-C01, UX-013, UX-015)가 완료되어 있음
 - When: 푸시 수신 딥링크 랜딩 처리 작업을 실행함
 - Then: SRS §F6 REQ-FUNC-051 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -46,7 +46,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: PUSH-Q01는 [Query/UI] 푸시 수신 딥링크 랜딩 처리 — 푸시 탭 → 딥링크 파싱 → 홈/상세 화면 라우팅(≤1,000ms) + PostHog push_open/deeplink_success/deeplink_fail 이벤트에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: PUSH-C01, REC-Q01, EVT-C01 완료 상태를 전제로 한다.
+- 의존성: PUSH-C01, REC-Q01, EVT-C01, UX-013, UX-015 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 - 안정성: 푸시 발송 성공률 ≥ 99%와 오발송 0% 목표를 고려한다.
 - 보안: `CRON_SECRET`과 OneSignal 키는 환경 변수로만 사용한다.
@@ -58,5 +58,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: PUSH-C01, REC-Q01, EVT-C01
+- Depends on: PUSH-C01, REC-Q01, EVT-C01, UX-013, UX-015
 - Blocks: EVT-C03, TEST-F6-02

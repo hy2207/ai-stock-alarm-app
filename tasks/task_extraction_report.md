@@ -5,13 +5,14 @@
 **Source SRS:** [`SRS-v1.md`](./SRS-v1.md)  
 **Source Task List:** [`task-list-v1.md`](./task-list-v1.md)  
 **Output Directory:** [`./tasks`](./)  
-**Status:** Completed
+**Status:** Updated — UI/UX Design tasks added
 
 ---
 
 ## 1. Summary
 
 SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 요구사항을 기반으로 개발 가능한 GitHub Issue 형태의 태스크 명세서를 추출했다.
+2026-04-22 업데이트에서 UI/UX 디자인 작업을 백엔드/프론트엔드 개발 및 인프라 구성과 분리하여 `UX-001`~`UX-016` 태스크로 추가했다.
 
 추출 결과는 `task-list-v1.md`의 실제 Task ID 행을 기준으로 하며, 각 태스크는 다음 형식을 포함한다.
 
@@ -24,7 +25,7 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 - Definition of Done
 - Dependencies & Blockers
 
-> Note: `task-list-v1.md` 하단 요약에는 총 78개로 표기되어 있으나, 실제 Task ID 표 행은 102개다. 본 보고서와 생성 산출물은 표에 존재하는 실제 102개 Task ID를 기준으로 한다.
+> Note: UI/UX Design 태스크 추가 후 `task-list-v1.md`의 실제 Task ID 표 행은 118개다. 본 보고서와 생성 산출물은 표에 존재하는 실제 118개 Task ID를 기준으로 한다.
 
 ---
 
@@ -49,15 +50,19 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
    - Prisma 데이터 모델, DTO/Zod schema, API/Server Action contract를 먼저 분리했다.
    - Foundation 태스크는 후속 구현 태스크의 SSOT가 되도록 구성했다.
 
-2. **CQRS-Oriented Feature Breakdown**
+2. **UI/UX Design Separation**
+   - UI 구현 태스크와 별도로 제품 UX 원칙, IA, 디자인 시스템, 화면별 상태, 마이크로카피, 접근성, 디자인 QA 태스크를 분리했다.
+   - 기존 UI 개발 태스크는 관련 `UX-*` 산출물을 선행 의존성으로 참조하도록 업데이트했다.
+
+3. **CQRS-Oriented Feature Breakdown**
    - 기능 구현 태스크는 Command와 Query/UI 성격을 구분했다.
    - Server Action, Route Handler, Server Component, Client Component의 책임을 명확히 나눴다.
 
-3. **Acceptance Criteria to Test Conversion**
+4. **Acceptance Criteria to Test Conversion**
    - SRS의 Given/When/Then 조건을 테스트 태스크로 별도 추출했다.
    - 외부 SaaS 및 LLM 연동은 mock/stub 기반 검증을 전제로 했다.
 
-4. **NFR and Operations Extraction**
+5. **NFR and Operations Extraction**
    - 성능, 보안, 모니터링, 가용성 요구사항을 별도 인프라/운영 태스크로 분리했다.
    - p95, timeout, RPO/RTO, 이벤트 누락률, 푸시 성공률 등 측정 가능한 기준을 포함했다.
 
@@ -67,8 +72,8 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 
 | 항목 | 결과 |
 |---|---:|
-| 실제 Task ID 수 | 102 |
-| 생성된 Issue 명세 파일 수 | 102 |
+| 실제 Task ID 수 | 118 |
+| 생성된 Issue 명세 파일 수 | 118 |
 | 기존 `issue-###-` prefix 파일 수 | 0 |
 | 새 파일명 규칙 적용 여부 | 완료 |
 | 필수 템플릿 섹션 포함 여부 | 완료 |
@@ -76,6 +81,9 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 대표 산출 파일:
 
 - [`DB-001-Prisma_dual_datasource_setup.md`](./DB-001-Prisma_dual_datasource_setup.md)
+- [`UX-001-Product_ux_principles_personas.md`](./UX-001-Product_ux_principles_personas.md)
+- [`UX-007-Home_recommendation_card_ux_spec.md`](./UX-007-Home_recommendation_card_ux_spec.md)
+- [`UX-016-Design_qa_usability_handoff_checklist.md`](./UX-016-Design_qa_usability_handoff_checklist.md)
 - [`DB-002-User_model_schema.md`](./DB-002-User_model_schema.md)
 - [`DTO-003-RecommendationCard_output_schema.md`](./DTO-003-RecommendationCard_output_schema.md)
 - [`AUTH-C01-NextAuth_initial_setup.md`](./AUTH-C01-NextAuth_initial_setup.md)
@@ -88,6 +96,7 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 
 | Epic | Count | 설명 |
 |---|---:|---|
+| UI/UX Design | 16 | UX 원칙, IA, 디자인 시스템, 화면별 UX, 상태/카피, 접근성, 디자인 QA |
 | Foundation | 23 | DB schema, DTO/Zod schema, mock data |
 | Auth | 5 | NextAuth.js, middleware, session, account deletion, login UI |
 | Onboarding | 4 | watchlist 저장/수정 및 온보딩/설정 UI |
@@ -104,7 +113,7 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 | Infra/Sec | 5 | TLS, encryption, RBAC, data minimization, log retention |
 | Infra/Ops | 5 | health endpoint, Vercel/PostHog/OneSignal/security monitoring |
 | Infra/Avail | 3 | backup RPO, DR runbook, Prisma connection pool protection |
-| **Total** | **102** | 실제 Task ID 행 기준 |
+| **Total** | **118** | 실제 Task ID 행 기준 |
 
 ---
 
@@ -112,15 +121,17 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 
 | Complexity | Count | 비율 |
 |---|---:|---:|
-| H | 11 | 10.8% |
-| M | 62 | 60.8% |
-| L | 29 | 28.4% |
-| **Total** | **102** | **100%** |
+| H | 13 | 11.0% |
+| M | 74 | 62.7% |
+| L | 31 | 26.3% |
+| **Total** | **118** | **100%** |
 
 주요 High complexity 태스크:
 
 - `DTO-003` RecommendationCard 출력 Zod schema
 - `DTO-004` LLM Structured Output JSON Schema
+- `UX-007` 홈 추천 카드 UX 명세
+- `UX-009` Confidence Score 선택 인터랙션 명세
 - `AUTH-C01` NextAuth.js 초기 설정
 - `AUTH-C04` 사용자 탈퇴 처리
 - `CONF-Q01` Confidence Score 토글 UI
@@ -137,6 +148,7 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 
 | SRS 영역 | 추출된 태스크 범위 |
 |---|---|
+| UI/UX Design | `UX-001` ~ `UX-016` |
 | §1.5.2 기술 스택 제약 | `DB-001`, `INFRA-*`, `LLM-C01`, `LLM-Q01` |
 | §3.1 External Systems | `MOCK-004`, `LLM-C02`, `PUSH-*`, `EVT-*`, `INFRA-004` |
 | §6.1 API/Server Action List | `DTO-*`, `ONB-*`, `CONF-*`, `REC-*`, `PUSH-C02`, `MON-001` |
@@ -160,6 +172,7 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 
 | Phase | Task Range | 목적 |
 |---|---|---|
+| Phase -1 | `UX-001` ~ `UX-016` | 제품 UX 원칙, 화면 구조, 상태/카피, 디자인 시스템, 접근성, QA 기준 |
 | Phase 0 | `INFRA-001` ~ `INFRA-003` | Next.js/Vercel 기본 환경 준비 |
 | Phase 1 | `DB-*`, `DTO-*`, `MOCK-*` | 데이터 계약과 mock 기반 UI/테스트 준비 |
 | Phase 2 | `AUTH-*` | 인증, 세션, 보호 경로 기반 구축 |
@@ -167,4 +180,3 @@ SRS v1.0의 기능 요구사항, 데이터 모델, API/Server Action, 비기능 
 | Phase 4 | `TRUST-*`, `PUSH-*`, `ARC-*`, `EVT-C03`, `EVT-Q01` | 신뢰 레이어, 푸시, 이력, 분석 완성 |
 | Phase 5 | `TEST-*` | Acceptance Criteria 자동화 |
 | Phase 6 | `PERF-*`, `SEC-*`, `MON-*`, `AVAIL-*`, `INFRA-004` | 성능, 보안, 운영 안정성 검증 |
-

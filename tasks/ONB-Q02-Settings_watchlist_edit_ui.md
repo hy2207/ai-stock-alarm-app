@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] ONB-Q02: 설정 화면 관심 종목 편집 UI 구현"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, priority:high'
 assignees: ''
 ---
 
@@ -19,7 +19,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F1 REQ-FUNC-003 요구사항과 ONB-Q02 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: ONB-C02
+- [ ] 선행 태스크 상태 확인: ONB-C02, UX-006, UX-012
 - [ ] 온보딩 Server Action 또는 화면 컴포넌트의 파일 위치와 공개 인터페이스 결정
 - [ ] 설정 화면 관심 종목 편집 UI 구현의 Server Action 또는 화면 컴포넌트 작성
 - [ ] 관심 종목/섹터 최소 1개, 최대 3개 제약 처리
@@ -31,7 +31,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(ONB-C02)가 완료되어 있음
+- Given: 선행 태스크(ONB-C02, UX-006, UX-012)가 완료되어 있음
 - When: 설정 화면 관심 종목 편집 UI 구현 작업을 실행함
 - Then: SRS §F1 REQ-FUNC-003 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -47,7 +47,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: ONB-Q02는 [Query/UI] 설정 화면 관심 종목 편집 UI 구현 — 기존 watchlist 조회 + 수정 인터페이스에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: ONB-C02 완료 상태를 전제로 한다.
+- 의존성: ONB-C02, UX-006, UX-012 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 
 ## :checkered_flag: Definition of Done (DoD)
@@ -57,5 +57,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: ONB-C02
+- Depends on: ONB-C02, UX-006, UX-012
 - Blocks: None identified in `task-list-v1.md`

@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] REC-Q05: 차트 위젯 비노출 검증"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, design-qa, priority:high'
 assignees: ''
 ---
 
@@ -19,7 +19,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F2 REQ-FUNC-014, ADR-004 요구사항과 REC-Q05 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: REC-Q03
+- [ ] 선행 태스크 상태 확인: REC-Q03, UX-008, UX-016
 - [ ] 추천 카드 조회/표시/상호작용 기능의 파일 위치와 공개 인터페이스 결정
 - [ ] 차트 위젯 비노출 검증 조회/표시/상호작용 구현
 - [ ] published 카드와 no_call 상태를 모두 오류 없이 처리
@@ -31,7 +31,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(REC-Q03)가 완료되어 있음
+- Given: 선행 태스크(REC-Q03, UX-008, UX-016)가 완료되어 있음
 - When: 차트 위젯 비노출 검증 작업을 실행함
 - Then: SRS §F2 REQ-FUNC-014, ADR-004 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -47,7 +47,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: REC-Q05는 [Query/UI] 차트 위젯 비노출 검증 — 메인 폴드 영역에 캔들/RSI/MACD 미렌더링 (디자인 QA)에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: REC-Q03 완료 상태를 전제로 한다.
+- 의존성: REC-Q03, UX-008, UX-016 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 - 성능: 홈 추천 카드 조회는 warm 상태 p95 ≤ 800ms 목표를 고려한다.
 - 컴플라이언스: 캔들/RSI/MACD 위젯은 메인 폴드에 노출하지 않고 면책 문구를 유지한다.
@@ -59,5 +59,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: REC-Q03
+- Depends on: REC-Q03, UX-008, UX-016
 - Blocks: None identified in `task-list-v1.md`

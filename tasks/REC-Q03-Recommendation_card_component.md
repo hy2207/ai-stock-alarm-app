@@ -2,7 +2,7 @@
 name: Feature Task
 about: SRS 기반의 구체적인 개발 태스크 명세
 title: "[Feature] REC-Q03: 추천 카드 렌더링 Client Component"
-labels: 'feature, backend, priority:high'
+labels: 'feature, frontend, ui, priority:high'
 assignees: ''
 ---
 
@@ -19,7 +19,7 @@ assignees: ''
 
 ## :white_check_mark: Task Breakdown (실행 계획)
 - [ ] SRS의 §F2 REQ-FUNC-011, REQ-FUNC-012, §F9 REQ-FUNC-085 요구사항과 REC-Q03 태스크 범위를 재확인
-- [ ] 선행 태스크 상태 확인: REC-Q01, MOCK-001
+- [ ] 선행 태스크 상태 확인: REC-Q01, MOCK-001, UX-007, UX-014
 - [ ] 추천 카드 조회/표시/상호작용 기능의 파일 위치와 공개 인터페이스 결정
 - [ ] 추천 카드 렌더링 Client Component 조회/표시/상호작용 구현
 - [ ] published 카드와 no_call 상태를 모두 오류 없이 처리
@@ -31,7 +31,7 @@ assignees: ''
 
 ## :test_tube: Acceptance Criteria (BDD/GWT)
 Scenario 1: 정상 처리
-- Given: 선행 태스크(REC-Q01, MOCK-001)가 완료되어 있음
+- Given: 선행 태스크(REC-Q01, MOCK-001, UX-007, UX-014)가 완료되어 있음
 - When: 추천 카드 렌더링 Client Component 작업을 실행함
 - Then: SRS §F2 REQ-FUNC-011, REQ-FUNC-012, §F9 REQ-FUNC-085 요구사항을 만족하는 산출물이 생성되고 후속 태스크에서 참조할 수 있다.
 
@@ -47,7 +47,7 @@ Scenario 3: 추적 이벤트 및 후속 연동
 
 ## :gear: Technical & Non-Functional Constraints
 - 범위: REC-Q03는 [Query/UI] 추천 카드 렌더링 Client Component — ticker, direction, entryPrice, holdDays, confidenceScore, reasonLine 표시 + 면책 문구 고정에 한정하며 unrelated refactor를 포함하지 않는다.
-- 의존성: REC-Q01, MOCK-001 완료 상태를 전제로 한다.
+- 의존성: REC-Q01, MOCK-001, UX-007, UX-014 완료 상태를 전제로 한다.
 - 보안: API 키, OAuth 토큰, 사용자 식별자, 원문 입력은 코드/로그에 평문으로 남기지 않는다.
 - 성능: 홈 추천 카드 조회는 warm 상태 p95 ≤ 800ms 목표를 고려한다.
 - 컴플라이언스: 캔들/RSI/MACD 위젯은 메인 폴드에 노출하지 않고 면책 문구를 유지한다.
@@ -59,5 +59,5 @@ Scenario 3: 추적 이벤트 및 후속 연동
 - [ ] API 명세서(Swagger 등)가 최신화되었는가?
 
 ## :construction: Dependencies & Blockers
-- Depends on: REC-Q01, MOCK-001
+- Depends on: REC-Q01, MOCK-001, UX-007, UX-014
 - Blocks: REC-Q04, REC-Q05, REC-C01, REC-C02, CONF-Q01, TRUST-Q03, EVT-C03, PERF-003
