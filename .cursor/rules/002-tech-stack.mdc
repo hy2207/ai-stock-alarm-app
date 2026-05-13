@@ -1,0 +1,38 @@
+---
+description: Target stack per SRS C-TEC — Next.js, Prisma, Vercel AI SDK, Gemini, PostHog, OneSignal
+globs: "**/*.{ts,tsx,js,jsx,mjs,cjs}","**/prisma/schema.prisma","**/vercel.json","**/package.json"
+alwaysApply: false
+---
+# Technical stack (SRS C-TEC)
+
+**Migrate toward this stack** for new code. If the repo root still shows a legacy Vite SPA, treat Next.js paths below as the **target** layout (`AGENTS.md`).
+
+## Application
+- **Next.js App Router** — React Server Components, **Server Actions** (`'use server'`), **Route Handlers** under `app/api/**/route.ts`.
+- **TypeScript** everywhere; strict boundaries with **Zod**.
+
+## Data
+- **Prisma** ORM; **SQLite** locally, **PostgreSQL (Supabase)** in production; **`prisma migrate`** for schema changes.
+- Entities per SRS §6.2: User, RiskProfile, Watchlist, RecommendationCard, EvidenceSnapshot, PerformanceRecord. **No** Prisma EventLog / NotificationLog (PostHog + OneSignal own those concerns).
+
+## UI
+- **Tailwind CSS** + **shadcn/ui** (Radix primitives). Result-first cards; responsive, accessible controls for risk mode.
+
+## AI
+- **Vercel AI SDK** + **`@ai-sdk/google`** (Gemini). Default **`streamObject()`** for structured recommendation output.
+- **`GEMINI_MODEL`** env switches models. Generate **three published card rows per ticker batch** (aggressive/balanced/conservative) so toggling risk mode does not re-call the LLM (REQ-FUNC-031).
+- On schema/LLM failure: **No Call** path + `llm_call_failed` / `rec_validation_failed` server events (SRS).
+
+## Auth & security
+- **NextAuth.js** — `/api/auth/[...nextauth]`; **middleware** protects app routes.
+- Secrets only in **Vercel environment variables**; TLS everywhere (REQ-NF-020).
+
+## Analytics & push
+- **PostHog** — `posthog-js` on client; small **server capture helper** for server-originated events. **Forbidden:** dedicated **`/api/events`** REST sink (SRS REQ-FUNC-060).
+- **OneSignal** for web push; **Vercel Cron** + `CRON_SECRET` for `/api/cron/morning-briefing`.
+
+## External data
+- **Yahoo Finance** / **Finnhub** via `fetch` with **`revalidate`** or **`unstable_cache`**; respect rate limits; surface freshness in `/api/admin/health`.
+
+## Performance anchors (PRD / SRS)
+- Home recommendations **p95 ≤ 800ms** (warm), detail **≤ 700ms**, risk toggle UI **≤ 300ms** (client switch between precomputed cards), push landing **≤ 1s** — see REQ-NF-001–004.

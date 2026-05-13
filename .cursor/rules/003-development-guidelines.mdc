@@ -1,0 +1,29 @@
+---
+description: Implementation habits — minimal diffs, Zod, events, no chart creep
+globs: "**/*.{ts,tsx,js,jsx}"
+alwaysApply: false
+---
+# Development guidelines (Decision Layer app)
+
+## Scope of change
+- Touch only files needed for the task; no unrelated refactors or “cleanup” in the same PR unless requested.
+- Follow existing naming, folder structure, and import style in the edited area.
+
+## Domain rules in code
+- **Cards:** enforce ticker, direction, confidence, prices/ranges, `holdDays` 1–10, `reasonLine` 1–160 chars before persist or render as “published”.
+- **Risk mode:** validate with Zod on every Server Action; illegal values return structured errors without mutating stored profile (REQ-FUNC-033).
+- **Charts:** do not add raw market chart widgets to primary recommendation surfaces (ADR-004). Sparkline-only UX still needs PM/ADR sign-off.
+- **Disclaimers:** non-investment-advice copy on card surfaces (REQ-FUNC-085).
+
+## Analytics
+- Use **PostHog** client (`posthog-js`) or the server helper; align event names with SRS REQ-FUNC-060. Never add a parallel **`/api/events`** pipeline.
+
+## Data & migrations
+- Any Prisma schema change → migration + types regenerated; keep SQLite/Postgres compatibility per SRS ASS-010.
+
+## Quality bar
+- Prefer explicit types over `any`; handle loading/empty/**No Call** states in UI.
+- When fixing bugs: reproduce → minimal fix → consider a regression test for REQ-critical paths.
+
+## Git
+- Small, reviewable commits; Conventional Commit style when the repo already uses it (`102-gitflow-agent` skill / `/gitflow-commit` command).
