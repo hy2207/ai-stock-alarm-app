@@ -1,0 +1,105 @@
+// Prisma schema — SQLite (local), PostgreSQL (production).
+// Change provider to "postgresql" and DATABASE_URL to the Supabase connection
+// string before deploying. Schema uses only the common subset (cuid PKs,
+// no native Postgres types) so both datasources are compatible.
+//
+// Follows SRS §6.2 Entity & Data Model. No EventLog/NotificationLog
+// (delegated to PostHog / OneSignal per SRS v0.3).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Core business entities ──────────────────────────────────────────
+
+model User {
+  id           String         @id @default(cuid())
+  email        String?        @unique
+  name         String?
+  signupChannel String
+  timezone     String         @default("Asia/Seoul")
+  consentPush  Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  riskProfile          RiskProfile?
+  watchlist            Watchlist[]
+  recommendationCards  RecommendationCard[]
+}
+
+model RiskProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  riskMode  String   // "aggressive" | "balanced" | "conservative" (Zod-validated)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  ticker    String?
+  sector    String?
+  priority  Int      // 1-3, enforced by Server Action
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Either ticker or sector must be set (Zod-validated)
+}
+
+model RecommendationCard {
+  id              String   @id @default(cuid())
+  userId          String
+  ticker          String
+  direction       String   // "BUY" | "SELL" (Zod-validated)
+  entryPrice      Float?
+  entryRangeLow   Float?
+  entryRangeHigh  Float?
+  targetPrice     Float?
+  targetRangeLow  Float?
+  targetRangeHigh Float?
+  stopPrice       Float?
+  holdDays        Int      // 1-10 integer (Zod-validated)
+  confidenceScore String   // "aggressive" | "balanced" | "conservative" (Zod-validated)
+  reasonLine      String   // min 1, max 160 chars (Zod-validated)
+  status          String   // "published" | "no_call" | "validation_failed" (Zod-validated)
+  createdAt       DateTime @default(now())
+  validUntil      DateTime
+
+  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  evidenceSnapshots EvidenceSnapshot[]
+  performanceRecords PerformanceRecord[]
+}
+
+model EvidenceSnapshot {
+  id                   String   @id @default(cuid())
+  recId                String
+  newsSignalScore      Float?
+  volumeSignalScore    Float?
+  communitySignalScore Float?
+  patternTag           String?
+  createdAt            DateTime @default(now())
+
+  recommendationCard RecommendationCard @relation(fields: [recId], references: [id], onDelete: Cascade)
+}
+
+model PerformanceRecord {
+  id                   String    @id @default(cuid())
+  recId                String
+  ticker               String
+  predictedDirection   String    // "BUY" | "SELL"
+  realizedReturn       Float?
+  hitFlag              Boolean?
+  evaluationWindowDays Int
+  evaluatedAt          DateTime?
+  createdAt            DateTime  @default(now())
+
+  recommendationCard RecommendationCard @relation(fields: [recId], references: [id], onDelete: Cascade)
+}
