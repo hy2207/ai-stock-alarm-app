@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   recommendationCardCreateSchema,
   recommendationCardSchema,
+  recommendationCardOutputSchema,
   directionEnum,
   confidenceModeEnum,
   cardStatusEnum,
@@ -156,6 +157,58 @@ describe("enum schemas", () => {
     for (const s of ["published", "no_call", "validation_failed"] as const) {
       expect(cardStatusEnum.parse(s)).toBe(s);
     }
+  });
+});
+
+describe("recommendationCardOutputSchema", () => {
+  it("accepts a valid output card", () => {
+    const result = recommendationCardOutputSchema.safeParse({
+      id: "clxoutp00000000000000001",
+      ticker: "NVDA",
+      direction: "BUY",
+      entryPrice: 890.5,
+      entryRangeLow: null,
+      entryRangeHigh: null,
+      targetPrice: 980.0,
+      targetRangeLow: null,
+      targetRangeHigh: null,
+      stopPrice: 840.0,
+      holdDays: 5,
+      confidenceScore: "aggressive",
+      reasonLine: "Strong earnings momentum continues.",
+      status: "published",
+      createdAt: new Date("2026-05-28"),
+      validUntil: new Date("2026-06-04"),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects output with userId (omitted field)", () => {
+    const result = recommendationCardOutputSchema.safeParse({
+      id: "clxoutp00000000000000001",
+      userId: "clxusr00000000000000001",
+      ticker: "NVDA",
+      direction: "BUY",
+      entryPrice: 890.5,
+      targetPrice: 980.0,
+      holdDays: 5,
+      confidenceScore: "aggressive",
+      reasonLine: "Strong earnings momentum continues.",
+      status: "published",
+      createdAt: new Date("2026-05-28"),
+      validUntil: new Date("2026-06-04"),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("output schema has same shape minus userId", () => {
+    const outputKeys = Object.keys(
+      recommendationCardOutputSchema._def.shape,
+    ).sort();
+    const fullKeys = Object.keys(
+      recommendationCardSchema._def.shape,
+    ).sort();
+    expect(outputKeys).toEqual(fullKeys.filter((k) => k !== "userId"));
   });
 });
 
