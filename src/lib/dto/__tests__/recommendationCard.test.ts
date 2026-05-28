@@ -110,6 +110,61 @@ describe("recommendationCardCreateSchema", () => {
     expect(success).toBe(false);
   });
 
+  it("rejects whitespace-only reasonLine", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      reasonLine: "   ",
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects reasonLine exceeding 160 characters", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      reasonLine: "x".repeat(161),
+    });
+    expect(success).toBe(false);
+  });
+
+  it("accepts reasonLine exactly 160 characters (boundary)", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      reasonLine: "x".repeat(160),
+    });
+    expect(success).toBe(true);
+  });
+
+  it("accepts reasonLine exactly 1 character (boundary)", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      reasonLine: "X",
+    });
+    expect(success).toBe(true);
+  });
+
+  it("published cards always have 1-160 char reasonLine (output schema)", () => {
+    const published = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      reasonLine: "Published card with valid reason line.",
+      status: "published",
+    });
+    expect(published.success).toBe(true);
+    if (published.success) {
+      expect(published.data.reasonLine.length).toBeGreaterThanOrEqual(1);
+      expect(published.data.reasonLine.length).toBeLessThanOrEqual(160);
+    }
+  });
+
   it("rejects negative entry price", () => {
     const { success } = recommendationCardCreateSchema.safeParse({
       ...validBase,
