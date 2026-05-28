@@ -92,7 +92,9 @@ describe("userSchema (full output)", () => {
     const result = userSchema.parse({
       id: "clx123abc",
       email: "user@example.com",
+      emailVerified: null,
       name: "Test User",
+      image: null,
       signupChannel: "google",
       timezone: "Asia/Seoul",
       consentPush: true,
@@ -103,11 +105,30 @@ describe("userSchema (full output)", () => {
     expect(result.createdAt).toBeInstanceOf(Date);
   });
 
+  it("parses a row with emailVerified and image", () => {
+    const result = userSchema.parse({
+      id: "clx123abc",
+      email: "verified@example.com",
+      emailVerified: new Date("2026-05-01"),
+      name: "Verified User",
+      image: "https://example.com/avatar.png",
+      signupChannel: "email",
+      timezone: "America/New_York",
+      consentPush: true,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-05-28"),
+    });
+    expect(result.emailVerified).toBeInstanceOf(Date);
+    expect(result.image).toBe("https://example.com/avatar.png");
+  });
+
   it("rejects a row with an invalid cuid", () => {
     const { success } = userSchema.safeParse({
       id: "",
       email: null,
+      emailVerified: null,
       name: null,
+      image: null,
       signupChannel: "email",
       timezone: "Asia/Seoul",
       consentPush: false,
