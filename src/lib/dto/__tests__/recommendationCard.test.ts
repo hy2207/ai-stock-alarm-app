@@ -194,6 +194,75 @@ describe("recommendationCardCreateSchema", () => {
     });
     expect(success).toBe(true);
   });
+
+  it("rejects entryRangeLow without entryRangeHigh", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeLow: 180.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
+  });
+
+  it("rejects entryRangeHigh without entryRangeLow", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeHigh: 190.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
+  });
+
+  it("rejects targetRangeLow without targetRangeHigh", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeLow: 200.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
+  });
+
+  it("rejects targetRangeHigh without targetRangeLow", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeHigh: 220.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
+  });
+
+  it("accepts entryPrice alone without any range fields", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("accepts entryRangeLow + entryRangeHigh together", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeLow: 180.0,
+      entryRangeHigh: 190.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("accepts targetRangeLow + targetRangeHigh together", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeLow: 200.0,
+      targetRangeHigh: 220.0,
+    });
+    expect(success).toBe(true);
+  });
 });
 
 describe("enum schemas", () => {
