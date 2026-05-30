@@ -167,4 +167,52 @@ describe("llmResponseSchema", () => {
     });
     expect(success).toBe(true);
   });
+
+  it("rejects ticker exceeding 10 characters", () => {
+    const { success } = llmOkResponseSchema.safeParse({
+      status: "ok",
+      variants: [
+        { ...validVariant, confidenceMode: "aggressive", ticker: "VERYLONGTKR" },
+        { ...validVariant, confidenceMode: "balanced" },
+        { ...validVariant, confidenceMode: "conservative" },
+      ],
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects invalid confidenceMode", () => {
+    const { success } = llmOkResponseSchema.safeParse({
+      status: "ok",
+      variants: [
+        { ...validVariant, confidenceMode: "extreme" },
+        { ...validVariant, confidenceMode: "balanced" },
+        { ...validVariant, confidenceMode: "conservative" },
+      ],
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects negative price in LLM variant", () => {
+    const { success } = llmOkResponseSchema.safeParse({
+      status: "ok",
+      variants: [
+        { ...validVariant, confidenceMode: "aggressive", entryPrice: -10 },
+        { ...validVariant, confidenceMode: "balanced" },
+        { ...validVariant, confidenceMode: "conservative" },
+      ],
+    });
+    expect(success).toBe(false);
+  });
+
+  it("accepts all-null optional price fields in LLM variant", () => {
+    const { success } = llmOkResponseSchema.safeParse({
+      status: "ok",
+      variants: [
+        { ...validVariant, confidenceMode: "aggressive", entryPrice: null, entryRangeLow: null, entryRangeHigh: null },
+        { ...validVariant, confidenceMode: "balanced" },
+        { ...validVariant, confidenceMode: "conservative" },
+      ],
+    });
+    expect(success).toBe(true);
+  });
 });
