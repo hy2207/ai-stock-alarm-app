@@ -103,4 +103,64 @@ describe("generateCards", () => {
       }),
     );
   });
+
+  it("classifies rate_limit error", async () => {
+    mockStreamObject.mockRejectedValue(new Error("429 Too Many Requests"));
+
+    const { generateCards } = await import("../generateCards");
+    const result = await generateCards(baseInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorType).toBe("rate_limit");
+    }
+  });
+
+  it("classifies api_key error", async () => {
+    mockStreamObject.mockRejectedValue(new Error("401 Unauthorized - invalid API key"));
+
+    const { generateCards } = await import("../generateCards");
+    const result = await generateCards(baseInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorType).toBe("api_key");
+    }
+  });
+
+  it("classifies api_error for 503", async () => {
+    mockStreamObject.mockRejectedValue(new Error("503 Service Unavailable"));
+
+    const { generateCards } = await import("../generateCards");
+    const result = await generateCards(baseInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorType).toBe("api_error");
+    }
+  });
+
+  it("classifies no_response for empty LLM reply", async () => {
+    mockStreamObject.mockRejectedValue(new Error("Empty response from model"));
+
+    const { generateCards } = await import("../generateCards");
+    const result = await generateCards(baseInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorType).toBe("no_response");
+    }
+  });
+
+  it("classifies unknown error", async () => {
+    mockStreamObject.mockRejectedValue(new Error("Something unexpected"));
+
+    const { generateCards } = await import("../generateCards");
+    const result = await generateCards(baseInput);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errorType).toBe("unknown");
+    }
+  });
 });

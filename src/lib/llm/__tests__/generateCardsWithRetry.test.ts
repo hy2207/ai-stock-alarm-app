@@ -84,4 +84,35 @@ describe("generateCardsWithRetry", () => {
 
     expect(mockGenerateCards).toHaveBeenCalledTimes(1);
   });
+
+  it("retries on rate_limit then succeeds", async () => {
+    mockGenerateCards
+      .mockResolvedValueOnce({ ok: false, reason: "Too many requests", errorType: "rate_limit" })
+      .mockResolvedValueOnce({
+        ok: true,
+        variants: [
+          { ticker: "AAPL", direction: "BUY", holdDays: 5, reasonLine: "After rate limit", confidenceMode: "balanced" },
+          { ticker: "AAPL", direction: "BUY", holdDays: 6, reasonLine: "After rate limit 2", confidenceMode: "aggressive" },
+          { ticker: "AAPL", direction: "BUY", holdDays: 7, reasonLine: "After rate limit 3", confidenceMode: "conservative" },
+        ],
+      });
+
+    const { generateCardsWithRetry } = await import("../generateCardsWithRetry");
+    const result = await generateCardsWithRetry(baseInput);
+
+    expect(result.ok).toBe(true);
+    expect(mockGenerateCards).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries once on api_key error, returns final failure", async () => {
+    mockGenerateCards
+      .mockResolvedValueOnce({ ok: false, reason: "Invalid API key", errorType: "api_key" })
+      .mockResolvedValueOnce({ ok: false, reason: "Still invalid key", errorType: "api_key" });
+
+    const { generateCardsWithRetry } = await import("../generateCardsWithRetry");
+    const result = await generateCardsWithRetry(baseInput);
+
+    expect(result.ok).toBe(false);
+    expect(mockGenerateCards).toHaveBeenCalledTimes(2);
+  });
 });
