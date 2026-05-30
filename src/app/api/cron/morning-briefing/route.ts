@@ -70,6 +70,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const sent = isSuccess ? scheduled : 0;
     const failed = isSuccess ? 0 : scheduled;
 
+    // Update consentPush=false for users with invalid subscriptions
+    // (per REQ-FUNC-052: must not send to revoked-permission users).
+    if (isSuccess && Array.isArray(oneSignalData.invalid_external_user_ids)) {
+      const invalidIds: string[] = oneSignalData.invalid_external_user_ids;
+      if (invalidIds.length > 0) {
+        try {
+          await prisma.user.updateMany({
+            where: { id: { in: invalidIds } },
+            data: { consentPush: false },
+          });
+        } catch {
+          // DB update must not fail the cron response
+        }
+      }
+    }
+
     // Capture server event
     try {
       await captureServerEvent("push_sent", {
@@ -77,6 +93,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         sent,
         failed,
         oneSignalNotificationId: oneSignalData.id ?? null,
+        invalidExternalUserIds: oneSignalData.invalid_external_user_ids?.length ?? 0,
       });
     } catch {
       // analytics must not surface 5xx
