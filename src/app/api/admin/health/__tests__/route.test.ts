@@ -13,6 +13,9 @@ vi.mock("@/lib/prisma", () => ({
   },
 }));
 
+// Static import: module is evaluated at parse time (before fake timers in beforeEach)
+const { GET } = await import("../route");
+
 const NOW = new Date("2026-05-30T10:00:00.000Z");
 
 beforeEach(() => {
@@ -21,7 +24,6 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -34,7 +36,6 @@ describe("GET /api/admin/health", () => {
     mockFindFirst.mockResolvedValue(null);
     mockFindMany.mockResolvedValue([]);
 
-    const { GET } = await import("../route");
     const response = await GET(createRequest());
 
     expect(response.status).toBe(200);
@@ -51,7 +52,6 @@ describe("GET /api/admin/health", () => {
       { entryPrice: 150, entryRangeLow: null, targetPrice: 160, targetRangeLow: null, reasonLine: "Test" },
     ]);
 
-    const { GET } = await import("../route");
     const response = await GET(createRequest());
 
     expect(response.status).toBe(200);
@@ -70,7 +70,6 @@ describe("GET /api/admin/health", () => {
       { entryPrice: null, entryRangeLow: null, targetPrice: null, targetRangeLow: null, reasonLine: "" },
     ]);
 
-    const { GET } = await import("../route");
     const response = await GET(createRequest());
 
     expect(response.status).toBe(200);
@@ -86,7 +85,6 @@ describe("GET /api/admin/health", () => {
       { entryPrice: 200, entryRangeLow: null, targetPrice: 190, targetRangeLow: null, reasonLine: "B" },
     ]);
 
-    const { GET } = await import("../route");
     const response = await GET(createRequest());
 
     expect(response.status).toBe(200);
@@ -101,7 +99,6 @@ describe("GET /api/admin/health", () => {
       { entryPrice: 150, entryRangeLow: null, targetPrice: 155, targetRangeLow: null, reasonLine: "Trending" },
     ]);
 
-    const { GET } = await import("../route");
     const response = await GET(createRequest());
 
     expect(response.status).toBe(200);

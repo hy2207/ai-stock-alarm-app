@@ -19,7 +19,30 @@
 
 ### MINOR: 1
 
+**Decision CORE-003**: Session 3 completed 5 issues (AUTH-C02, TEST-F10-01, LLM-Q01, TEST-F9-03, TEST-F2-01) but remaining 30+ unaddressed issues require visual-engineering, ops/config, or depend on other PR branches not yet merged to feat/47.
+- **Context**: All code-level backend issues addressable from feat/47 are either implemented, on other PR branches, or already covered by existing tests. Remaining issues are visual-engineering (UI components, UX design), ops/config (monitoring, perf, deploy), writing (docs, taxonomy), or on separate PR branches (feat/36, feat/42, feat/43, feat/45). No unblocked code-level issues remain.
+- **Classification**: MINOR (project status observation, not architecture/security/external dependency/data model/ADR)
+
+### MINOR: 5
+
+**Decision MINOR-002**: DTO-009 uses per-event Zod property schemas instead of a single loose `Record<string, unknown>`.
+- **Context**: SRS REQ-FUNC-060 requires strict event property typing. Options: (a) one schema per event name with z.discriminatedUnion, (b) a factory function, (c) a single loose record type. Option (a) wins for type safety, auto-complete, and runtime validation. Each event name gets a dedicated schema keyed on the `event` literal.
+- **Classification**: MINOR (analytics implementation detail)
+
+**Decision MINOR-003**: EVT-C01 uses Next.js `use client` component without Suspense wrapping for PostHogProvider.
+- **Context**: PostHog v3's `posthog-js` needs a browser `window` at init. We create the provider as a separate client component mounted inside `layout.tsx`. No Suspense boundary needed because the PostHog SDK internally handles async loading. The provider wraps `PostHogProvider` from `posthog-js/react`.
+- **Classification**: MINOR (component wiring — standard PostHog Next.js pattern)
+
+**Decision MINOR-004**: MOCK-004 adds rate-limit, timeout, and error fixtures alongside a validation test file.
+- **Context**: Mock market data needs to simulate non-happy paths for reliable test coverage. Pattern: export `mockRateLimitedResponse`, `mockTimeoutResponse`, `mockErrorResponse` from each provider's mock. A shared `market.test.ts` validates the types against the real provider interfaces.
+- **Classification**: MINOR (test infrastructure)
+
+**Decision MINOR-005**: SEC-004 produces a standalone data minimization review document rather than inline assertions.
+- **Context**: A security review document is the SRS-prescribed deliverable for REQ-NF-024/026 verification. It lives at `docs/security/data-minimization-review.md` — separate from code, independently auditable.
+- **Classification**: MINOR (documentation deliverable)
+
 ---
 
 CORE: 2
-MINOR: 1
+MINOR: 6
+STOP REASON: NO_UNBLOCKED_ISSUES

@@ -37,6 +37,8 @@ export const llmResponseSchema = z.discriminatedUnion("status", [
 ]);
 
 export type LlmCardVariant = z.infer<typeof llmVariantCardSchema>;
+/** @deprecated Use {@link LlmCardVariant} instead. */
+export type LlmVariantCard = LlmCardVariant;
 export type LlmOkResponse = z.infer<typeof llmOkResponseSchema>;
 export type LlmNoCallResponse = z.infer<typeof llmNoCallResponseSchema>;
 export type LlmResponse = z.infer<typeof llmResponseSchema>;
