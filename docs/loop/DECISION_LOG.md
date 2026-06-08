@@ -45,8 +45,12 @@
 - **Context**: Issue #113 requires 16 typed client event capture functions for PostHog. Implemented as a pure factory (`createClientEventCapturers`) wrapped by a React hook (`useClientEvent`), separating testable logic from the `usePostHog` context dependency. 17 unit tests pass.
 - **Classification**: MINOR (analytics implementation detail, follows DTO-009 schema)
 
+**Decision MINOR-007**: TEST-F7-01 PostHog integration tests — schema verification, server capture, client factory, /api/events absence.
+- **Context**: Issue #117 validates full PostHog event taxonomy (16 client + 3 server events with per-event property schemas), server-side capture via `captureServerEvent`, client-side factory via `createClientEventCapturers`, and confirms `/api/events` endpoint does not exist. 15 tests pass.
+- **Classification**: MINOR (test infrastructure — follows DTO-009 schema)
+
 ---
 
 CORE: 2
-MINOR: 7
+MINOR: 8
 STOP REASON: NO_UNBLOCKED_ISSUES
