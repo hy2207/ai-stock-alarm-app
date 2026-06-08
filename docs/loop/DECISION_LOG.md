@@ -41,8 +41,12 @@
 - **Context**: A security review document is the SRS-prescribed deliverable for REQ-NF-024/026 verification. It lives at `docs/security/data-minimization-review.md` — separate from code, independently auditable.
 - **Classification**: MINOR (documentation deliverable)
 
+**Decision MINOR-006**: EVT-C03 client event tracking hook — typed per-event capture functions.
+- **Context**: Issue #113 requires 16 typed client event capture functions for PostHog. Implemented as a pure factory (`createClientEventCapturers`) wrapped by a React hook (`useClientEvent`), separating testable logic from the `usePostHog` context dependency. 17 unit tests pass.
+- **Classification**: MINOR (analytics implementation detail, follows DTO-009 schema)
+
 ---
 
 CORE: 2
-MINOR: 6
+MINOR: 7
 STOP REASON: NO_UNBLOCKED_ISSUES
