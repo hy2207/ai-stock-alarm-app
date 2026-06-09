@@ -35,7 +35,6 @@ function createRequest(auth?: string): NextRequest {
     headers: new Map(
       auth ? [["authorization", auth]] : [],
     ) as unknown as Headers,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 

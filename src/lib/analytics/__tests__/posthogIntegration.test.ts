@@ -14,10 +14,10 @@ import {
 const phCapture = vi.fn();
 const phFlush = vi.fn().mockResolvedValue(undefined);
 
-function MockPostHog() {
-  this.capture = phCapture;
-  this.flush = phFlush;
-  this.shutdown = vi.fn().mockResolvedValue(undefined);
+class MockPostHog {
+  capture = phCapture;
+  flush = phFlush;
+  shutdown = vi.fn().mockResolvedValue(undefined);
 }
 
 vi.mock("posthog-node", () => ({
@@ -130,7 +130,6 @@ describe("captureServerEvent", () => {
 
   it("silently handles invalid event name (no-op)", async () => {
     const { captureServerEvent } = await import("../serverCapture");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await expect(captureServerEvent("home_view" as any, {} as any)).resolves.toBeUndefined();
     expect(phCapture).not.toHaveBeenCalled();
   });
@@ -176,17 +175,13 @@ describe("createClientEventCapturers", () => {
 
 describe("/api/events endpoint", () => {
   it("does NOT exist", async () => {
-    await expect(
-      (async () => {
-        try {
-          await import("../../../app/api/events/route");
-        } catch (e) {
-          if (e instanceof Error && e.message.includes("Cannot find module")) {
-            throw new Error("/api/events must not exist");
-          }
-          throw e;
-        }
-      })(),
-    ).rejects.toThrow("/api/events must not exist");
+    // Use fs to check file existence instead of import to avoid TS2307
+    const fs = await import("fs");
+    const path = await import("path");
+    const eventsRoute = path.resolve(
+      __dirname,
+      "../../../app/api/events/route.ts",
+    );
+    expect(fs.existsSync(eventsRoute)).toBe(false);
   });
 });

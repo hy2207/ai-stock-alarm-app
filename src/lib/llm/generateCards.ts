@@ -43,11 +43,6 @@ export interface CardGenerationResultOk {
   variants: LlmVariantCard[];
 }
 
-export interface CardGenerationResultOk {
-  ok: true;
-  variants: LlmVariantCard[];
-}
-
 export interface CardGenerationResultError {
   ok: false;
   reason: string;

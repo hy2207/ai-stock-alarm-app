@@ -20,19 +20,19 @@ const variantDef: Record<
   { src: string; className: string }
 > = {
   hero: {
-    src: stockalarmLogo,
+    src: stockalarmLogo.src,
     className: 'h-28 sm:h-32 w-auto max-w-full object-contain mx-auto',
   },
   header: {
-    src: stockalarmMark,
+    src: stockalarmMark.src,
     className: `h-9 w-9 p-0.5 ${markFrame}`,
   },
   mark: {
-    src: stockalarmMark,
+    src: stockalarmMark.src,
     className: `h-12 w-12 p-1 ${markFrame}`,
   },
   'mark-lg': {
-    src: stockalarmMark,
+    src: stockalarmMark.src,
     className: `h-16 w-16 p-1.5 ${markFrame}`,
   },
 };

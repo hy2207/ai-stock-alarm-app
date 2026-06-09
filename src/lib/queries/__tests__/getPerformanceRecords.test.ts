@@ -15,6 +15,7 @@ vi.mock("@/lib/auth/getServerSession", () => ({
 }));
 
 const { getCurrentUserId } = await import("@/lib/auth/getServerSession");
+const mockGetCurrentUserId = vi.mocked(getCurrentUserId);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -22,7 +23,7 @@ beforeEach(() => {
 
 describe("getPerformanceRecords", () => {
   it("returns empty array when user is unauthenticated", async () => {
-    getCurrentUserId.mockResolvedValue(null);
+    mockGetCurrentUserId.mockResolvedValue(null);
     const { getPerformanceRecords } = await import("../getPerformanceRecords");
     const result = await getPerformanceRecords();
 
@@ -31,7 +32,7 @@ describe("getPerformanceRecords", () => {
   });
 
   it("fetches records scoped to the authenticated user", async () => {
-    getCurrentUserId.mockResolvedValue("user-1");
+    mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([
       {
         id: "rec-1",
@@ -52,7 +53,7 @@ describe("getPerformanceRecords", () => {
   });
 
   it("limits to 30 most recent records within 30 days", async () => {
-    getCurrentUserId.mockResolvedValue("user-1");
+    mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([]);
 
     const { getPerformanceRecords } = await import("../getPerformanceRecords");
@@ -65,7 +66,7 @@ describe("getPerformanceRecords", () => {
   });
 
   it("includes both success and failure records", async () => {
-    getCurrentUserId.mockResolvedValue("user-1");
+    mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([
       {
         id: "rec-1",
@@ -94,7 +95,7 @@ describe("getPerformanceRecords", () => {
   });
 
   it("returns empty array when no records exist", async () => {
-    getCurrentUserId.mockResolvedValue("user-1");
+    mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([]);
 
     const { getPerformanceRecords } = await import("../getPerformanceRecords");

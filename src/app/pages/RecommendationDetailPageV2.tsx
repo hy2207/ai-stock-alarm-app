@@ -33,6 +33,12 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
     ...recommendationsByRisk.aggressive,
   ];
   const recommendation = allRecommendations.find(r => r.id === recId);
+  const currentRec = recommendation
+    ? recommendationsByRisk[selectedRisk].find(r => r.ticker === recommendation.ticker)
+    : undefined;
+  const statsRec = currentRec || recommendation;
+  const tickerRecords = statsRec ? performanceRecords.filter(r => r.ticker === statsRec.ticker) : [];
+  const { successRate, avgReturn, failCount, evaluatingCount } = usePerformanceStats(tickerRecords);
 
   if (!recommendation) {
     return (
@@ -53,14 +59,7 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
     );
   }
 
-  const currentRec = recommendationsByRisk[selectedRisk].find(
-    r => r.ticker === recommendation.ticker
-  );
-
   const rec = currentRec || recommendation;
-
-  const tickerRecords = performanceRecords.filter(r => r.ticker === rec.ticker);
-  const { successRate, avgReturn, failCount, evaluatingCount } = usePerformanceStats(tickerRecords);
 
   const handleRiskChange = (risk: RiskProfile) => {
     setSelectedRisk(risk);

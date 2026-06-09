@@ -16,5 +16,5 @@ export async function getRiskProfile(): Promise<RiskProfile | null> {
     where: { userId },
   });
 
-  return profile;
+  return profile as RiskProfile | null;
 }

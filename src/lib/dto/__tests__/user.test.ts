@@ -81,7 +81,7 @@ describe("userCreateSchema", () => {
   });
 
   it("infers correct TypeScript types", () => {
-    type Input = import("zod").infer<typeof userCreateSchema>;
+    type Input = import("zod").input<typeof userCreateSchema>;
     const payload: Input = { signupChannel: "email" };
     expect(payload.signupChannel).toBe("email");
   });
