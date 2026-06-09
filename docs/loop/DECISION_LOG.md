@@ -53,8 +53,12 @@
 - **Context**: Issue #71 requires a Server Component query that fetches the current user's performance records (max 30 records, 30-day window, both hit/miss). Implemented as `getPerformanceRecords` in `src/lib/queries/getPerformanceRecords.ts` following the existing `getRiskProfile` pattern. TEST-F5-02 (#110) adds 5 GWT tests: unauthenticated returns empty, user-scoped fetch, 30-record limit, success+failure inclusion, empty state handling.
 - **Classification**: MINOR (query implementation following established pattern)
 
+**Decision MINOR-009**: EVT-Q01 (#116) PostHog KPI Dashboard configuration guide.
+- **Context**: Issue #116 requires a guide configuring PostHog dashboards for ADR, CTR, Confidence Engagement, D7/D30 Retention, and operational health. Created `docs/posthog/dashboard-guide.md` with 3 dashboards (Product Engagement, Operational Health, Retention), event property reference, and taxonomy validation instructions.
+- **Classification**: MINOR (documentation — follows DTO-009 taxonomy)
+
 ---
 
 CORE: 2
-MINOR: 9
-STOP REASON: NO_UNBLOCKED_ISSUES
+MINOR: 10
+STOP REASON: MINOR_BUDGET
