@@ -49,8 +49,12 @@
 - **Context**: Issue #117 validates full PostHog event taxonomy (16 client + 3 server events with per-event property schemas), server-side capture via `captureServerEvent`, client-side factory via `createClientEventCapturers`, and confirms `/api/events` endpoint does not exist. 15 tests pass.
 - **Classification**: MINOR (test infrastructure — follows DTO-009 schema)
 
+**Decision MINOR-008**: TRUST-Q01 (#71) performance record query + TEST-F5-02 (#110) query GWT test.
+- **Context**: Issue #71 requires a Server Component query that fetches the current user's performance records (max 30 records, 30-day window, both hit/miss). Implemented as `getPerformanceRecords` in `src/lib/queries/getPerformanceRecords.ts` following the existing `getRiskProfile` pattern. TEST-F5-02 (#110) adds 5 GWT tests: unauthenticated returns empty, user-scoped fetch, 30-record limit, success+failure inclusion, empty state handling.
+- **Classification**: MINOR (query implementation following established pattern)
+
 ---
 
 CORE: 2
-MINOR: 8
+MINOR: 9
 STOP REASON: NO_UNBLOCKED_ISSUES
