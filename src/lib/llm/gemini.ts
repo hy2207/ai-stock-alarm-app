@@ -36,5 +36,5 @@ export function getGeminiProvider() {
 
 /** Returns the Gemini language model configured via GEMINI_MODEL env. */
 export function getGeminiModel() {
-  return getGeminiProvider().getModel(getGeminiModelName());
+  return getGeminiProvider().languageModel(getGeminiModelName());
 }

@@ -14,15 +14,16 @@ describe("authOptions", () => {
     expect(authOptions.session?.strategy).toBe("jwt");
   });
 
-  it("session callback sets user.id from token.sub", () => {
-    const session = authOptions.callbacks?.session?.({
+  it("session callback sets user.id from token.sub", async () => {
+    const session = await authOptions.callbacks?.session?.({
       session: {
         user: { name: "Test", email: "test@example.com" },
         expires: new Date(Date.now() + 86400000).toISOString(),
       },
       token: { sub: "clxuserid00000000000001" },
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    expect(session?.user?.id).toBe("clxuserid00000000000001");
+    expect((session?.user as { id?: string })?.id).toBe(
+      "clxuserid00000000000001",
+    );
   });
 });
