@@ -174,6 +174,82 @@ describe("recommendationCardCreateSchema", () => {
     expect(success).toBe(false);
   });
 
+  it("rejects zero entry price (positive() rejects 0)", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects zero target price", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 0,
+    });
+    expect(success).toBe(false);
+  });
+
+  it("accepts holdDays boundary values (1 and 10)", () => {
+    const min = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      holdDays: 1,
+    });
+    expect(min.success).toBe(true);
+
+    const max = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      holdDays: 10,
+    });
+    expect(max.success).toBe(true);
+  });
+
+  it("accepts fractional holdDays values between 2 and 9", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      holdDays: 3,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("rejects non-integer holdDays", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      holdDays: 5.5,
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects negative entry range prices", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeLow: -10,
+      entryRangeHigh: 190.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects negative stop price", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+      stopPrice: -5,
+    });
+    expect(success).toBe(false);
+  });
+
   it("rejects invalid status", () => {
     const { success } = recommendationCardCreateSchema.safeParse({
       ...validBase,
@@ -191,6 +267,75 @@ describe("recommendationCardCreateSchema", () => {
       status: "no_call",
       entryPrice: 185.5,
       targetPrice: 210.0,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("rejects entryRangeLow without entryRangeHigh", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeLow: 180.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
+  });
+
+  it("rejects entryRangeHigh without entryRangeLow", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeHigh: 190.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
+  });
+
+  it("rejects targetRangeLow without targetRangeHigh", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeLow: 200.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
+  });
+
+  it("rejects targetRangeHigh without targetRangeLow", () => {
+    const { success, error } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeHigh: 220.0,
+    });
+    expect(success).toBe(false);
+    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
+  });
+
+  it("accepts entryPrice alone without any range fields", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("accepts entryRangeLow + entryRangeHigh together", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryRangeLow: 180.0,
+      entryRangeHigh: 190.0,
+      targetPrice: 210.0,
+    });
+    expect(success).toBe(true);
+  });
+
+  it("accepts targetRangeLow + targetRangeHigh together", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
+      ...validBase,
+      entryPrice: 185.5,
+      targetRangeLow: 200.0,
+      targetRangeHigh: 220.0,
     });
     expect(success).toBe(true);
   });

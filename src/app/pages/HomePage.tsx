@@ -86,8 +86,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
               }}
             >
               <RecommendationCard
-                recommendation={rec}
-                onViewDetail={() => handleCardClick(rec.id)}
+                rec={rec}
+                onCardClick={handleCardClick}
               />
             </div>
           ))}

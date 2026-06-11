@@ -19,7 +19,46 @@
 
 ### MINOR: 1
 
+**Decision CORE-003**: Session 3 completed 5 issues (AUTH-C02, TEST-F10-01, LLM-Q01, TEST-F9-03, TEST-F2-01) but remaining 30+ unaddressed issues require visual-engineering, ops/config, or depend on other PR branches not yet merged to feat/47.
+- **Context**: All code-level backend issues addressable from feat/47 are either implemented, on other PR branches, or already covered by existing tests. Remaining issues are visual-engineering (UI components, UX design), ops/config (monitoring, perf, deploy), writing (docs, taxonomy), or on separate PR branches (feat/36, feat/42, feat/43, feat/45). No unblocked code-level issues remain.
+- **Classification**: MINOR (project status observation, not architecture/security/external dependency/data model/ADR)
+
+### MINOR: 5
+
+**Decision MINOR-002**: DTO-009 uses per-event Zod property schemas instead of a single loose `Record<string, unknown>`.
+- **Context**: SRS REQ-FUNC-060 requires strict event property typing. Options: (a) one schema per event name with z.discriminatedUnion, (b) a factory function, (c) a single loose record type. Option (a) wins for type safety, auto-complete, and runtime validation. Each event name gets a dedicated schema keyed on the `event` literal.
+- **Classification**: MINOR (analytics implementation detail)
+
+**Decision MINOR-003**: EVT-C01 uses Next.js `use client` component without Suspense wrapping for PostHogProvider.
+- **Context**: PostHog v3's `posthog-js` needs a browser `window` at init. We create the provider as a separate client component mounted inside `layout.tsx`. No Suspense boundary needed because the PostHog SDK internally handles async loading. The provider wraps `PostHogProvider` from `posthog-js/react`.
+- **Classification**: MINOR (component wiring — standard PostHog Next.js pattern)
+
+**Decision MINOR-004**: MOCK-004 adds rate-limit, timeout, and error fixtures alongside a validation test file.
+- **Context**: Mock market data needs to simulate non-happy paths for reliable test coverage. Pattern: export `mockRateLimitedResponse`, `mockTimeoutResponse`, `mockErrorResponse` from each provider's mock. A shared `market.test.ts` validates the types against the real provider interfaces.
+- **Classification**: MINOR (test infrastructure)
+
+**Decision MINOR-005**: SEC-004 produces a standalone data minimization review document rather than inline assertions.
+- **Context**: A security review document is the SRS-prescribed deliverable for REQ-NF-024/026 verification. It lives at `docs/security/data-minimization-review.md` — separate from code, independently auditable.
+- **Classification**: MINOR (documentation deliverable)
+
+**Decision MINOR-006**: EVT-C03 client event tracking hook — typed per-event capture functions.
+- **Context**: Issue #113 requires 16 typed client event capture functions for PostHog. Implemented as a pure factory (`createClientEventCapturers`) wrapped by a React hook (`useClientEvent`), separating testable logic from the `usePostHog` context dependency. 17 unit tests pass.
+- **Classification**: MINOR (analytics implementation detail, follows DTO-009 schema)
+
+**Decision MINOR-007**: TEST-F7-01 PostHog integration tests — schema verification, server capture, client factory, /api/events absence.
+- **Context**: Issue #117 validates full PostHog event taxonomy (16 client + 3 server events with per-event property schemas), server-side capture via `captureServerEvent`, client-side factory via `createClientEventCapturers`, and confirms `/api/events` endpoint does not exist. 15 tests pass.
+- **Classification**: MINOR (test infrastructure — follows DTO-009 schema)
+
+**Decision MINOR-008**: TRUST-Q01 (#71) performance record query + TEST-F5-02 (#110) query GWT test.
+- **Context**: Issue #71 requires a Server Component query that fetches the current user's performance records (max 30 records, 30-day window, both hit/miss). Implemented as `getPerformanceRecords` in `src/lib/queries/getPerformanceRecords.ts` following the existing `getRiskProfile` pattern. TEST-F5-02 (#110) adds 5 GWT tests: unauthenticated returns empty, user-scoped fetch, 30-record limit, success+failure inclusion, empty state handling.
+- **Classification**: MINOR (query implementation following established pattern)
+
+**Decision MINOR-009**: EVT-Q01 (#116) PostHog KPI Dashboard configuration guide.
+- **Context**: Issue #116 requires a guide configuring PostHog dashboards for ADR, CTR, Confidence Engagement, D7/D30 Retention, and operational health. Created `docs/posthog/dashboard-guide.md` with 3 dashboards (Product Engagement, Operational Health, Retention), event property reference, and taxonomy validation instructions.
+- **Classification**: MINOR (documentation — follows DTO-009 taxonomy)
+
 ---
 
 CORE: 2
-MINOR: 1
+MINOR: 10
+STOP REASON: MINOR_BUDGET

@@ -90,3 +90,13 @@ export const mockYahooQuoteResponseError = {
     },
   },
 };
+
+/** Rate-limit error response from Yahoo Finance. */
+export const mockYahooRateLimitError = {
+  chart: { result: null, error: { code: "Too Many Requests", description: "Rate limit exceeded" } },
+};
+
+/** Chart API error response (e.g. ticker not found). */
+export const mockYahooChartNotFound = {
+  chart: { result: null, error: { code: "Not Found", description: "No data found, symbol may be delisted" } },
+};

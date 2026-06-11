@@ -58,6 +58,7 @@ export function RecommendationDetailPage({ recId, onNavigate }: RecommendationDe
         }, 0) / tickerRecords.length
       ).toFixed(1)
     : '0.0';
+  const avgReturnValue = Number(avgReturn);
 
   const handleRiskChange = (risk: RiskProfile) => {
     setSelectedRisk(risk);
@@ -194,7 +195,7 @@ export function RecommendationDetailPage({ recId, onNavigate }: RecommendationDe
             </div>
             <div className="space-y-1">
               <div className="text-slate-600">평균 수익률</div>
-              <div className="text-green-600">{avgReturn > 0 ? '+' : ''}{avgReturn}%</div>
+              <div className="text-green-600">{avgReturnValue > 0 ? '+' : ''}{avgReturn}%</div>
             </div>
             <div className="space-y-1">
               <div className="text-slate-600">실패 건수</div>

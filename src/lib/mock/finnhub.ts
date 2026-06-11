@@ -1,3 +1,5 @@
+import type { FinnhubCandleResponse } from "../market-data/finnhub";
+
 // Finnhub OHLCV uses "c" (close), "h" (high), "l" (low), "o" (open), "v" (volume), "t" (timestamp). All Unix seconds.
 
 export const mockFinnhubCandleAAPL = {
@@ -8,7 +10,7 @@ export const mockFinnhubCandleAAPL = {
   v: [52000000, 48000000, 55000000, 51000000, 53000000],
   t: [1716854400, 1716940800, 1717027200, 1717113600, 1717200000],
   s: "ok",
-};
+} satisfies FinnhubCandleResponse;
 
 export const mockFinnhubCandleTSLA = {
   c: [243.8, 244.5, 245.2, 244.1, 246.8],
@@ -18,12 +20,12 @@ export const mockFinnhubCandleTSLA = {
   v: [89000000, 92000000, 87000000, 95000000, 91000000],
   t: [1716854400, 1716940800, 1717027200, 1717113600, 1717200000],
   s: "ok",
-};
+} satisfies FinnhubCandleResponse;
 
 export const mockFinnhubCandleEmpty = {
   c: [], h: [], l: [], o: [], v: [], t: [],
   s: "no_data",
-};
+} satisfies FinnhubCandleResponse;
 
 export const mockFinnhubNewsAAPL = [
   {
@@ -47,6 +49,39 @@ export const mockFinnhubNewsAAPL = [
     source: "TechCrunch",
     summary: "Apple unveiled new artificial intelligence capabilities coming to iOS later this year.",
     url: "https://example.com/news/1002",
+  },
+];
+
+/** Rate-limit error response from Finnhub API. */
+export const mockFinnhubRateLimitError = {
+  ok: false as const,
+  error: { code: "HTTP_ERROR" as const, message: "Finnhub returned 429" },
+};
+
+/** HTTP 5xx server error response. */
+export const mockFinnhubServerError = {
+  ok: false as const,
+  error: { code: "HTTP_ERROR" as const, message: "Finnhub returned 502" },
+};
+
+/** Network/fetch error (timeout, DNS failure). */
+export const mockFinnhubFetchError = {
+  ok: false as const,
+  error: { code: "FETCH_ERROR" as const, message: "fetch failed" },
+};
+
+/** Miscellaneous news items for tickers other than AAPL. */
+export const mockFinnhubNewsTSLA = [
+  {
+    category: "automotive",
+    datetime: 1716940800,
+    headline: "Tesla Deliveries Beat Estimates in Q2",
+    id: 2001,
+    image: "https://example.com/tesla-deliveries.jpg",
+    related: "TSLA",
+    source: "Reuters",
+    summary: "Tesla delivered more vehicles than analysts expected in the second quarter.",
+    url: "https://example.com/news/2001",
   },
 ];
 

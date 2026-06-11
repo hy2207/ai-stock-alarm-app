@@ -37,7 +37,7 @@ export function initOneSignal(): void {
     if (safariWebId) {
       config.safari_web_id = safariWebId;
     }
-    await OneSignal.init(config);
+    await OneSignal!.init(config);
   });
 
   initialized = true;
