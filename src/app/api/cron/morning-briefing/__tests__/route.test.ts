@@ -2,12 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 
 const mockFindMany = vi.fn();
+const mockUpdateMany = vi.fn();
 const mockCaptureServerEvent = vi.fn();
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
     user: {
       findMany: mockFindMany,
+      updateMany: mockUpdateMany,
     },
   },
 }));
@@ -20,6 +22,7 @@ beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "test-cron-secret");
   vi.stubEnv("ONESIGNAL_APP_ID", "test-app-id");
   vi.stubEnv("ONESIGNAL_REST_API_KEY", "test-api-key");
+  mockUpdateMany.mockResolvedValue({ count: 0 });
 });
 
 afterEach(() => {
@@ -101,6 +104,7 @@ describe("GET /api/cron/morning-briefing", () => {
       sent: 3,
       failed: 0,
       oneSignalNotificationId: "onesignal-notif-001",
+      invalidExternalUserIds: 0,
     });
   });
 
@@ -132,5 +136,37 @@ describe("GET /api/cron/morning-briefing", () => {
     const response = await GET(createRequest("Bearer test-cron-secret"));
 
     expect(response.status).toBe(500);
+  });
+
+  it("marks invalid external user IDs as consentPush=false", async () => {
+    mockFindMany.mockResolvedValue([
+      { id: "user-valid" },
+      { id: "user-revoked" },
+    ]);
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: "onesignal-notif-002",
+          recipients: 1,
+          invalid_external_user_ids: ["user-revoked"],
+        }),
+      }),
+    );
+
+    const { GET } = await import("../route");
+    const response = await GET(createRequest("Bearer test-cron-secret"));
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.scheduled).toBe(2);
+    expect(body.sent).toBe(2);
+    expect(body.failed).toBe(0);
+
+    expect(mockUpdateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["user-revoked"] } },
+      data: { consentPush: false },
+    });
   });
 });
