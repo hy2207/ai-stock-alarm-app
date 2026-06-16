@@ -65,7 +65,7 @@ export const recommendationCardCreateSchema = z
     stopPrice: z.number().positive().nullable().optional(),
     holdDays: z.number().int().min(1).max(10),
     confidenceScore: confidenceModeEnum,
-    reasonLine: z.string().min(1).max(160),
+    reasonLine: z.string().trim().min(1).max(160),
     status: cardStatusEnum,
     validUntil: z.date(),
   })
