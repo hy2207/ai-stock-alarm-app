@@ -4,8 +4,13 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "dev": "vite"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "vite:dev": "vite",
+    "vite:build": "vite build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -48,6 +53,7 @@
     "input-otp": "1.4.2",
     "lucide-react": "0.487.0",
     "motion": "12.23.24",
+    "next": "^14.2.35",
     "next-themes": "0.4.6",
     "react-day-picker": "8.10.1",
     "react-dnd": "16.0.1",
@@ -65,15 +71,20 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
     "@tailwindcss/vite": "4.1.12",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
     "sharp": "^0.34.5",
     "tailwindcss": "4.1.12",
+    "typescript": "^6.0.3",
     "vite": "6.3.5"
   },
   "peerDependencies": {
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "peerDependenciesMeta": {
     "react": {
