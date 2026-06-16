@@ -106,3 +106,13 @@ export const recommendationCardSchema = z.object({
 });
 
 export type RecommendationCard = z.infer<typeof recommendationCardSchema>;
+
+/** Zod schema for client-facing API response output.
+ *  Excludes internal `userId`; includes all presentation-relevant fields. */
+export const recommendationCardOutputSchema = recommendationCardSchema.omit({
+  userId: true,
+});
+
+export type RecommendationCardOutput = z.infer<
+  typeof recommendationCardOutputSchema
+>;
