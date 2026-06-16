@@ -15,7 +15,9 @@ const timezoneSchema = z.string().min(1).default("Asia/Seoul");
  */
 export const userCreateSchema = z.object({
   email: z.string().email().nullable().optional(),
+  emailVerified: z.date().nullable().optional(),
   name: z.string().min(1).max(100).nullable().optional(),
+  image: z.string().url().nullable().optional(),
   signupChannel: signupChannelSchema,
   timezone: timezoneSchema,
   consentPush: z.boolean().default(false),
@@ -28,7 +30,9 @@ export type UserCreateInput = z.infer<typeof userCreateSchema>;
 export const userSchema = z.object({
   id: z.string().cuid(),
   email: z.string().email().nullable(),
+  emailVerified: z.date().nullable(),
   name: z.string().nullable(),
+  image: z.string().url().nullable(),
   signupChannel: signupChannelSchema,
   timezone: z.string().min(1),
   consentPush: z.boolean(),
