@@ -1,0 +1,108 @@
+import { z } from "zod";
+
+export const directionEnum = z.enum(["BUY", "SELL"]);
+export const confidenceModeEnum = z.enum([
+  "aggressive",
+  "balanced",
+  "conservative",
+]);
+export const cardStatusEnum = z.enum([
+  "published",
+  "no_call",
+  "validation_failed",
+]);
+
+function atLeastOne(field1: string, field2: string) {
+  return (data: Record<string, unknown>) =>
+    data[field1] != null || data[field2] != null;
+}
+
+function atLeastOneOf(...fields: string[]) {
+  return (data: Record<string, unknown>) =>
+    fields.some((f) => data[f] != null);
+}
+
+function entryOrRange(data: {
+  entryPrice?: number | null;
+  entryRangeLow?: number | null;
+  entryRangeHigh?: number | null;
+}) {
+  return (
+    data.entryPrice != null ||
+    data.entryRangeLow != null ||
+    data.entryRangeHigh != null
+  );
+}
+
+function targetOrRange(data: {
+  targetPrice?: number | null;
+  targetRangeLow?: number | null;
+  targetRangeHigh?: number | null;
+}) {
+  return (
+    data.targetPrice != null ||
+    data.targetRangeLow != null ||
+    data.targetRangeHigh != null
+  );
+}
+
+/** Zod schema for validating RecommendationCard create payloads.
+ *
+ *  At least one of entryPrice / entryRangeLow / entryRangeHigh must be set.
+ *  At least one of targetPrice / targetRangeLow / targetRangeHigh must be set.
+ */
+export const recommendationCardCreateSchema = z
+  .object({
+    userId: z.string().cuid(),
+    ticker: z.string().min(1).max(10),
+    direction: directionEnum,
+    entryPrice: z.number().positive().nullable().optional(),
+    entryRangeLow: z.number().positive().nullable().optional(),
+    entryRangeHigh: z.number().positive().nullable().optional(),
+    targetPrice: z.number().positive().nullable().optional(),
+    targetRangeLow: z.number().positive().nullable().optional(),
+    targetRangeHigh: z.number().positive().nullable().optional(),
+    stopPrice: z.number().positive().nullable().optional(),
+    holdDays: z.number().int().min(1).max(10),
+    confidenceScore: confidenceModeEnum,
+    reasonLine: z.string().min(1).max(160),
+    status: cardStatusEnum,
+    validUntil: z.date(),
+  })
+  .refine(entryOrRange, {
+    message:
+      "At least one of entryPrice, entryRangeLow, or entryRangeHigh must be provided",
+    path: ["entryPrice"],
+  })
+  .refine(targetOrRange, {
+    message:
+      "At least one of targetPrice, targetRangeLow, or targetRangeHigh must be provided",
+    path: ["targetPrice"],
+  });
+
+export type RecommendationCardCreateInput = z.infer<
+  typeof recommendationCardCreateSchema
+>;
+
+/** Zod schema matching the full Prisma RecommendationCard model. */
+export const recommendationCardSchema = z.object({
+  id: z.string().cuid(),
+  userId: z.string().cuid(),
+  ticker: z.string(),
+  direction: directionEnum,
+  entryPrice: z.number().nullable(),
+  entryRangeLow: z.number().nullable(),
+  entryRangeHigh: z.number().nullable(),
+  targetPrice: z.number().nullable(),
+  targetRangeLow: z.number().nullable(),
+  targetRangeHigh: z.number().nullable(),
+  stopPrice: z.number().nullable(),
+  holdDays: z.number().int().min(1).max(10),
+  confidenceScore: confidenceModeEnum,
+  reasonLine: z.string().min(1).max(160),
+  status: cardStatusEnum,
+  createdAt: z.date(),
+  validUntil: z.date(),
+});
+
+export type RecommendationCard = z.infer<typeof recommendationCardSchema>;
