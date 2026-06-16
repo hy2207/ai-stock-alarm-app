@@ -36,5 +36,9 @@ coverage/
 .env.test.local
 .env.production.local
 
+# Prisma SQLite database files
+prisma/*.db
+prisma/*.db-journal
+
 # Puppeteer
 screenshot.cjs
