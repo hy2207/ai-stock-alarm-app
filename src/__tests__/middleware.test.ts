@@ -31,9 +31,10 @@ describe("auth middleware path policy", () => {
 describe("auth middleware", () => {
   beforeEach(() => {
     getTokenMock.mockReset();
+    vi.stubEnv("NEXTAUTH_SECRET", "test-nextauth-secret");
   });
 
-  it("redirects unauthenticated protected page requests to login with callbackUrl", async () => {
+  it("GWT: Given unauthenticated protected access When middleware runs Then redirects to login with callbackUrl", async () => {
     getTokenMock.mockResolvedValue(null);
 
     const response = await middleware(makeRequest("/app?from=push"));
@@ -42,9 +43,13 @@ describe("auth middleware", () => {
     expect(response?.headers.get("location")).toBe(
       "https://stockalarm.test/login?callbackUrl=%2Fapp%3Ffrom%3Dpush",
     );
+    expect(getTokenMock).toHaveBeenCalledWith({
+      req: expect.any(NextRequest),
+      secret: "test-nextauth-secret",
+    });
   });
 
-  it("allows authenticated protected page requests", async () => {
+  it("GWT: Given valid session token When accessing protected page Then passes through", async () => {
     getTokenMock.mockResolvedValue({ sub: "user-1" });
 
     const response = await middleware(makeRequest("/settings"));
@@ -53,7 +58,7 @@ describe("auth middleware", () => {
     expect(response?.headers.get("location")).toBeNull();
   });
 
-  it("redirects token refresh error sessions away from protected content", async () => {
+  it("GWT: Given refresh error token When accessing protected page Then redirects away from protected content", async () => {
     getTokenMock.mockResolvedValue({
       sub: "user-1",
       error: "RefreshAccessTokenError",
@@ -67,7 +72,21 @@ describe("auth middleware", () => {
     );
   });
 
-  it("does not ask NextAuth for tokens on public routes", async () => {
+  it("GWT: Given expired token without refresh path When accessing protected page Then redirects to login", async () => {
+    getTokenMock.mockResolvedValue({
+      sub: "user-1",
+      error: "NoRefreshToken",
+    });
+
+    const response = await middleware(makeRequest("/recommendations/rec-1"));
+
+    expect(response?.status).toBe(307);
+    expect(response?.headers.get("location")).toBe(
+      "https://stockalarm.test/login?callbackUrl=%2Frecommendations%2Frec-1",
+    );
+  });
+
+  it("GWT: Given public route When middleware runs Then skips token lookup", async () => {
     const response = await middleware(makeRequest("/login"));
 
     expect(response?.status).toBe(200);
