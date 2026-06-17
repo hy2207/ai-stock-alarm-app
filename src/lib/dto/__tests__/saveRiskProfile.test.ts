@@ -12,6 +12,11 @@ describe("riskModeSchema", () => {
     const { success } = riskModeSchema.safeParse("ultra");
     expect(success).toBe(false);
   });
+
+  it("rejects null risk mode", () => {
+    const { success } = riskModeSchema.safeParse(null);
+    expect(success).toBe(false);
+  });
 });
 
 describe("saveRiskProfileInputSchema", () => {
@@ -30,6 +35,13 @@ describe("saveRiskProfileInputSchema", () => {
   it("rejects invalid riskMode value", () => {
     const { success } = saveRiskProfileInputSchema.safeParse({
       riskMode: "extreme",
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects empty riskMode string", () => {
+    const { success } = saveRiskProfileInputSchema.safeParse({
+      riskMode: "",
     });
     expect(success).toBe(false);
   });

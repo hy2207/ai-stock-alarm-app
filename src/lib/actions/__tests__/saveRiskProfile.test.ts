@@ -48,7 +48,35 @@ describe("saveRiskProfile", () => {
     const result = await saveRiskProfile(createFormData("invalid_mode"));
     expect(result).toEqual({ success: false, error: "Invalid riskMode" });
     expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
   });
+
+  it("GWT: Given invalid riskMode When saving Then preserves existing value by skipping writes", async () => {
+    mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
+
+    const result = await saveRiskProfile(createFormData("invalid_mode"));
+
+    expect(result).toEqual({ success: false, error: "Invalid riskMode" });
+    expect(mockUpsert).not.toHaveBeenCalled();
+    expect(mockRevalidatePath).not.toHaveBeenCalled();
+  });
+
+  it.each(["aggressive", "balanced", "conservative"] as const)(
+    "GWT: Given allowed riskMode %s When saving Then upserts that value",
+    async (riskMode) => {
+      mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
+      mockUpsert.mockResolvedValue({} as never);
+
+      const result = await saveRiskProfile(createFormData(riskMode));
+
+      expect(result).toEqual({ success: true });
+      expect(mockUpsert).toHaveBeenCalledWith({
+        where: { userId: "clxuser00000000001" },
+        create: { userId: "clxuser00000000001", riskMode },
+        update: { riskMode },
+      });
+    },
+  );
 
   it("upserts RiskProfile with aggressive mode", async () => {
     mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
@@ -84,6 +112,4 @@ describe("saveRiskProfile", () => {
     await saveRiskProfile(createFormData("balanced"));
     expect(mockRevalidatePath).toHaveBeenCalledWith("/");
   });
-
-
 });
