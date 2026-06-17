@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { availableWatchlistItems } from '../mockData';
 import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
+import {
+  getOnboardingSelectionState,
+  toggleOnboardingSelection,
+  validateOnboardingSelection,
+} from '../lib/onboardingSelection';
 
 interface OnboardingPageProps {
   onNavigate: (route: string) => void;
@@ -12,24 +16,32 @@ interface OnboardingPageProps {
 export function OnboardingPage({ onNavigate }: OnboardingPageProps) {
   const { setWatchlist, addDebugEvent } = useApp();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const selectionState = getOnboardingSelectionState(selectedItems);
 
   const toggleSelection = (ticker: string) => {
+    const nextSelectedItems = toggleOnboardingSelection(selectedItems, ticker);
+
+    if (nextSelectedItems === selectedItems) {
+      toast.error('최대 3개까지 선택 가능합니다.');
+      addDebugEvent('watchlist_max_reached');
+      return;
+    }
+
+    setSelectedItems(nextSelectedItems);
+
     if (selectedItems.includes(ticker)) {
-      setSelectedItems(selectedItems.filter(t => t !== ticker));
       addDebugEvent('watchlist_item_deselected', { ticker });
     } else {
-      if (selectedItems.length >= 3) {
-        toast.error('최대 3개까지 선택 가능합니다.');
-        addDebugEvent('watchlist_max_reached');
-        return;
-      }
-      setSelectedItems([...selectedItems, ticker]);
       addDebugEvent('watchlist_item_selected', { ticker });
     }
   };
 
   const handleComplete = () => {
-    if (selectedItems.length === 0) return;
+    const validation = validateOnboardingSelection(selectedItems);
+    if (!validation.ok) {
+      toast.error('최소 1개 이상 선택해 주세요.');
+      return;
+    }
 
     setWatchlist(selectedItems);
     addDebugEvent('onboarding_complete', { watchlist: selectedItems });
@@ -42,7 +54,7 @@ export function OnboardingPage({ onNavigate }: OnboardingPageProps) {
         <div className="text-center space-y-2">
           <h1 className="text-slate-900">관심 있는 종목을 3개까지 선택하세요</h1>
           <div className="text-sm text-slate-600">
-            {selectedItems.length}/3 선택됨
+            {selectionState.count}/{selectionState.max} 선택됨
           </div>
           <p className="text-sm text-slate-600">
             선택한 종목은 아침 추천 카드 생성에 사용됩니다.
@@ -72,7 +84,7 @@ export function OnboardingPage({ onNavigate }: OnboardingPageProps) {
         <div className="flex justify-center pt-4">
           <Button
             onClick={handleComplete}
-            disabled={selectedItems.length === 0}
+            disabled={!selectionState.canSubmit}
             className="w-full md:w-auto min-w-64 bg-blue-600 hover:bg-blue-700"
           >
             선택 완료

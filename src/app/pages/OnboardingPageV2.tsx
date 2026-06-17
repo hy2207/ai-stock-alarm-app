@@ -7,6 +7,11 @@ import { Check } from 'lucide-react';
 import { StockAlarmBrand } from '../components/StockAlarmBrand';
 import { Badge } from '../components/ui/badge';
 import { ROUTES } from '../routes';
+import {
+  getOnboardingSelectionState,
+  toggleOnboardingSelection,
+  validateOnboardingSelection,
+} from '../lib/onboardingSelection';
 
 interface OnboardingPageV2Props {
   onNavigate: (route: string) => void;
@@ -15,24 +20,32 @@ interface OnboardingPageV2Props {
 export function OnboardingPageV2({ onNavigate }: OnboardingPageV2Props) {
   const { setWatchlist, addDebugEvent } = useApp();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const selectionState = getOnboardingSelectionState(selectedItems);
 
   const toggleSelection = (ticker: string) => {
+    const nextSelectedItems = toggleOnboardingSelection(selectedItems, ticker);
+
+    if (nextSelectedItems === selectedItems) {
+      toast.error('최대 3개까지 선택 가능합니다.');
+      addDebugEvent('watchlist_max_reached');
+      return;
+    }
+
+    setSelectedItems(nextSelectedItems);
+
     if (selectedItems.includes(ticker)) {
-      setSelectedItems(selectedItems.filter(t => t !== ticker));
       addDebugEvent('watchlist_item_deselected', { ticker });
     } else {
-      if (selectedItems.length >= 3) {
-        toast.error('최대 3개까지 선택 가능합니다.');
-        addDebugEvent('watchlist_max_reached');
-        return;
-      }
-      setSelectedItems([...selectedItems, ticker]);
       addDebugEvent('watchlist_item_selected', { ticker });
     }
   };
 
   const handleComplete = () => {
-    if (selectedItems.length === 0) return;
+    const validation = validateOnboardingSelection(selectedItems);
+    if (!validation.ok) {
+      toast.error('최소 1개 이상 선택해 주세요.');
+      return;
+    }
 
     setWatchlist(selectedItems);
     addDebugEvent('onboarding_complete', { watchlist: selectedItems });
@@ -52,10 +65,10 @@ export function OnboardingPageV2({ onNavigate }: OnboardingPageV2Props) {
           </h1>
           <div className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-6 py-3 shadow-sm">
             <span className="text-2xl font-bold text-slate-950">
-              {selectedItems.length}
+              {selectionState.count}
             </span>
             <span className="text-slate-600">/</span>
-            <span className="text-slate-600">3 선택됨</span>
+            <span className="text-slate-600">{selectionState.max} 선택됨</span>
           </div>
           <p className="text-sm text-slate-600 max-w-md mx-auto">
             선택한 종목 또는 섹터는 홈 추천 카드와 이력 필터 기준으로 사용됩니다
@@ -116,7 +129,7 @@ export function OnboardingPageV2({ onNavigate }: OnboardingPageV2Props) {
         <div className="flex justify-center pt-4">
           <Button
             onClick={handleComplete}
-            disabled={selectedItems.length === 0}
+            disabled={!selectionState.canSubmit}
             className="w-full md:w-auto min-w-80 h-14 rounded-lg bg-blue-600 text-white shadow-sm transition-all hover:bg-blue-700 disabled:bg-slate-300"
           >
             선택 완료하고 시작하기
