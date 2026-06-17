@@ -29,6 +29,16 @@ describe("watchlistItemSchema", () => {
     expect(success).toBe(false);
   });
 
+  it("rejects item when ticker and sector are both null", () => {
+    const { success, error } = watchlistItemSchema.safeParse({
+      ticker: null,
+      sector: null,
+    });
+
+    expect(success).toBe(false);
+    expect(error?.issues.length).toBeGreaterThan(0);
+  });
+
   it("rejects item with empty string ticker", () => {
     const { success } = watchlistItemSchema.safeParse({ ticker: "" });
     expect(success).toBe(false);
@@ -102,6 +112,14 @@ describe("saveWatchlistInputSchema", () => {
     });
     expect(success).toBe(false);
     expect(error?.issues.some((i) => i.message.includes("ticker or sector"))).toBe(true);
+  });
+
+  it("rejects GWT case: Given ticker and sector are null When parsed Then validation fails", () => {
+    const { success } = saveWatchlistInputSchema.safeParse({
+      items: [{ ticker: null, sector: null }],
+    });
+
+    expect(success).toBe(false);
   });
 
   it("infers correct TypeScript types", () => {
