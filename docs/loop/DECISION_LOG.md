@@ -19,7 +19,12 @@
 
 ### MINOR: 1
 
+**Decision MINOR-002**: Normalize legacy `models/` Gemini model prefixes at the provider boundary.
+- **Context**: Existing code and tests may set `GEMINI_MODEL` to values such as `models/gemini-2.5-pro-001`, while `@ai-sdk/google` v3 provider calls use model ids without the `models/` prefix.
+- **Decision**: Strip a leading `models/` prefix inside `getGeminiModel()` before calling the provider. This keeps existing env values compatible without changing the public env contract.
+- **Classification**: MINOR (provider boundary compatibility, no product behavior change)
+
 ---
 
 CORE: 2
-MINOR: 1
+MINOR: 2

@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { env } from "node:process";
 
-const DEFAULT_GEMINI_MODEL = "models/gemini-2.0-flash-001";
+const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash-001";
 
 function getGeminiApiKey(): string {
   const key = env.GEMINI_API_KEY;
@@ -15,6 +15,10 @@ function getGeminiApiKey(): string {
 
 function getGeminiModelName(): string {
   return env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL;
+}
+
+function normalizeGeminiModelName(modelName: string): string {
+  return modelName.replace(/^models\//, "");
 }
 
 function createGeminiProvider() {
@@ -36,5 +40,8 @@ export function getGeminiProvider() {
 
 /** Returns the Gemini language model configured via GEMINI_MODEL env. */
 export function getGeminiModel() {
-  return getGeminiProvider().getModel(getGeminiModelName());
+  const modelName = normalizeGeminiModelName(getGeminiModelName());
+  return getGeminiProvider()(
+    modelName as Parameters<ReturnType<typeof createGoogleGenerativeAI>>[0],
+  );
 }
