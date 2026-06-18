@@ -6,6 +6,10 @@ import { Button } from '../components/ui/button';
 import { Switch } from '../components/ui/switch';
 import type { RiskProfile } from '../types';
 import { toast } from 'sonner';
+import {
+  getSettingsWatchlistEditState,
+  toggleOnboardingSelection,
+} from '../lib/onboardingSelection';
 
 interface SettingsPageProps {
   onNavigate: (route: string) => void;
@@ -25,28 +29,37 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
 
   const [editingWatchlist, setEditingWatchlist] = useState<string[]>(watchlist);
   const [localRiskProfile, setLocalRiskProfile] = useState<RiskProfile>(riskProfile);
+  const watchlistEditState = getSettingsWatchlistEditState(watchlist, editingWatchlist);
 
   useEffect(() => {
     addDebugEvent('settings_view');
   }, []);
 
+  useEffect(() => {
+    setEditingWatchlist(watchlist);
+  }, [watchlist]);
+
   const toggleWatchlistItem = (ticker: string) => {
-    if (editingWatchlist.includes(ticker)) {
-      setEditingWatchlist(editingWatchlist.filter(t => t !== ticker));
-    } else {
-      if (editingWatchlist.length >= 3) {
-        toast.error('최대 3개까지 선택 가능합니다.');
-        return;
-      }
-      setEditingWatchlist([...editingWatchlist, ticker]);
+    const nextWatchlist = toggleOnboardingSelection(editingWatchlist, ticker);
+
+    if (nextWatchlist === editingWatchlist) {
+      toast.error('최대 3개까지 선택 가능합니다.');
+      return;
     }
+
+    setEditingWatchlist(nextWatchlist);
   };
 
   const handleSaveWatchlist = () => {
-    if (editingWatchlist.length === 0) {
+    if (watchlistEditState.validationMessage) {
       toast.error('최소 1개 이상 선택해야 합니다.');
       return;
     }
+    if (!watchlistEditState.hasChanges) {
+      toast.info('변경된 관심 종목이 없습니다.');
+      return;
+    }
+
     setWatchlist(editingWatchlist);
     toast.success('변경사항이 저장되었습니다. 다음 추천부터 반영됩니다.');
     addDebugEvent('watchlist_saved', { watchlist: editingWatchlist });
@@ -99,8 +112,13 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
         <div className="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
           <h2 className="text-slate-900">관심 종목 설정</h2>
           <p className="text-sm text-slate-600">
-            현재 선택: {editingWatchlist.join(', ')} ({editingWatchlist.length}/3)
+            현재 선택: {watchlistEditState.selectedLabel} ({watchlistEditState.count}/{watchlistEditState.max})
           </p>
+          {watchlistEditState.validationMessage && (
+            <p className="text-xs text-amber-600">
+              최소 1개, 최대 3개까지 선택할 수 있습니다.
+            </p>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {availableWatchlistItems.map(({ ticker, name }) => {
               const isSelected = editingWatchlist.includes(ticker);
@@ -122,6 +140,7 @@ export function SettingsPage({ onNavigate }: SettingsPageProps) {
           </div>
           <Button
             onClick={handleSaveWatchlist}
+            disabled={!watchlistEditState.canSave}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             저장

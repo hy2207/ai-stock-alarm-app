@@ -54,6 +54,27 @@ export function validateOnboardingSelection(selected: string[]):
   return { ok: true };
 }
 
+export function getSettingsWatchlistEditState(
+  currentWatchlist: string[],
+  editingWatchlist: string[],
+) {
+  const validation = validateOnboardingSelection(editingWatchlist);
+  const hasChanges =
+    currentWatchlist.length !== editingWatchlist.length ||
+    currentWatchlist.some((item, index) => editingWatchlist[index] !== item);
+
+  return {
+    ...getOnboardingSelectionState(editingWatchlist),
+    hasChanges,
+    canSave: validation.ok && hasChanges,
+    validationMessage: validation.ok ? null : validation.message,
+    selectedLabel:
+      editingWatchlist.length === 0
+        ? "No watchlist items selected"
+        : editingWatchlist.join(", "),
+  };
+}
+
 export function buildWatchlistInput(
   selected: string[],
   availableItems: OnboardingSelectionItem[],
