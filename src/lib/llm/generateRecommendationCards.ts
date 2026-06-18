@@ -9,6 +9,7 @@ import {
   type RecommendationPromptInput,
 } from "./promptBuilder";
 import { getGeminiModel } from "./gemini";
+import { captureServerEvent } from "@/lib/analytics/serverCapture";
 
 const FALLBACK_NO_CALL_REASON =
   "Recommendation generation is unavailable. Review the watchlist later.";
@@ -88,12 +89,14 @@ export interface GenerateRecommendationCardsInput {
   promptInput: RecommendationPromptInput;
   model?: LanguageModel;
   stream?: typeof streamObject;
+  captureEvent?: typeof captureServerEvent;
 }
 
 export async function generateRecommendationCards({
   promptInput,
   model,
   stream = streamObject,
+  captureEvent = captureServerEvent,
 }: GenerateRecommendationCardsInput): Promise<RecommendationGeneration> {
   if (promptInput.watchlist.length === 0) {
     return {
@@ -104,17 +107,37 @@ export async function generateRecommendationCards({
 
   try {
     const prompt = buildRecommendationPrompt(promptInput);
-    const result = stream({
-      model: model ?? getGeminiModel(),
-      schema: recommendationGenerationSchema,
-      schemaName: "RecommendationGeneration",
-      schemaDescription:
-        "Decision Layer recommendation output with exactly three confidence variants or No Call.",
-      system: prompt.system,
-      prompt: prompt.user,
-    });
+    const modelToUse = model ?? getGeminiModel();
+    const callStream = () =>
+      stream({
+        model: modelToUse,
+        schema: recommendationGenerationSchema,
+        schemaName: "RecommendationGeneration",
+        schemaDescription:
+          "Decision Layer recommendation output with exactly three confidence variants or No Call.",
+        system: prompt.system,
+        prompt: prompt.user,
+      });
 
-    return recommendationGenerationSchema.parse(await result.object);
+    try {
+      return recommendationGenerationSchema.parse(await callStream().object);
+    } catch (error) {
+      if (!(error instanceof z.ZodError)) {
+        throw error;
+      }
+    }
+
+    try {
+      return recommendationGenerationSchema.parse(await callStream().object);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        await captureEvent("rec_validation_failed", {
+          error: "structured_output_validation_failed",
+          attempts: 2,
+        });
+      }
+      throw error;
+    }
   } catch {
     return {
       status: "no_call",

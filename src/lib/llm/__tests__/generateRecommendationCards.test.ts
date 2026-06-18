@@ -157,21 +157,53 @@ describe("generateRecommendationCards", () => {
   });
 
   it("GWT: Given invalid structured output When validation fails Then returns No Call fallback", async () => {
-    const stream = vi.fn().mockReturnValue(
-      streamResult({
-        ...okGeneration,
-        variants: [{ ...okGeneration.variants[0], holdDays: 11 }],
-      }),
-    );
+    const captureEvent = vi.fn().mockResolvedValue(undefined);
+    const invalidGeneration = {
+      ...okGeneration,
+      variants: [{ ...okGeneration.variants[0], holdDays: 11 }],
+    };
+    const stream = vi
+      .fn()
+      .mockReturnValueOnce(streamResult(invalidGeneration))
+      .mockReturnValueOnce(streamResult(invalidGeneration));
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
       stream,
+      captureEvent,
     });
 
     expect(result.status).toBe("no_call");
-    expect(stream).toHaveBeenCalledOnce();
+    expect(stream).toHaveBeenCalledTimes(2);
+    expect(captureEvent).toHaveBeenCalledWith("rec_validation_failed", {
+      error: "structured_output_validation_failed",
+      attempts: 2,
+    });
+  });
+
+  it("GWT: Given first structured output is invalid When retry succeeds Then returns retry result", async () => {
+    const captureEvent = vi.fn().mockResolvedValue(undefined);
+    const stream = vi
+      .fn()
+      .mockReturnValueOnce(
+        streamResult({
+          ...okGeneration,
+          variants: [{ ...okGeneration.variants[0], holdDays: 11 }],
+        }),
+      )
+      .mockReturnValueOnce(streamResult(okGeneration));
+
+    const result = await generateRecommendationCards({
+      promptInput: basePromptInput,
+      model,
+      stream,
+      captureEvent,
+    });
+
+    expect(result).toEqual(okGeneration);
+    expect(stream).toHaveBeenCalledTimes(2);
+    expect(captureEvent).not.toHaveBeenCalled();
   });
 
   it("GWT: Given empty watchlist When generating Then avoids LLM call and returns No Call", async () => {
