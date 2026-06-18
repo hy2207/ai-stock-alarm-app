@@ -14,8 +14,53 @@ import { captureServerEvent } from "@/lib/analytics/serverCapture";
 const FALLBACK_NO_CALL_REASON =
   "Recommendation generation is unavailable. Review the watchlist later.";
 
+type LlmFailureReason =
+  | "api_error"
+  | "rate_limit"
+  | "timeout"
+  | "llm_call_failed";
+
 function hasAnyPrice(...values: Array<number | null | undefined>) {
   return values.some((value) => value != null);
+}
+
+function readErrorStatus(error: unknown) {
+  if (typeof error !== "object" || error == null) {
+    return null;
+  }
+
+  const status = "status" in error ? error.status : null;
+  return typeof status === "number" ? status : null;
+}
+
+export function classifyLlmCallFailure(error: unknown): {
+  reason: LlmFailureReason;
+  status: number | null;
+} {
+  const status = readErrorStatus(error);
+  const message = error instanceof Error
+    ? error.message.toLowerCase()
+    : String(error).toLowerCase();
+  const name = error instanceof Error ? error.name.toLowerCase() : "";
+
+  if (status === 429 || message.includes("rate limit")) {
+    return { reason: "rate_limit", status };
+  }
+
+  if (
+    name === "aborterror" ||
+    name === "timeouterror" ||
+    message.includes("timeout") ||
+    message.includes("timed out")
+  ) {
+    return { reason: "timeout", status };
+  }
+
+  if (status != null && status >= 500) {
+    return { reason: "api_error", status };
+  }
+
+  return { reason: "llm_call_failed", status };
 }
 
 export const recommendationGenerationVariantSchema = z
@@ -135,10 +180,20 @@ export async function generateRecommendationCards({
           error: "structured_output_validation_failed",
           attempts: 2,
         });
+        return {
+          status: "no_call",
+          reason: FALLBACK_NO_CALL_REASON,
+        };
       }
       throw error;
     }
-  } catch {
+  } catch (error) {
+    const failure = classifyLlmCallFailure(error);
+    await captureEvent("llm_call_failed", {
+      reason: failure.reason,
+      status: failure.status,
+    });
+
     return {
       status: "no_call",
       reason: FALLBACK_NO_CALL_REASON,
