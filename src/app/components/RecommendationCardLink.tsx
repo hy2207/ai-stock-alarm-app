@@ -1,5 +1,6 @@
 import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
 import { PostHogEvent } from "./PostHogEvent";
+import { RecommendationActions } from "./RecommendationActions";
 import { TrackedLink } from "./TrackedLink";
 
 function formatPrice(card: RecommendationCardOutput, kind: "entry" | "target") {
@@ -74,6 +75,16 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
       >
         상세 보기
       </TrackedLink>
+
+      <RecommendationActions
+        recId={card.id}
+        ticker={card.ticker}
+        riskMode={card.confidenceScore}
+        page="home"
+        entryPrice={card.entryPrice}
+        entryRangeLow={card.entryRangeLow}
+        entryRangeHigh={card.entryRangeHigh}
+      />
     </article>
   );
 }

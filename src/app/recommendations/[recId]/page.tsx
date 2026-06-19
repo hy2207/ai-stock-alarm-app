@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Disclaimer } from "@/app/components/Disclaimer";
 import { PostHogEvent } from "@/app/components/PostHogEvent";
+import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 
 interface RecommendationDetailPageProps {
@@ -106,6 +107,17 @@ export default async function RecommendationDetailPage({
             <h2 className="font-semibold">한 줄 이유</h2>
             <p className="mt-2 text-sm text-slate-700">{card.reasonLine}</p>
           </div>
+
+          <RecommendationActions
+            recId={card.id}
+            ticker={card.ticker}
+            riskMode={card.confidenceScore}
+            page="detail"
+            entryPrice={card.entryPrice}
+            entryRangeLow={card.entryRangeLow}
+            entryRangeHigh={card.entryRangeHigh}
+            reasonLine={card.reasonLine}
+          />
         </section>
 
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
