@@ -41,13 +41,19 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
       return { ...token, error: "RefreshAccessTokenError" };
     }
 
+    const expiresAt =
+      typeof refreshed.expires_at === "number"
+        ? refreshed.expires_at * 1000
+        : Date.now() +
+          (typeof refreshed.expires_in === "number"
+            ? refreshed.expires_in
+            : 3600) *
+            1000;
+
     return {
       ...token,
       accessToken: refreshed.access_token ?? token.accessToken,
-      accessTokenExpires:
-        refreshed.expires_at
-          ? refreshed.expires_at * 1000
-          : Date.now() + (refreshed.expires_in ?? 3600) * 1000,
+      accessTokenExpires: expiresAt,
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
       error: undefined,
     };

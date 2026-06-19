@@ -29,7 +29,7 @@ describe("initPostHog", () => {
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_HOST", "https://eu.posthog.com");
     const { initPostHog } = await import("../posthog");
-    initPostHog();
+    await initPostHog();
     expect(mockInit).toHaveBeenCalledWith("phc_testkey123", {
       api_host: "https://eu.posthog.com",
       capture_pageview: false,
@@ -41,8 +41,7 @@ describe("initPostHog", () => {
     vi.stubGlobal("window", {});
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     const { initPostHog } = await import("../posthog");
-    initPostHog();
-    initPostHog();
+    await Promise.all([initPostHog(), initPostHog()]);
     expect(mockInit).toHaveBeenCalledTimes(1);
   });
 
@@ -50,7 +49,7 @@ describe("initPostHog", () => {
     vi.stubGlobal("window", undefined);
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     const { initPostHog } = await import("../posthog");
-    initPostHog();
+    await initPostHog();
     expect(mockInit).not.toHaveBeenCalled();
   });
 
@@ -58,7 +57,7 @@ describe("initPostHog", () => {
     vi.stubGlobal("window", {});
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "");
     const { initPostHog } = await import("../posthog");
-    initPostHog();
+    await initPostHog();
     expect(mockInit).not.toHaveBeenCalled();
   });
 });
@@ -68,8 +67,8 @@ describe("captureClientEvent", () => {
     vi.stubGlobal("window", {});
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     const { captureClientEvent, initPostHog } = await import("../posthog");
-    initPostHog();
-    captureClientEvent("rec_card_view", { recId: "clx123" });
+    await initPostHog();
+    await captureClientEvent("rec_card_view", { recId: "clx123" });
     expect(mockCapture).toHaveBeenCalledWith("rec_card_view", {
       recId: "clx123",
     });
@@ -81,8 +80,8 @@ describe("identifyUser", () => {
     vi.stubGlobal("window", {});
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     const { identifyUser, initPostHog } = await import("../posthog");
-    initPostHog();
-    identifyUser("clxuser123", { email: "test@example.com" });
+    await initPostHog();
+    await identifyUser("clxuser123", { email: "test@example.com" });
     expect(mockIdentify).toHaveBeenCalledWith("clxuser123", {
       email: "test@example.com",
     });
@@ -94,8 +93,8 @@ describe("resetUser", () => {
     vi.stubGlobal("window", {});
     vi.stubEnv("NEXT_PUBLIC_POSTHOG_KEY", "phc_testkey123");
     const { resetUser, initPostHog } = await import("../posthog");
-    initPostHog();
-    resetUser();
+    await initPostHog();
+    await resetUser();
     expect(mockReset).toHaveBeenCalled();
   });
 });

@@ -17,7 +17,7 @@ const markFrame = 'shrink-0 rounded-lg object-contain ring-1 ring-slate-200/45 s
 
 const variantDef: Record<
   NonNullable<StockAlarmBrandProps['variant']>,
-  { src: string; className: string }
+  { src: { src: string }; className: string }
 > = {
   hero: {
     src: stockalarmLogo,
@@ -41,7 +41,7 @@ export function StockAlarmBrand({ variant = 'header', className = '' }: StockAla
   const { src, className: base } = variantDef[variant];
   return (
     <img
-      src={src}
+      src={src.src}
       alt="StockAlarm"
       className={`${base} ${className}`.trim()}
       decoding="async"

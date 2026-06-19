@@ -25,7 +25,7 @@ import { ROUTES, getRouteFromHash, isRecommendationRoute, normalizeRoute } from 
  * 3. Make sure to pass `onNavigate={handleNavigate}` to the page.
  */
 function AppContent() {
-  const { isLoggedIn } = useApp();
+  const { isLoggedIn, addDebugEvent } = useApp();
   const [currentRoute, setCurrentRoute] = useState(() =>
     typeof window === 'undefined' ? ROUTES.landing : getRouteFromHash(window.location.hash)
   );
@@ -46,6 +46,30 @@ function AppContent() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    const hashParams = new URLSearchParams(window.location.hash.split('?')[1] ?? '');
+    const cameFromPush =
+      url.searchParams.get('from') === 'push' ||
+      url.searchParams.get('utm_source') === 'onesignal' ||
+      hashParams.get('from') === 'push' ||
+      hashParams.get('utm_source') === 'onesignal';
+
+    if (!cameFromPush) {
+      return;
+    }
+
+    const route = getRouteFromHash(window.location.hash);
+    addDebugEvent('push_open', { route });
+    addDebugEvent(route === ROUTES.landing ? 'deeplink_fail' : 'deeplink_success', {
+      route,
+    });
+  }, [addDebugEvent]);
 
   useEffect(() => {
     if (!isLoggedIn && currentRoute !== ROUTES.login && currentRoute !== ROUTES.landing) {
