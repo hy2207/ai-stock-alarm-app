@@ -94,7 +94,7 @@ describe("getTickerHistory", () => {
     expect(result.items[0].hitFlag).toBe(true);
     expect(result.items[0].realizedReturn).toBe(15.2);
     expect(
-      (result.items[0] as Record<string, unknown>).userId,
+      (result.items[0] as unknown as Record<string, unknown>).userId,
     ).toBeUndefined();
   });
 

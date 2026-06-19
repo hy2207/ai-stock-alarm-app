@@ -42,6 +42,6 @@ export function normalizeRoute(route: string) {
 }
 
 export function getRouteFromHash(hash: string) {
-  const route = hash.replace(/^#/, '');
+  const route = hash.replace(/^#/, '').split('?')[0];
   return route ? normalizeRoute(route) : ROUTES.landing;
 }

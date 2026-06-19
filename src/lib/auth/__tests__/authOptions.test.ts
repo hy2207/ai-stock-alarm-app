@@ -40,35 +40,35 @@ describe("authOptions", () => {
 });
 
 describe("session callback", () => {
-  it("sets user.id from token.sub", () => {
-    const session = authOptions.callbacks?.session?.({
+  it("sets user.id from token.sub", async () => {
+    const session = await authOptions.callbacks?.session?.({
       session: makeSession(),
       token: makeToken(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    expect((session as Record<string, unknown>)?.user?.id).toBe(
+    expect(((session as unknown as Record<string, Record<string, unknown>>)?.user)?.id).toBe(
       "clxuserid00000000000001",
     );
   });
 
-  it("propagates refresh error to session.error", () => {
-    const session = authOptions.callbacks?.session?.({
+  it("propagates refresh error to session.error", async () => {
+    const session = await authOptions.callbacks?.session?.({
       session: makeSession(),
       token: makeToken({ error: "RefreshAccessTokenError" }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    expect((session as Record<string, unknown>)?.error).toBe(
+    expect((session as unknown as Record<string, unknown>)?.error).toBe(
       "RefreshAccessTokenError",
     );
   });
 
-  it("does not set session.error when token has no error", () => {
-    const session = authOptions.callbacks?.session?.({
+  it("does not set session.error when token has no error", async () => {
+    const session = await authOptions.callbacks?.session?.({
       session: makeSession(),
       token: makeToken(),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
-    expect((session as Record<string, unknown>)?.error).toBeUndefined();
+    expect((session as unknown as Record<string, unknown>)?.error).toBeUndefined();
   });
 });
 

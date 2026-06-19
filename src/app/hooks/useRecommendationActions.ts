@@ -25,6 +25,7 @@ export function useRecommendationActions() {
   };
 
   const handleBrokerRedirect = (ticker: string, pageContext: string = 'home') => {
+    addDebugEvent('execution_intent_submit', { ticker, page: pageContext });
     addDebugEvent('broker_redirect', { ticker, page: pageContext });
     toast.success('브로커 이동을 시뮬레이션했습니다. 실제 연동 시 증권사 딥링크가 연결됩니다.');
   };

@@ -17,10 +17,12 @@ interface RecommendationDetailPageV2Props {
 export function RecommendationDetailPageV2({ recId, onNavigate }: RecommendationDetailPageV2Props) {
   const { riskProfile, setRiskProfile, addDebugEvent } = useApp();
   const [selectedRisk, setSelectedRisk] = useState<RiskProfile>(riskProfile);
+  const [reasonExpanded, setReasonExpanded] = useState(false);
   const { handleCopyPrice, handleBrokerRedirect, handleSetAlert } = useRecommendationActions();
 
   useEffect(() => {
     addDebugEvent('rec_detail_view', { recId });
+    addDebugEvent('confidence_view', { page: 'detail', recId, riskMode: riskProfile });
   }, [recId]);
 
   useEffect(() => {
@@ -34,7 +36,29 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
   ];
   const recommendation = allRecommendations.find(r => r.id === recId);
 
-  if (!recommendation) {
+  const currentRec = recommendation
+    ? recommendationsByRisk[selectedRisk].find(r => r.ticker === recommendation.ticker)
+    : undefined;
+
+  const rec = currentRec || recommendation;
+
+  const tickerRecords = rec
+    ? performanceRecords.filter(r => r.ticker === rec.ticker)
+    : [];
+  const { successRate, avgReturn, failCount, evaluatingCount } = usePerformanceStats(tickerRecords);
+
+  useEffect(() => {
+    if (!rec) {
+      return;
+    }
+    addDebugEvent('performance_card_view', {
+      recId: rec.id,
+      ticker: rec.ticker,
+      records: tickerRecords.length,
+    });
+  }, [addDebugEvent, rec, tickerRecords.length]);
+
+  if (!rec) {
     return (
       <div className="min-h-screen bg-[#f7f8f5] flex items-center justify-center p-4">
         <div className="border border-slate-200 bg-white rounded-lg shadow-sm p-8 text-center space-y-4 max-w-md">
@@ -53,19 +77,16 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
     );
   }
 
-  const currentRec = recommendationsByRisk[selectedRisk].find(
-    r => r.ticker === recommendation.ticker
-  );
-
-  const rec = currentRec || recommendation;
-
-  const tickerRecords = performanceRecords.filter(r => r.ticker === rec.ticker);
-  const { successRate, avgReturn, failCount, evaluatingCount } = usePerformanceStats(tickerRecords);
-
   const handleRiskChange = (risk: RiskProfile) => {
     setSelectedRisk(risk);
     setRiskProfile(risk);
-    addDebugEvent('confidence_change', { from: riskProfile, to: risk, page: 'detail' });
+    addDebugEvent('confidence_change', {
+      from: riskProfile,
+      to: risk,
+      page: 'detail',
+      recId: rec.id,
+      ticker: rec.ticker,
+    });
   };
 
   const riskOptions: { value: RiskProfile; label: string; color: string }[] = [
@@ -193,6 +214,29 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
           <p className="text-slate-700 leading-relaxed bg-[#f7f8f5] p-4 rounded-lg border border-blue-100">
             {rec.reasonLine}
           </p>
+          <button
+            type="button"
+            onClick={() => {
+              const nextExpanded = !reasonExpanded;
+              setReasonExpanded(nextExpanded);
+              if (nextExpanded) {
+                addDebugEvent('reason_expand', {
+                  recId: rec.id,
+                  ticker: rec.ticker,
+                  riskMode: selectedRisk,
+                });
+              }
+            }}
+            className="mt-3 text-sm font-medium text-blue-700 hover:text-blue-900"
+          >
+            {reasonExpanded ? '근거 요약 접기' : '근거 요약 보기'}
+          </button>
+          {reasonExpanded && (
+            <div className="mt-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              가격, 거래량, 뉴스 신호를 함께 본 단기 판단입니다. 보유 기간과 가격대가 맞지 않으면
+              No Call처럼 실행을 보류하는 것이 기본 원칙입니다.
+            </div>
+          )}
         </div>
 
         {/* Evidence Snapshot */}
@@ -301,6 +345,17 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
             ))}
           </div>
         </div>
+
+        {tickerRecords.length >= 3 && (
+          <div className="border border-slate-200 bg-white rounded-lg shadow-sm p-6 mb-6">
+            <h2 className="font-bold text-slate-900 mb-3">유사 패턴 참고</h2>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              최근 {tickerRecords.length}건의 동일 종목 평가 기록을 기준으로 성공과 실패가 모두
+              있는지 확인하세요. 이 영역은 보조 참고용이며, 현재 카드의 가격·기간 판단을
+              대체하지 않습니다.
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="space-y-3">

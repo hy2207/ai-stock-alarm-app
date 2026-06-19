@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState, ReactNode } from 'react';
 import type { RiskProfile, DebugEvent } from '../types';
 import { mockUser, defaultWatchlist } from '../mockData';
+import { captureClientEvent } from '@/lib/analytics/posthog';
+import { clientEventNameSchema } from '@/lib/dto/posthogEvents';
 
 interface AppContextType {
   isLoggedIn: boolean;
@@ -12,7 +14,7 @@ interface AppContextType {
   pushEnabled: boolean;
   setPushEnabled: (value: boolean) => void;
   debugEvents: DebugEvent[];
-  addDebugEvent: (eventName: string, data?: any) => void;
+  addDebugEvent: (eventName: string, data?: Record<string, unknown>) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -108,14 +110,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     window.localStorage.setItem(STORAGE_KEYS.pushEnabled, String(pushEnabled));
   }, [pushEnabled]);
 
-  const addDebugEvent = (eventName: string, data?: any) => {
+  const addDebugEvent = useCallback((eventName: string, data?: Record<string, unknown>) => {
     const event: DebugEvent = {
       timestamp: new Date().toISOString(),
       eventName,
       data,
     };
     setDebugEvents(prev => [...prev.slice(-19), event]);
-  };
+
+    const parsedEventName = clientEventNameSchema.safeParse(eventName);
+    if (parsedEventName.success) {
+      captureClientEvent(parsedEventName.data, data);
+    }
+  }, []);
 
   return (
     <AppContext.Provider

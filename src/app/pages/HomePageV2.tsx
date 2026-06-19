@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { recommendationsByRisk, watchlistItemByTicker } from '../mockData';
 import { NavigationV2 } from '../components/NavigationV2';
@@ -8,6 +8,7 @@ import { ROUTES } from '../routes';
 import { Shield } from 'lucide-react';
 import { StockAlarmBrand } from '../components/StockAlarmBrand';
 import { Button } from '../components/ui/button';
+import { selectRecommendationsForRisk } from '../lib/confidenceRecommendations';
 
 interface HomePageV2Props {
   onNavigate: (route: string) => void;
@@ -25,29 +26,48 @@ interface HomePageV2Props {
 export function HomePageV2({ onNavigate }: HomePageV2Props) {
   const { riskProfile, setRiskProfile, addDebugEvent, watchlist } = useApp();
   const [selectedRisk, setSelectedRisk] = useState<RiskProfile>(riskProfile);
+  const impressedRecIds = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     addDebugEvent('home_view');
+    addDebugEvent('confidence_view', { page: 'home', riskMode: riskProfile });
   }, []);
 
   useEffect(() => {
     setSelectedRisk(riskProfile);
   }, [riskProfile]);
 
-  const recommendations = recommendationsByRisk[selectedRisk].filter(rec =>
-    watchlist.includes(rec.ticker)
-  ).slice(0, 3);
+  const recommendations = selectRecommendationsForRisk(
+    recommendationsByRisk,
+    selectedRisk,
+    watchlist,
+  );
+
+  useEffect(() => {
+    recommendations.forEach((rec) => {
+      const impressionKey = `${selectedRisk}:${rec.id}`;
+      if (impressedRecIds.current.has(impressionKey)) {
+        return;
+      }
+      impressedRecIds.current.add(impressionKey);
+      addDebugEvent('rec_card_impression', {
+        recId: rec.id,
+        ticker: rec.ticker,
+        riskMode: selectedRisk,
+      });
+    });
+  }, [addDebugEvent, recommendations, selectedRisk]);
 
   const handleRiskChange = (risk: RiskProfile) => {
     setSelectedRisk(risk);
     setRiskProfile(risk);
-    addDebugEvent('confidence_change', { from: riskProfile, to: risk });
+    addDebugEvent('confidence_change', { from: riskProfile, to: risk, page: 'home' });
   };
 
 
 
   const handleCardClick = (recId: string) => {
-    addDebugEvent('rec_card_click', { recId });
+    addDebugEvent('rec_card_click', { recId, riskMode: selectedRisk });
     onNavigate(`/recommendations/${recId}`);
   };
 

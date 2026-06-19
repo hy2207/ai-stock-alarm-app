@@ -32,6 +32,7 @@ export function initOneSignal(): void {
   window.OneSignalDeferred = window.OneSignalDeferred || [];
 
   window.OneSignalDeferred.push(async function (OneSignal: Window["OneSignal"]) {
+    if (!OneSignal) return;
     const config: Record<string, unknown> = { appId };
     const safariWebId = getSafariWebId();
     if (safariWebId) {
