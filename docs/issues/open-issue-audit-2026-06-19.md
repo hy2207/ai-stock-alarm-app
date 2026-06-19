@@ -46,7 +46,7 @@
 | #93 | TEST-F9-01 | close-ready-local | LLM schema tests 존재, 실행은 dependency install 필요 |
 | #94 | UX-010 | close-ready-local | V2 No Call/loading/empty/error states 존재 |
 | #95 | LLM-C08 | close-ready-local | persistence helper가 EvidenceSnapshot nested create 지원 |
-| #96 | PERF-003 | verification-blocked | bundle 측정은 dependency install 필요 |
+| #96 | PERF-003 | close-ready-local | `npm run build` First Load JS 87.4 kB로 150 kB 기준 충족 |
 | #97 | REC-Q04 | needs-app-router-integration | V2 No Call screen 존재, 실제 RSC no-call card UX 보강 필요 |
 | #98 | TEST-F3-01 | close-ready-local | DTO price/holdDays tests 존재 |
 | #99 | TEST-F4-02 | close-ready-local | `src/app/lib/__tests__/confidenceRecommendations.test.ts` 추가 |
