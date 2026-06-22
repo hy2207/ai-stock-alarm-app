@@ -40,12 +40,17 @@ describe("POST /api/dev/generate-recommendations", () => {
     const response = await POST();
 
     expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: "Unauthorized" });
+    expect(await response.json()).toEqual({
+      error: "Unauthorized",
+      stage: "auth_session",
+      hint:
+        "Clear localhost:3000 cookies and sign in again if NEXTAUTH_SECRET changed.",
+    });
   });
 
   it("returns generation summary JSON for authenticated development users", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockGetCurrentUserId.mockResolvedValue("clxuserid00000000000001");
     mockGenerateRecommendationsForUser.mockResolvedValue({
       generatedCount: 3,
       skippedCount: 0,
@@ -63,7 +68,27 @@ describe("POST /api/dev/generate-recommendations", () => {
       validationErrors: [],
       externalApiErrors: [],
     });
-    expect(mockGenerateRecommendationsForUser).toHaveBeenCalledWith("user-1");
+    expect(mockGenerateRecommendationsForUser).toHaveBeenCalledWith(
+      "clxuserid00000000000001",
+    );
     expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+  });
+
+  it("returns a development failure stage when generation throws", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    mockGetCurrentUserId.mockResolvedValue("clxuserid00000000000001");
+    mockGenerateRecommendationsForUser.mockRejectedValue(
+      new Error("Gemini unavailable"),
+    );
+
+    const { POST } = await import("../route");
+    const response = await POST();
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error: "Internal server error",
+      stage: "generate_recommendations",
+      message: "Gemini unavailable",
+    });
   });
 });

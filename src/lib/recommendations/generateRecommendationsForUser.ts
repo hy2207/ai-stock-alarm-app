@@ -107,7 +107,7 @@ async function hasPublishedCardForTickerToday(
 
 async function collectMarketContext(
   watchlist: WatchlistPromptItem[],
-  finnhubToken: string,
+  finnhubToken: string | null,
 ): Promise<{
   marketData: RecommendationPromptInput["marketData"];
   newsSignals: RecommendationPromptInput["newsSignals"];
@@ -119,10 +119,28 @@ async function collectMarketContext(
 
   await Promise.all(
     watchlist.map(async ({ ticker }) => {
-      const [candleResult, newsResult] = await Promise.all([
-        fetchFinnhubCandle(ticker, finnhubToken),
-        fetchFinnhubNews(ticker, finnhubToken),
-      ]);
+      const [candleResult, newsResult] = finnhubToken
+        ? await Promise.all([
+            fetchFinnhubCandle(ticker, finnhubToken),
+            fetchFinnhubNews(ticker, finnhubToken),
+          ])
+        : [
+            {
+              ok: false as const,
+              error: {
+                code: "MISSING_FINNHUB_TOKEN",
+                message:
+                  "FINNHUB_API_KEY is not configured. Using Yahoo Finance fallback.",
+              },
+            },
+            {
+              ok: false as const,
+              error: {
+                code: "MISSING_FINNHUB_TOKEN",
+                message: "FINNHUB_API_KEY is not configured.",
+              },
+            },
+          ];
 
       if (!candleResult.ok) {
         externalApiErrors.push(
@@ -220,7 +238,7 @@ export async function generateRecommendationsForUser(
   }
 
   const finnhubToken = getFinnhubApiKey();
-  if (!finnhubToken) {
+  if (!finnhubToken && process.env.NODE_ENV === "production") {
     externalApiErrors.push(
       "FINNHUB_API_KEY is not configured. Set it in your environment.",
     );

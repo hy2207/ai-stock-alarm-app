@@ -119,6 +119,24 @@ beforeEach(() => {
       },
     ],
   });
+  mockFetchYahooChart.mockResolvedValue({
+    ok: true,
+    data: {
+      ticker: "AAPL",
+      regularMarketPrice: 197,
+      previousClose: 193,
+      ohlcv: [
+        {
+          timestamp: 1717086400,
+          open: 193,
+          high: 198,
+          low: 192,
+          close: 197,
+          volume: 45_000_000,
+        },
+      ],
+    },
+  });
   mockGenerateRecommendationCards.mockResolvedValue(okGeneration);
   mockTransaction.mockImplementation(async (operations: Promise<unknown>[]) =>
     Promise.all(operations),
@@ -140,7 +158,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result).toEqual({
       generatedCount: 0,
@@ -157,7 +177,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result.generatedCount).toBe(0);
     expect(result.skippedCount).toBe(1);
@@ -170,7 +192,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result).toEqual({
       generatedCount: 0,
@@ -181,13 +205,16 @@ describe("generateRecommendationsForUser", () => {
     expect(mockGenerateRecommendationCards).not.toHaveBeenCalled();
   });
 
-  it("reports Finnhub configuration errors without calling Gemini", async () => {
+  it("reports Finnhub configuration errors without calling Gemini in production", async () => {
     vi.stubEnv("FINNHUB_API_KEY", "");
+    vi.stubEnv("NODE_ENV", "production");
 
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result.externalApiErrors).toContain(
       "FINNHUB_API_KEY is not configured. Set it in your environment.",
@@ -196,11 +223,42 @@ describe("generateRecommendationsForUser", () => {
     expect(mockGenerateRecommendationCards).not.toHaveBeenCalled();
   });
 
+  it("uses Yahoo Finance fallback when Finnhub token is missing outside production", async () => {
+    vi.stubEnv("FINNHUB_API_KEY", "");
+    vi.stubEnv("NODE_ENV", "development");
+
+    const { generateRecommendationsForUser } = await import(
+      "../generateRecommendationsForUser"
+    );
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
+
+    expect(mockFetchFinnhubCandle).not.toHaveBeenCalled();
+    expect(mockFetchFinnhubNews).not.toHaveBeenCalled();
+    expect(mockFetchYahooChart).toHaveBeenCalledWith("AAPL");
+    expect(result.generatedCount).toBe(3);
+    expect(result.externalApiErrors).toContain(
+      "Finnhub candle (AAPL): FINNHUB_API_KEY is not configured. Using Yahoo Finance fallback.",
+    );
+    expect(mockGenerateRecommendationCards).toHaveBeenCalledWith({
+      promptInput: expect.objectContaining({
+        marketData: expect.objectContaining({
+          AAPL: expect.objectContaining({
+            ohlcv: expect.any(Array),
+          }),
+        }),
+      }),
+    });
+  });
+
   it("persists up to three validated cards for the authenticated user", async () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result.generatedCount).toBe(3);
     expect(result.skippedCount).toBe(0);
@@ -224,7 +282,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result.generatedCount).toBe(0);
     expect(result.validationErrors).toEqual(["Insufficient market context."]);
@@ -258,7 +318,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(mockFetchYahooChart).toHaveBeenCalledWith("AAPL");
     expect(result.generatedCount).toBe(3);
@@ -295,7 +357,9 @@ describe("generateRecommendationsForUser", () => {
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
     );
-    const result = await generateRecommendationsForUser("user-1");
+    const result = await generateRecommendationsForUser(
+      "clxuserid00000000000001",
+    );
 
     expect(result.externalApiErrors).toEqual([
       "Finnhub candle (AAPL): Finnhub returned 429",

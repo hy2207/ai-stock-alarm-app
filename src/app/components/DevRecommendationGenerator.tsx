@@ -6,6 +6,35 @@ import { toast } from "sonner";
 
 type GenerationState = "idle" | "running" | "done" | "failed";
 
+type GenerationSummary = {
+  generatedCount?: number;
+  validationErrors?: string[];
+  externalApiErrors?: string[];
+  error?: string;
+  stage?: string;
+  message?: string;
+  hint?: string;
+};
+
+async function readGenerationSummary(response: Response): Promise<GenerationSummary> {
+  try {
+    return (await response.json()) as GenerationSummary;
+  } catch {
+    return {};
+  }
+}
+
+function firstFailureMessage(summary: GenerationSummary, fallback: string) {
+  return (
+    summary.validationErrors?.[0] ??
+    summary.externalApiErrors?.[0] ??
+    summary.hint ??
+    summary.message ??
+    summary.error ??
+    fallback
+  );
+}
+
 /**
  * Development helper: when the home page has no cards yet, trigger one
  * recommendation generation run and refresh once it finishes.
@@ -14,10 +43,12 @@ export function DevRecommendationGenerator() {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<GenerationState>("idle");
+  const [failureMessage, setFailureMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setState("running");
+    setFailureMessage(null);
 
     void (async () => {
       try {
@@ -35,35 +66,52 @@ export function DevRecommendationGenerator() {
         }
 
         if (!response.ok) {
+          const summary = await readGenerationSummary(response);
+          const message = firstFailureMessage(
+            summary,
+            "추천 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.",
+          );
           setState("failed");
-          toast.warning("추천 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.");
+          setFailureMessage(message);
+          toast.warning(message);
           return;
         }
 
-        const summary = await response.json();
+        const summary = await readGenerationSummary(response);
 
-        if (summary.generatedCount > 0) {
-          toast.success(`오늘 추천 ${summary.generatedCount}건을 생성했습니다.`);
+        const generatedCount = summary.generatedCount ?? 0;
+        const validationErrors = summary.validationErrors ?? [];
+        const externalApiErrors = summary.externalApiErrors ?? [];
+
+        if (generatedCount > 0) {
+          toast.success(`오늘 추천 ${generatedCount}건을 생성했습니다.`);
           router.refresh();
           setState("done");
           return;
         }
 
-        if (summary.validationErrors?.length > 0) {
-          toast.warning(`추천 생성 실패: ${summary.validationErrors[0]}`);
+        if (validationErrors.length > 0) {
+          const message = `추천 생성 실패: ${validationErrors[0]}`;
+          setFailureMessage(message);
+          toast.warning(message);
           setState("failed");
           return;
         }
 
-        if (summary.externalApiErrors?.length > 0) {
-          toast.warning(`시장 데이터 오류: ${summary.externalApiErrors[0]}`);
+        if (externalApiErrors.length > 0) {
+          const message = `시장 데이터 오류: ${externalApiErrors[0]}`;
+          setFailureMessage(message);
+          toast.warning(message);
         }
 
+        setFailureMessage("추천 카드가 생성되지 않았습니다. 설정과 API 응답을 확인해 주세요.");
         setState("failed");
       } catch {
         if (!cancelled) {
+          const message = "추천 생성 중 오류가 발생했습니다.";
           setState("failed");
-          toast.warning("추천 생성 중 오류가 발생했습니다.");
+          setFailureMessage(message);
+          toast.warning(message);
         }
       }
     })();
@@ -83,13 +131,20 @@ export function DevRecommendationGenerator() {
 
   if (state === "failed") {
     return (
-      <button
-        type="button"
-        className="mt-3 text-sm font-medium text-blue-700"
-        onClick={() => setAttempt((value) => value + 1)}
-      >
-        다시 시도
-      </button>
+      <div className="mt-3 space-y-2 text-center text-sm">
+        {failureMessage && (
+          <p className="text-slate-600">
+            {failureMessage}
+          </p>
+        )}
+        <button
+          type="button"
+          className="font-medium text-blue-700"
+          onClick={() => setAttempt((value) => value + 1)}
+        >
+          다시 시도
+        </button>
+      </div>
     );
   }
 
