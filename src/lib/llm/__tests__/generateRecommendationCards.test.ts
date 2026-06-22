@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { LanguageModel, StreamObjectResult } from "ai";
+import type { LanguageModel } from "ai";
 import {
   classifyLlmCallFailure,
   generateRecommendationCards,
@@ -75,11 +75,15 @@ const okGeneration = {
   ],
 } satisfies RecommendationGeneration;
 
-function streamResult(object: unknown) {
+function generateResult(object: unknown) {
   return {
-    object: Promise.resolve(object),
-  } as StreamObjectResult<unknown, unknown, never>;
+    text: JSON.stringify(object),
+  } as Awaited<ReturnType<GenerateRecommendationCardsTextFn>>;
 }
+
+type GenerateRecommendationCardsTextFn = NonNullable<
+  Parameters<typeof generateRecommendationCards>[0]["generate"]
+>;
 
 describe("recommendationGenerationSchema", () => {
   it("accepts exactly three confidence variants", () => {
@@ -190,32 +194,39 @@ describe("classifyLlmCallFailure", () => {
 });
 
 describe("generateRecommendationCards", () => {
-  it("GWT: Given prompt context When streamObject succeeds Then returns validated variants", async () => {
-    const stream = vi.fn().mockReturnValue(streamResult(okGeneration));
+  it("GWT: Given prompt context When generateText succeeds Then returns validated variants", async () => {
+    const generate = vi.fn().mockReturnValue(generateResult(okGeneration));
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
     });
 
     expect(result).toEqual(okGeneration);
-    expect(stream).toHaveBeenCalledTimes(1);
-    expect(stream).toHaveBeenCalledWith(
+    expect(generate).toHaveBeenCalledTimes(1);
+    expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({
         model,
-        schema: recommendationGenerationSchema,
-        schemaName: "RecommendationGeneration",
         system: expect.stringContaining("Decision Layer"),
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
+        maxOutputTokens: 1_200,
+        providerOptions: {
+          google: {
+            thinkingConfig: {
+              thinkingLevel: "minimal",
+              includeThoughts: false,
+            },
+          },
+        },
         timeout: { totalMs: 25_000 },
       }),
     );
   });
 
   it("GWT: Given model returns No Call When generation completes Then passes through No Call", async () => {
-    const stream = vi.fn().mockReturnValue(
-      streamResult({
+    const generate = vi.fn().mockReturnValue(
+      generateResult({
         status: "no_call",
         reason: "Insufficient market and news evidence for a decision.",
       }),
@@ -224,7 +235,7 @@ describe("generateRecommendationCards", () => {
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
     });
 
     expect(result).toEqual({
@@ -239,20 +250,20 @@ describe("generateRecommendationCards", () => {
       ...okGeneration,
       variants: [{ ...okGeneration.variants[0], holdDays: 11 }],
     };
-    const stream = vi
+    const generate = vi
       .fn()
-      .mockReturnValueOnce(streamResult(invalidGeneration))
-      .mockReturnValueOnce(streamResult(invalidGeneration));
+      .mockReturnValueOnce(generateResult(invalidGeneration))
+      .mockReturnValueOnce(generateResult(invalidGeneration));
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
       captureEvent,
     });
 
     expect(result.status).toBe("no_call");
-    expect(stream).toHaveBeenCalledTimes(2);
+    expect(generate).toHaveBeenCalledTimes(2);
     expect(captureEvent).toHaveBeenCalledWith("rec_validation_failed", {
       error: "structured_output_validation_failed",
       attempts: 2,
@@ -261,36 +272,34 @@ describe("generateRecommendationCards", () => {
 
   it("GWT: Given first structured output is invalid When retry succeeds Then returns retry result", async () => {
     const captureEvent = vi.fn().mockResolvedValue(undefined);
-    const stream = vi
+    const generate = vi
       .fn()
       .mockReturnValueOnce(
-        streamResult({
+        generateResult({
           ...okGeneration,
           variants: [{ ...okGeneration.variants[0], holdDays: 11 }],
         }),
       )
-      .mockReturnValueOnce(streamResult(okGeneration));
+      .mockReturnValueOnce(generateResult(okGeneration));
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
       captureEvent,
     });
 
     expect(result).toEqual(okGeneration);
-    expect(stream).toHaveBeenCalledTimes(2);
-    expect(stream).toHaveBeenNthCalledWith(
+    expect(generate).toHaveBeenCalledTimes(2);
+    expect(generate).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
-        schema: recommendationGenerationSchema,
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
       }),
     );
-    expect(stream).toHaveBeenNthCalledWith(
+    expect(generate).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
-        schema: recommendationGenerationSchema,
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
       }),
     );
@@ -298,31 +307,31 @@ describe("generateRecommendationCards", () => {
   });
 
   it("GWT: Given empty watchlist When generating Then avoids LLM call and returns No Call", async () => {
-    const stream = vi.fn();
+    const generate = vi.fn();
 
     const result = await generateRecommendationCards({
       promptInput: { ...basePromptInput, watchlist: [] },
       model,
-      stream,
+      generate,
     });
 
     expect(result).toEqual({
       status: "no_call",
       reason: "Watchlist is empty. Add at least one ticker before generating.",
     });
-    expect(stream).not.toHaveBeenCalled();
+    expect(generate).not.toHaveBeenCalled();
   });
 
-  it("GWT: Given rate limit error When streamObject fails Then emits llm_call_failed and returns No Call", async () => {
+  it("GWT: Given rate limit error When generateText fails Then emits llm_call_failed and returns No Call", async () => {
     const captureEvent = vi.fn().mockResolvedValue(undefined);
-    const stream = vi.fn().mockImplementation(() => {
+    const generate = vi.fn().mockImplementation(() => {
       throw { status: 429, message: "rate limit exceeded" };
     });
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
       captureEvent,
     });
 
@@ -333,17 +342,15 @@ describe("generateRecommendationCards", () => {
     });
   });
 
-  it("GWT: Given timeout during object resolution When generation fails Then emits timeout event", async () => {
+  it("GWT: Given timeout during generation When generation fails Then emits timeout event", async () => {
     const captureEvent = vi.fn().mockResolvedValue(undefined);
     const timeoutError = new Error("Gemini request timed out");
-    const stream = vi.fn().mockReturnValue({
-      object: Promise.reject(timeoutError),
-    });
+    const generate = vi.fn().mockRejectedValue(timeoutError);
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
       captureEvent,
     });
 
@@ -354,18 +361,16 @@ describe("generateRecommendationCards", () => {
     });
   });
 
-  it("GWT: Given hanging object resolution When generation exceeds timeout Then returns No Call", async () => {
+  it("GWT: Given hanging generation When generation exceeds timeout Then returns No Call", async () => {
     vi.useFakeTimers();
     const captureEvent = vi.fn().mockResolvedValue(undefined);
-    const stream = vi.fn().mockReturnValue({
-      object: new Promise(() => undefined),
-    });
+    const generate = vi.fn().mockReturnValue(new Promise(() => undefined));
 
     try {
       const pending = generateRecommendationCards({
         promptInput: basePromptInput,
         model,
-        stream,
+        generate,
         captureEvent,
       });
 
@@ -373,6 +378,10 @@ describe("generateRecommendationCards", () => {
       const result = await pending;
 
       expect(result.status).toBe("no_call");
+      if (result.status !== "no_call") {
+        throw new Error("Expected No Call result");
+      }
+      expect(result.reason).toContain("timed out");
       expect(captureEvent).toHaveBeenCalledWith("llm_call_failed", {
         reason: "timeout",
         status: null,
@@ -382,16 +391,16 @@ describe("generateRecommendationCards", () => {
     }
   });
 
-  it("GWT: Given API key failure When streamObject fails Then emits api_key reason and returns No Call", async () => {
+  it("GWT: Given API key failure When generateText fails Then emits api_key reason and returns No Call", async () => {
     const captureEvent = vi.fn().mockResolvedValue(undefined);
-    const stream = vi.fn().mockImplementation(() => {
+    const generate = vi.fn().mockImplementation(() => {
       throw new Error("401 Unauthorized - invalid API key");
     });
 
     const result = await generateRecommendationCards({
       promptInput: basePromptInput,
       model,
-      stream,
+      generate,
       captureEvent,
     });
 

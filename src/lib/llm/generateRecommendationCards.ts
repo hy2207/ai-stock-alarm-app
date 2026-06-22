@@ -1,4 +1,4 @@
-import { streamObject, type LanguageModel } from "ai";
+import { generateText, type LanguageModel } from "ai";
 import { z } from "zod";
 import {
   confidenceModeEnum,
@@ -14,6 +14,14 @@ import { captureServerEvent } from "@/lib/analytics/serverCapture";
 const FALLBACK_NO_CALL_REASON =
   "Recommendation generation is unavailable. Review the watchlist later.";
 const LLM_GENERATION_TIMEOUT_MS = 25_000;
+const GEMINI_PROVIDER_OPTIONS = {
+  google: {
+    thinkingConfig: {
+      thinkingLevel: "minimal",
+      includeThoughts: false,
+    },
+  },
+} as const;
 
 class LlmGenerationTimeoutError extends Error {
   constructor() {
@@ -129,6 +137,34 @@ export function classifyLlmCallFailure(error: unknown): {
   return { reason: "llm_call_failed", status };
 }
 
+function getNoCallReasonForLlmFailure(reason: LlmFailureReason) {
+  switch (reason) {
+    case "timeout":
+      return "Gemini recommendation generation timed out. Try again or use a faster GEMINI_MODEL.";
+    case "api_key":
+      return "Gemini API key or model access is invalid. Check GEMINI_API_KEY and GEMINI_MODEL.";
+    case "rate_limit":
+      return "Gemini quota or rate limit was reached. Try again after the quota resets.";
+    case "api_error":
+      return "Gemini service returned an error. Try generating again later.";
+    case "no_response":
+      return "Gemini returned an empty response. Try generating again.";
+    case "llm_call_failed":
+      return FALLBACK_NO_CALL_REASON;
+  }
+}
+
+function parseJsonObject(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("empty response from model");
+  }
+
+  const fencedJson = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  const candidate = fencedJson?.[1] ?? trimmed;
+  return JSON.parse(candidate);
+}
+
 export const recommendationGenerationVariantSchema = z
   .object({
     ticker: z.string().trim().min(1).max(10),
@@ -199,14 +235,14 @@ export type RecommendationGeneration = z.infer<
 export interface GenerateRecommendationCardsInput {
   promptInput: RecommendationPromptInput;
   model?: LanguageModel;
-  stream?: typeof streamObject;
+  generate?: typeof generateText;
   captureEvent?: typeof captureServerEvent;
 }
 
 export async function generateRecommendationCards({
   promptInput,
   model,
-  stream = streamObject,
+  generate = generateText,
   captureEvent = captureServerEvent,
 }: GenerateRecommendationCardsInput): Promise<RecommendationGeneration> {
   if (promptInput.watchlist.length === 0) {
@@ -219,16 +255,20 @@ export async function generateRecommendationCards({
   try {
     const prompt = buildRecommendationPrompt(promptInput);
     const modelToUse = model ?? getGeminiModel();
-    const callStream = (abortSignal: AbortSignal) =>
-      stream({
+    const callGenerate = (abortSignal: AbortSignal) =>
+      generate({
         model: modelToUse,
-        schema: recommendationGenerationSchema,
-        schemaName: "RecommendationGeneration",
-        schemaDescription:
-          "Decision Layer recommendation output with exactly three confidence variants or No Call.",
         system: prompt.system,
-        prompt: prompt.user,
+        prompt: `${prompt.user}
+
+Return only valid JSON. Do not wrap it in Markdown.
+Use one of these shapes:
+{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"160 chars max"},{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"balanced","reasonLine":"160 chars max"},{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"conservative","reasonLine":"160 chars max"}]}
+{"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
+        temperature: 0.2,
+        maxOutputTokens: 1_200,
+        providerOptions: GEMINI_PROVIDER_OPTIONS,
         timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
       });
     const readObject = async () => {
@@ -242,10 +282,11 @@ export async function generateRecommendationCards({
       });
 
       try {
-        return await Promise.race([
-          callStream(controller.signal).object,
+        const result = await Promise.race([
+          callGenerate(controller.signal),
           timeoutPromise,
         ]);
+        return parseJsonObject(result.text);
       } finally {
         clearTimeout(timeoutId!);
       }
@@ -269,13 +310,21 @@ export async function generateRecommendationCards({
         });
         return {
           status: "no_call",
-          reason: FALLBACK_NO_CALL_REASON,
+          reason:
+            "Gemini response did not match the recommendation card schema. Try generating again.",
         };
       }
       throw error;
     }
   } catch (error) {
     const failure = classifyLlmCallFailure(error);
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[recommendations] Gemini generation failed", {
+        reason: failure.reason,
+        status: failure.status,
+        message: readErrorMessage(error),
+      });
+    }
     await captureEvent("llm_call_failed", {
       reason: failure.reason,
       status: failure.status,
@@ -283,7 +332,7 @@ export async function generateRecommendationCards({
 
     return {
       status: "no_call",
-      reason: FALLBACK_NO_CALL_REASON,
+      reason: getNoCallReasonForLlmFailure(failure.reason),
     };
   }
 }
