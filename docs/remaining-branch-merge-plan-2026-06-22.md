@@ -43,20 +43,21 @@ Reconciled into `main` without direct merge because the branch contained stale s
   - Result: `0c549e3 feat(push): reconcile briefing cron slices`
   - Main reconciles push cron revocation sync, Vercel Cron config, App Router `/login`, and `updateWatchlist()` without direct-merging stale UI/report deletions.
 - P6 `origin/feat/16-ux-002-user-journey-ia`
-  - Result: P6 reconciliation commit in this update
+  - Result: `94656ec docs(ux): port user journey ia`
   - Main ported the UX-002 user journey/IA contract, issue report, and focused document-contract test while skipping stale harness, package, runtime, and deletion churn.
+- P7 `origin/feat/33-ux-004-responsive-accessibility`
+  - Result: P7 reconciliation commit in this update
+  - Main ported the UX-004 responsive/accessibility baseline, issue report, and focused document-contract test while preserving existing UX-002 and UX-016 docs.
 
 ## Remaining Branches
 
 Current unmerged remote branches:
-- `origin/feat/33-ux-004-responsive-accessibility`
 - `origin/feat/34-ux-005-auth-session-ux`
 
 ## Updated Priority Summary
 
 | Priority | Branch | Why | Recommended Strategy |
 |---|---|---|---|
-| P7 | `origin/feat/33-ux-004-responsive-accessibility` | UX accessibility documentation. Useful after core query/push work. | Extract doc/report artifacts only and align with current UX docs. |
 | P8 | `origin/feat/34-ux-005-auth-session-ux` | Auth-session UX documentation should reflect the already reconciled P0/P1 auth behavior. | Extract doc/report artifacts only after auth behavior is stable, which it now is. |
 
 ## P5 - Push Cron / Login / Onboarding Split
@@ -114,20 +115,18 @@ Primary useful artifacts:
 - `docs/ux/UX-004-responsive-accessibility-baseline.md`
 - `reports/issue-33-ux-004.md`
 
-Steps:
-1. Complete or intentionally skip P6 first so UX docs stay ordered.
-2. Extract only docs/report artifacts:
-   - `git show origin/feat/33-ux-004-responsive-accessibility:docs/ux/UX-004-responsive-accessibility-baseline.md`
-   - `git show origin/feat/33-ux-004-responsive-accessibility:reports/issue-33-ux-004.md`
-3. Check consistency with:
-   - `docs/ux/UX-016-design-qa-usability-handoff.md`
-4. Do not accept stale package/runtime changes.
-5. Run:
-   - `npm run typecheck`
-6. Commit with:
-   - `docs(ux): port responsive accessibility baseline`
-7. Delete the remote branch after successful push:
-   - `git push origin --delete feat/33-ux-004-responsive-accessibility`
+Completed:
+- Ported `docs/ux/UX-004-responsive-accessibility-baseline.md`.
+- Ported `reports/issue-33-ux-004.md` and updated verification commands to the current npm/Vitest workflow.
+- Ported `src/lib/ux/__tests__/responsiveAccessibility.test.ts` as a focused document-contract test.
+- Skipped stale package/runtime changes and unrelated report/doc/test deletions.
+
+Verification:
+- `npx vitest run src/lib/ux/__tests__/responsiveAccessibility.test.ts`
+- `npm run typecheck`
+
+Delete after this P7 pass is pushed:
+- `git push origin --delete feat/33-ux-004-responsive-accessibility`
 
 ## P8 - UX-005 Auth Session UX
 
