@@ -150,8 +150,8 @@ Verification:
 - `npx vitest run src/lib/ux/__tests__/authSessionUx.test.ts`
 - `npm run typecheck`
 
-Delete after this P8 pass is pushed:
-- `git push origin --delete feat/34-ux-005-auth-session-ux`
+Remote cleanup:
+- Deleted `origin/feat/34-ux-005-auth-session-ux` after pushing the P8 reconciliation.
 
 ## General Reconciliation Procedure
 
