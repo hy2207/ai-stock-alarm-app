@@ -7,7 +7,7 @@ export const mockFinnhubCandleAAPL = {
   o: [180.1, 181.3, 182.0, 181.7, 182.8],
   v: [52000000, 48000000, 55000000, 51000000, 53000000],
   t: [1716854400, 1716940800, 1717027200, 1717113600, 1717200000],
-  s: "ok",
+  s: "ok" as const,
 };
 
 export const mockFinnhubCandleTSLA = {
@@ -17,12 +17,12 @@ export const mockFinnhubCandleTSLA = {
   o: [242.0, 243.5, 244.8, 243.2, 245.5],
   v: [89000000, 92000000, 87000000, 95000000, 91000000],
   t: [1716854400, 1716940800, 1717027200, 1717113600, 1717200000],
-  s: "ok",
+  s: "ok" as const,
 };
 
 export const mockFinnhubCandleEmpty = {
   c: [], h: [], l: [], o: [], v: [], t: [],
-  s: "no_data",
+  s: "no_data" as const,
 };
 
 export const mockFinnhubNewsAAPL = [
