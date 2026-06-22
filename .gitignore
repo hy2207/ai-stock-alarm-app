@@ -53,3 +53,9 @@ prisma/dev.db*
 
 # Puppeteer
 screenshot.cjs
+
+# agent
+.agents/
+.claude/
+.gemini/
+.cursor/
