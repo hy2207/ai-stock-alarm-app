@@ -27,11 +27,11 @@ function entryOrRange(data: {
   entryRangeLow?: number | null;
   entryRangeHigh?: number | null;
 }) {
-  return (
-    data.entryPrice != null ||
-    data.entryRangeLow != null ||
-    data.entryRangeHigh != null
-  );
+  if (data.entryPrice != null) return true;
+  if (data.entryRangeLow != null || data.entryRangeHigh != null) {
+    return data.entryRangeLow != null && data.entryRangeHigh != null;
+  }
+  return false;
 }
 
 function targetOrRange(data: {
@@ -39,11 +39,11 @@ function targetOrRange(data: {
   targetRangeLow?: number | null;
   targetRangeHigh?: number | null;
 }) {
-  return (
-    data.targetPrice != null ||
-    data.targetRangeLow != null ||
-    data.targetRangeHigh != null
-  );
+  if (data.targetPrice != null) return true;
+  if (data.targetRangeLow != null || data.targetRangeHigh != null) {
+    return data.targetRangeLow != null && data.targetRangeHigh != null;
+  }
+  return false;
 }
 
 /** Zod schema for validating RecommendationCard create payloads.
