@@ -3,7 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PUBLIC_FILE = /\.(.*)$/;
 
-const PUBLIC_PATH_PREFIXES = ["/api/auth", "/_next", "/favicon.ico", "/assets"];
+const PUBLIC_PATH_PREFIXES = [
+  "/api/auth",
+  "/api/cron",
+  "/api/admin/health",
+  "/_next",
+  "/favicon.ico",
+  "/assets",
+];
 
 const PROTECTED_PATH_PREFIXES = [
   "/app",
@@ -16,12 +23,15 @@ const PROTECTED_PATH_PREFIXES = [
 
 export function isProtectedPath(pathname: string) {
   if (
-    pathname === "/" ||
     pathname === "/login" ||
     PUBLIC_FILE.test(pathname) ||
     PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   ) {
     return false;
+  }
+
+  if (pathname === "/") {
+    return true;
   }
 
   return PROTECTED_PATH_PREFIXES.some(

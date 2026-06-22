@@ -13,14 +13,21 @@ function makeRequest(path: string) {
 }
 
 describe("auth middleware path policy", () => {
-  it.each(["/", "/login", "/api/auth/signin", "/_next/static/chunk.js", "/favicon.ico"])(
+  it.each([
+    "/login",
+    "/api/auth/signin",
+    "/api/cron/morning-briefing",
+    "/api/admin/health",
+    "/_next/static/chunk.js",
+    "/favicon.ico",
+  ])(
     "treats %s as public",
     (path) => {
       expect(isProtectedPath(path)).toBe(false);
     },
   );
 
-  it.each(["/app", "/onboarding", "/archive", "/settings", "/recommendations/rec-1", "/state/error"])(
+  it.each(["/", "/app", "/onboarding", "/archive", "/settings", "/recommendations/rec-1", "/state/error"])(
     "treats %s as protected",
     (path) => {
       expect(isProtectedPath(path)).toBe(true);
@@ -47,6 +54,17 @@ describe("auth middleware", () => {
       req: expect.any(NextRequest),
       secret: "test-nextauth-secret",
     });
+  });
+
+  it("GWT: Given unauthenticated home access When middleware runs Then redirects to login with root callbackUrl", async () => {
+    getTokenMock.mockResolvedValue(null);
+
+    const response = await middleware(makeRequest("/?from=push"));
+
+    expect(response?.status).toBe(307);
+    expect(response?.headers.get("location")).toBe(
+      "https://stockalarm.test/login?callbackUrl=%2F%3Ffrom%3Dpush",
+    );
   });
 
   it("GWT: Given valid session token When accessing protected page Then passes through", async () => {
@@ -90,6 +108,15 @@ describe("auth middleware", () => {
     const response = await middleware(makeRequest("/login"));
 
     expect(response?.status).toBe(200);
+    expect(getTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("GWT: Given cron or health route When middleware runs Then skips NextAuth token lookup", async () => {
+    const cronResponse = await middleware(makeRequest("/api/cron/morning-briefing"));
+    const healthResponse = await middleware(makeRequest("/api/admin/health"));
+
+    expect(cronResponse?.status).toBe(200);
+    expect(healthResponse?.status).toBe(200);
     expect(getTokenMock).not.toHaveBeenCalled();
   });
 });
