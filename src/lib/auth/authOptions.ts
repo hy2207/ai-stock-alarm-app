@@ -1,7 +1,7 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { NextAuthOptions, TokenSet } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import KakaoProvider from "next-auth/providers/kakao";
+import GoogleProvider, { GoogleProfile } from "next-auth/providers/google";
+import KakaoProvider, { KakaoProfile } from "next-auth/providers/kakao";
 import { prisma } from "../prisma";
 
 const JWT_REFRESH_THRESHOLD_SEC = 5 * 60; // refresh when less than 5 minutes remain
@@ -12,6 +12,26 @@ type ExtendedToken = Record<string, unknown> & {
   accessTokenExpires?: number;
   error?: string;
 };
+
+export function mapGoogleProfile(profile: GoogleProfile) {
+  return {
+    id: profile.sub,
+    name: profile.name,
+    email: profile.email,
+    image: profile.picture,
+    signupChannel: "google",
+  };
+}
+
+export function mapKakaoProfile(profile: KakaoProfile) {
+  return {
+    id: String(profile.id),
+    name: profile.kakao_account?.profile?.nickname,
+    email: profile.kakao_account?.email,
+    image: profile.kakao_account?.profile?.profile_image_url,
+    signupChannel: "kakao",
+  };
+}
 
 async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> {
   try {
@@ -71,10 +91,12 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      profile: mapGoogleProfile,
     }),
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID ?? "",
       clientSecret: process.env.KAKAO_CLIENT_SECRET ?? "",
+      profile: mapKakaoProfile,
     }),
   ],
   session: {

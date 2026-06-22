@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { authOptions } from "../authOptions";
+import { authOptions, mapGoogleProfile, mapKakaoProfile } from "../authOptions";
 
 beforeEach(() => {
   vi.stubEnv("GOOGLE_CLIENT_ID", "google-id");
@@ -40,6 +40,47 @@ describe("authOptions", () => {
 
   it("uses the app login page for sign-in", () => {
     expect(authOptions.pages?.signIn).toBe("/login");
+  });
+
+  it("adds signupChannel to Google users before adapter createUser", () => {
+    expect(mapGoogleProfile({
+      aud: "google-client",
+      azp: "google-client",
+      sub: "google-sub",
+      name: "Google User",
+      given_name: "Google",
+      family_name: "User",
+      email: "google@example.com",
+      email_verified: true,
+      picture: "https://example.com/google.png",
+      exp: 1,
+      hd: "",
+      iat: 1,
+      iss: "https://accounts.google.com",
+      jti: "jti",
+      nbf: 1,
+    })).toMatchObject({
+      id: "google-sub",
+      email: "google@example.com",
+      signupChannel: "google",
+    });
+  });
+
+  it("adds signupChannel to Kakao users before adapter createUser", () => {
+    expect(mapKakaoProfile({
+      id: 12345,
+      kakao_account: {
+        email: "kakao@example.com",
+        profile: {
+          nickname: "Kakao User",
+          profile_image_url: "https://example.com/kakao.png",
+        },
+      },
+    })).toMatchObject({
+      id: "12345",
+      email: "kakao@example.com",
+      signupChannel: "kakao",
+    });
   });
 });
 
