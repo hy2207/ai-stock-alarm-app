@@ -3,7 +3,7 @@
 ## Current Baseline
 
 - Base branch: `main`
-- Base commit at latest update: `1191997 test(rec): port recommendation query gwt coverage`
+- Base commit at latest update: `0c549e3 feat(push): reconcile briefing cron slices`
 - Working tree status at latest update: clean
 - Completed branch cleanup: remote branches already merged or reconciled into `main` were deleted from GitHub.
 
@@ -40,13 +40,15 @@ Reconciled into `main` without direct merge because the branch contained stale s
   - Result: `1191997 test(rec): port recommendation query gwt coverage`
   - Main kept the current recommendation query implementation and ported GWT coverage for required fields, entry ranges, and auth failure propagation.
 - P5 `origin/feat/38-push-c02-morning-briefing-cron`
-  - Result: P5 reconciliation commit in this update
+  - Result: `0c549e3 feat(push): reconcile briefing cron slices`
   - Main reconciles push cron revocation sync, Vercel Cron config, App Router `/login`, and `updateWatchlist()` without direct-merging stale UI/report deletions.
+- P6 `origin/feat/16-ux-002-user-journey-ia`
+  - Result: P6 reconciliation commit in this update
+  - Main ported the UX-002 user journey/IA contract, issue report, and focused document-contract test while skipping stale harness, package, runtime, and deletion churn.
 
 ## Remaining Branches
 
 Current unmerged remote branches:
-- `origin/feat/16-ux-002-user-journey-ia`
 - `origin/feat/33-ux-004-responsive-accessibility`
 - `origin/feat/34-ux-005-auth-session-ux`
 
@@ -54,7 +56,6 @@ Current unmerged remote branches:
 
 | Priority | Branch | Why | Recommended Strategy |
 |---|---|---|---|
-| P6 | `origin/feat/16-ux-002-user-journey-ia` | Mostly UX documentation. Lower runtime risk and useful product reference. | Extract doc/report artifacts only. Skip stale package/runtime changes. |
 | P7 | `origin/feat/33-ux-004-responsive-accessibility` | UX accessibility documentation. Useful after core query/push work. | Extract doc/report artifacts only and align with current UX docs. |
 | P8 | `origin/feat/34-ux-005-auth-session-ux` | Auth-session UX documentation should reflect the already reconciled P0/P1 auth behavior. | Extract doc/report artifacts only after auth behavior is stable, which it now is. |
 
@@ -91,18 +92,18 @@ Primary useful artifacts:
 - `docs/ux/UX-002-user-journey-ia.md`
 - `reports/issue-16-ux-002.md`
 
-Steps:
-1. Extract only docs/report artifacts:
-   - `git show origin/feat/16-ux-002-user-journey-ia:docs/ux/UX-002-user-journey-ia.md`
-   - `git show origin/feat/16-ux-002-user-journey-ia:reports/issue-16-ux-002.md`
-2. Add/update docs manually on current `main`.
-3. Do not accept stale package/runtime changes.
-4. Run:
-   - `npm run typecheck`
-5. Commit with:
-   - `docs(ux): port user journey ia`
-6. Delete the remote branch after successful push:
-   - `git push origin --delete feat/16-ux-002-user-journey-ia`
+Completed:
+- Ported `docs/ux/UX-002-user-journey-ia.md`.
+- Ported `reports/issue-16-ux-002.md` and updated verification commands to the current npm/Vitest workflow.
+- Ported `src/lib/ux/__tests__/userJourneyIa.test.ts` as a focused document-contract test.
+- Skipped stale package/runtime changes and unrelated report/doc deletions.
+
+Verification:
+- `npx vitest run src/lib/ux/__tests__/userJourneyIa.test.ts`
+- `npm run typecheck`
+
+Delete after this P6 pass is pushed:
+- `git push origin --delete feat/16-ux-002-user-journey-ia`
 
 ## P7 - UX-004 Responsive Accessibility
 
