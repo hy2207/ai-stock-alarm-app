@@ -125,6 +125,15 @@ describe("classifyLlmCallFailure", () => {
     });
   });
 
+  it("classifies quota and textual 429 failures as rate limits", () => {
+    expect(
+      classifyLlmCallFailure(new Error("429 Too Many Requests: quota exceeded")),
+    ).toEqual({
+      reason: "rate_limit",
+      status: null,
+    });
+  });
+
   it("classifies timeout failures", () => {
     const error = new Error("Request timed out");
     error.name = "AbortError";
@@ -135,10 +144,47 @@ describe("classifyLlmCallFailure", () => {
     });
   });
 
+  it("classifies provider API key or permission failures", () => {
+    expect(
+      classifyLlmCallFailure(new Error("401 Unauthorized - invalid API key")),
+    ).toEqual({
+      reason: "api_key",
+      status: null,
+    });
+
+    expect(
+      classifyLlmCallFailure({ code: 403, message: "Permission denied" }),
+    ).toEqual({
+      reason: "api_key",
+      status: 403,
+    });
+  });
+
+  it("classifies empty model responses", () => {
+    expect(classifyLlmCallFailure(new Error("empty response from model"))).toEqual({
+      reason: "no_response",
+      status: null,
+    });
+  });
+
   it("classifies provider 5xx failures as API errors", () => {
     expect(classifyLlmCallFailure({ status: 503 })).toEqual({
       reason: "api_error",
       status: 503,
+    });
+  });
+
+  it("classifies server error messages as API errors", () => {
+    expect(classifyLlmCallFailure(new Error("502 Bad Gateway"))).toEqual({
+      reason: "api_error",
+      status: null,
+    });
+  });
+
+  it("falls back to llm_call_failed for unknown errors", () => {
+    expect(classifyLlmCallFailure("unexpected provider shape")).toEqual({
+      reason: "llm_call_failed",
+      status: null,
     });
   });
 });
@@ -154,6 +200,7 @@ describe("generateRecommendationCards", () => {
     });
 
     expect(result).toEqual(okGeneration);
+    expect(stream).toHaveBeenCalledTimes(1);
     expect(stream).toHaveBeenCalledWith(
       expect.objectContaining({
         model,
@@ -232,6 +279,20 @@ describe("generateRecommendationCards", () => {
 
     expect(result).toEqual(okGeneration);
     expect(stream).toHaveBeenCalledTimes(2);
+    expect(stream).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        schema: recommendationGenerationSchema,
+        prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
+      }),
+    );
+    expect(stream).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        schema: recommendationGenerationSchema,
+        prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
+      }),
+    );
     expect(captureEvent).not.toHaveBeenCalled();
   });
 
@@ -288,6 +349,26 @@ describe("generateRecommendationCards", () => {
     expect(result.status).toBe("no_call");
     expect(captureEvent).toHaveBeenCalledWith("llm_call_failed", {
       reason: "timeout",
+      status: null,
+    });
+  });
+
+  it("GWT: Given API key failure When streamObject fails Then emits api_key reason and returns No Call", async () => {
+    const captureEvent = vi.fn().mockResolvedValue(undefined);
+    const stream = vi.fn().mockImplementation(() => {
+      throw new Error("401 Unauthorized - invalid API key");
+    });
+
+    const result = await generateRecommendationCards({
+      promptInput: basePromptInput,
+      model,
+      stream,
+      captureEvent,
+    });
+
+    expect(result.status).toBe("no_call");
+    expect(captureEvent).toHaveBeenCalledWith("llm_call_failed", {
+      reason: "api_key",
       status: null,
     });
   });

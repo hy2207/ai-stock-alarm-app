@@ -16,6 +16,8 @@ const FALLBACK_NO_CALL_REASON =
 
 type LlmFailureReason =
   | "api_error"
+  | "api_key"
+  | "no_response"
   | "rate_limit"
   | "timeout"
   | "llm_call_failed";
@@ -30,7 +32,33 @@ function readErrorStatus(error: unknown) {
   }
 
   const status = "status" in error ? error.status : null;
-  return typeof status === "number" ? status : null;
+  if (typeof status === "number") {
+    return status;
+  }
+
+  const code = "code" in error ? error.code : null;
+  if (typeof code === "number") {
+    return code;
+  }
+
+  return null;
+}
+
+function readErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "object" && error != null && "message" in error) {
+    const message = error.message;
+    return typeof message === "string" ? message : String(message);
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return String(error);
 }
 
 export function classifyLlmCallFailure(error: unknown): {
@@ -38,12 +66,15 @@ export function classifyLlmCallFailure(error: unknown): {
   status: number | null;
 } {
   const status = readErrorStatus(error);
-  const message = error instanceof Error
-    ? error.message.toLowerCase()
-    : String(error).toLowerCase();
+  const message = readErrorMessage(error).toLowerCase();
   const name = error instanceof Error ? error.name.toLowerCase() : "";
 
-  if (status === 429 || message.includes("rate limit")) {
+  if (
+    status === 429 ||
+    message.includes("429") ||
+    message.includes("rate limit") ||
+    message.includes("quota")
+  ) {
     return { reason: "rate_limit", status };
   }
 
@@ -56,7 +87,34 @@ export function classifyLlmCallFailure(error: unknown): {
     return { reason: "timeout", status };
   }
 
-  if (status != null && status >= 500) {
+  if (
+    status === 401 ||
+    status === 403 ||
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("api key") ||
+    message.includes("permission denied") ||
+    message.includes("unauthorized")
+  ) {
+    return { reason: "api_key", status };
+  }
+
+  if (
+    message.includes("empty response") ||
+    message.includes("no response")
+  ) {
+    return { reason: "no_response", status };
+  }
+
+  if (
+    (status != null && status >= 500) ||
+    message.includes("500") ||
+    message.includes("502") ||
+    message.includes("503") ||
+    message.includes("internal server error") ||
+    message.includes("bad gateway") ||
+    message.includes("service unavailable")
+  ) {
     return { reason: "api_error", status };
   }
 
