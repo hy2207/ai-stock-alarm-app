@@ -1,4 +1,3 @@
-import { Button } from "@/app/components/ui/button";
 import {
   Card,
   CardContent,
@@ -7,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import { LoginProviderButtons } from "./LoginProviderButtons";
 import { getSafeCallbackUrl } from "./utils";
 
 type LoginPageProps = {
@@ -43,20 +43,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-4">
-            <form action="/api/auth/signin/google" method="post">
-              <input name="callbackUrl" type="hidden" value={callbackUrl} />
-              <Button className="h-11 w-full" type="submit" variant="outline">
-                Google로 계속하기
-              </Button>
-            </form>
-
-            <form action="/api/auth/signin/kakao" method="post">
-              <input name="callbackUrl" type="hidden" value={callbackUrl} />
-              <Button className="h-11 w-full" type="submit" variant="outline">
-                Kakao로 계속하기
-              </Button>
-            </form>
+          <CardContent>
+            <LoginProviderButtons callbackUrl={callbackUrl} />
           </CardContent>
 
           <CardFooter className="flex-col gap-2 border-t text-center text-xs text-slate-500">

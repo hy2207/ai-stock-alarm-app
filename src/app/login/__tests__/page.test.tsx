@@ -37,12 +37,11 @@ describe("AUTH-Q01 login page", () => {
     expect(getSafeCallbackUrl(undefined)).toBe("/");
   });
 
-  it("uses the safe callbackUrl as the NextAuth callback URL", () => {
+  it("passes the safe callbackUrl to the provider buttons", () => {
     const html = renderToStaticMarkup(
       <LoginPage searchParams={{ callbackUrl: "/archive" }} />,
     );
 
-    expect(html).toContain('name="callbackUrl"');
-    expect(html).toContain('value="/archive"');
+    expect(html).toContain('data-callback-url="/archive"');
   });
 });
