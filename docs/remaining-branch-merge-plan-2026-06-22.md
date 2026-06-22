@@ -46,19 +46,20 @@ Reconciled into `main` without direct merge because the branch contained stale s
   - Result: `94656ec docs(ux): port user journey ia`
   - Main ported the UX-002 user journey/IA contract, issue report, and focused document-contract test while skipping stale harness, package, runtime, and deletion churn.
 - P7 `origin/feat/33-ux-004-responsive-accessibility`
-  - Result: P7 reconciliation commit in this update
+  - Result: `daa1724 docs(ux): port responsive accessibility baseline`
   - Main ported the UX-004 responsive/accessibility baseline, issue report, and focused document-contract test while preserving existing UX-002 and UX-016 docs.
+- P8 `origin/feat/34-ux-005-auth-session-ux`
+  - Result: `docs(ux): port auth session ux`
+  - Main ported the UX-005 auth/session contract, issue report, and focused document-contract test after aligning it to the current Google/Kakao-only login and safe `callbackUrl` behavior.
 
 ## Remaining Branches
 
 Current unmerged remote branches:
-- `origin/feat/34-ux-005-auth-session-ux`
+- None.
 
 ## Updated Priority Summary
 
-| Priority | Branch | Why | Recommended Strategy |
-|---|---|---|---|
-| P8 | `origin/feat/34-ux-005-auth-session-ux` | Auth-session UX documentation should reflect the already reconciled P0/P1 auth behavior. | Extract doc/report artifacts only after auth behavior is stable, which it now is. |
+All prioritized remaining branches have been reconciled into `main` and deleted from `origin`.
 
 ## P5 - Push Cron / Login / Onboarding Split
 
@@ -137,21 +138,20 @@ Primary useful artifacts:
 - `docs/ux/UX-005-auth-session-ux.md`
 - `reports/issue-34-ux-005.md`
 
-Steps:
-1. Extract only docs/report artifacts:
-   - `git show origin/feat/34-ux-005-auth-session-ux:docs/ux/UX-005-auth-session-ux.md`
-   - `git show origin/feat/34-ux-005-auth-session-ux:reports/issue-34-ux-005.md`
-2. Align the document with current auth behavior:
-   - `src/middleware.ts` protects `/` and app routes.
-   - `/api/cron/*` and `/api/admin/health` are public to NextAuth middleware but guarded by their own route logic where applicable.
-   - `src/lib/auth/authOptions.ts` uses `pages.signIn = "/login"`.
-3. Do not accept stale package/runtime changes.
-4. Run:
-   - `npm run typecheck`
-5. Commit with:
-   - `docs(ux): port auth session ux`
-6. Delete the remote branch after successful push:
-   - `git push origin --delete feat/34-ux-005-auth-session-ux`
+Completed:
+- Ported `docs/ux/UX-005-auth-session-ux.md`.
+- Aligned the UX spec with current `src/lib/auth/authOptions.ts` providers: Google and Kakao only.
+- Aligned callback wording with current `/login` behavior: safe `callbackUrl` first, legacy `returnTo` compatibility.
+- Ported `reports/issue-34-ux-005.md` and updated verification commands to the current npm/Vitest workflow.
+- Ported `src/lib/ux/__tests__/authSessionUx.test.ts` as a focused document-contract test.
+- Skipped stale package/runtime changes and unrelated report/doc/test deletions.
+
+Verification:
+- `npx vitest run src/lib/ux/__tests__/authSessionUx.test.ts`
+- `npm run typecheck`
+
+Delete after this P8 pass is pushed:
+- `git push origin --delete feat/34-ux-005-auth-session-ux`
 
 ## General Reconciliation Procedure
 
