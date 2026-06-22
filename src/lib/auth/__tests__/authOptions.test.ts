@@ -37,6 +37,10 @@ describe("authOptions", () => {
   it("uses JWT session strategy", () => {
     expect(authOptions.session?.strategy).toBe("jwt");
   });
+
+  it("uses the app login page for sign-in", () => {
+    expect(authOptions.pages?.signIn).toBe("/login");
+  });
 });
 
 describe("session callback", () => {

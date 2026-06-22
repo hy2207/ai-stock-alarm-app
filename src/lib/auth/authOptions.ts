@@ -64,6 +64,9 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
+  pages: {
+    signIn: "/login",
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
