@@ -13,6 +13,7 @@ import { captureServerEvent } from "@/lib/analytics/serverCapture";
 
 const FALLBACK_NO_CALL_REASON =
   "Recommendation generation is unavailable. Review the watchlist later.";
+const LLM_GENERATION_TIMEOUT_MS = 25_000;
 
 type LlmFailureReason =
   | "api_error"
@@ -220,6 +221,7 @@ export async function generateRecommendationCards({
           "Decision Layer recommendation output with exactly three confidence variants or No Call.",
         system: prompt.system,
         prompt: prompt.user,
+        timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
       });
 
     try {

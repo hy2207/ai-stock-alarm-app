@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -41,85 +41,87 @@ function firstFailureMessage(summary: GenerationSummary, fallback: string) {
  */
 export function DevRecommendationGenerator() {
   const router = useRouter();
-  const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<GenerationState>("idle");
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  async function handleGenerate() {
+    if (state === "running") {
+      return;
+    }
+
     setState("running");
     setFailureMessage(null);
 
-    void (async () => {
-      try {
-        const response = await fetch("/api/dev/generate-recommendations", {
-          method: "POST",
-        });
+    try {
+      const response = await fetch("/api/dev/generate-recommendations", {
+        method: "POST",
+      });
 
-        if (cancelled) {
-          return;
-        }
-
-        if (response.status === 404) {
-          setState("done");
-          return;
-        }
-
-        if (!response.ok) {
-          const summary = await readGenerationSummary(response);
-          const message = firstFailureMessage(
-            summary,
-            "추천 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.",
-          );
-          setState("failed");
-          setFailureMessage(message);
-          toast.warning(message);
-          return;
-        }
-
-        const summary = await readGenerationSummary(response);
-
-        const generatedCount = summary.generatedCount ?? 0;
-        const validationErrors = summary.validationErrors ?? [];
-        const externalApiErrors = summary.externalApiErrors ?? [];
-
-        if (generatedCount > 0) {
-          toast.success(`오늘 추천 ${generatedCount}건을 생성했습니다.`);
-          router.refresh();
-          setState("done");
-          return;
-        }
-
-        if (validationErrors.length > 0) {
-          const message = `추천 생성 실패: ${validationErrors[0]}`;
-          setFailureMessage(message);
-          toast.warning(message);
-          setState("failed");
-          return;
-        }
-
-        if (externalApiErrors.length > 0) {
-          const message = `시장 데이터 오류: ${externalApiErrors[0]}`;
-          setFailureMessage(message);
-          toast.warning(message);
-        }
-
-        setFailureMessage("추천 카드가 생성되지 않았습니다. 설정과 API 응답을 확인해 주세요.");
-        setState("failed");
-      } catch {
-        if (!cancelled) {
-          const message = "추천 생성 중 오류가 발생했습니다.";
-          setState("failed");
-          setFailureMessage(message);
-          toast.warning(message);
-        }
+      if (response.status === 404) {
+        setState("done");
+        return;
       }
-    })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [attempt, router]);
+      if (!response.ok) {
+        const summary = await readGenerationSummary(response);
+        const message = firstFailureMessage(
+          summary,
+          "추천 생성 요청이 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        );
+        setState("failed");
+        setFailureMessage(message);
+        toast.warning(message);
+        return;
+      }
+
+      const summary = await readGenerationSummary(response);
+
+      const generatedCount = summary.generatedCount ?? 0;
+      const validationErrors = summary.validationErrors ?? [];
+      const externalApiErrors = summary.externalApiErrors ?? [];
+
+      if (generatedCount > 0) {
+        toast.success(`오늘 추천 ${generatedCount}건을 생성했습니다.`);
+        router.refresh();
+        setState("done");
+        return;
+      }
+
+      if (validationErrors.length > 0) {
+        const message = `추천 생성 실패: ${validationErrors[0]}`;
+        setFailureMessage(message);
+        toast.warning(message);
+        setState("failed");
+        return;
+      }
+
+      if (externalApiErrors.length > 0) {
+        const message = `시장 데이터 오류: ${externalApiErrors[0]}`;
+        setFailureMessage(message);
+        toast.warning(message);
+      }
+
+      setFailureMessage("추천 카드가 생성되지 않았습니다. 설정과 API 응답을 확인해 주세요.");
+      setState("failed");
+    } catch {
+      const message = "추천 생성 중 오류가 발생했습니다.";
+      setState("failed");
+      setFailureMessage(message);
+      toast.warning(message);
+    }
+  }
+
+  if (state === "idle") {
+    return (
+      <button
+        type="button"
+        className="mt-3 text-sm font-medium text-blue-700"
+        onClick={() => void handleGenerate()}
+      >
+        추천 생성하기
+      </button>
+    );
+  }
 
   if (state === "running") {
     return (
@@ -140,7 +142,7 @@ export function DevRecommendationGenerator() {
         <button
           type="button"
           className="font-medium text-blue-700"
-          onClick={() => setAttempt((value) => value + 1)}
+          onClick={() => void handleGenerate()}
         >
           다시 시도
         </button>

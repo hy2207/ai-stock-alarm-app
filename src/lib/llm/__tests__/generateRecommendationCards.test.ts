@@ -208,6 +208,7 @@ describe("generateRecommendationCards", () => {
         schemaName: "RecommendationGeneration",
         system: expect.stringContaining("Decision Layer"),
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
+        timeout: { totalMs: 25_000 },
       }),
     );
   });
