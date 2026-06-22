@@ -69,6 +69,22 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const isSuccess = oneSignalRes.ok && oneSignalData.id != null;
     const sent = isSuccess ? scheduled : 0;
     const failed = isSuccess ? 0 : scheduled;
+    const invalidExternalUserIds = Array.isArray(oneSignalData.invalid_external_user_ids)
+      ? oneSignalData.invalid_external_user_ids.filter(
+          (id: unknown): id is string => typeof id === "string" && id.length > 0,
+        )
+      : [];
+
+    if (isSuccess && invalidExternalUserIds.length > 0) {
+      try {
+        await prisma.user.updateMany({
+          where: { id: { in: invalidExternalUserIds } },
+          data: { consentPush: false },
+        });
+      } catch {
+        // Revocation sync failures should be observable, but must not fail cron.
+      }
+    }
 
     // Capture server event
     try {
@@ -77,6 +93,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         sent,
         failed,
         oneSignalNotificationId: oneSignalData.id ?? null,
+        invalidExternalUserIds: invalidExternalUserIds.length,
       });
     } catch {
       // analytics must not surface 5xx

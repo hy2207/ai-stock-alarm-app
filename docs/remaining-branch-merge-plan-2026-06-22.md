@@ -3,7 +3,7 @@
 ## Current Baseline
 
 - Base branch: `main`
-- Base commit at latest update: `baae82c test(llm): port retry failure coverage`
+- Base commit at latest update: `1191997 test(rec): port recommendation query gwt coverage`
 - Working tree status at latest update: clean
 - Completed branch cleanup: remote branches already merged or reconciled into `main` were deleted from GitHub.
 
@@ -36,54 +36,27 @@ Reconciled into `main` without direct merge because the branch contained stale s
 - P3 `origin/feat/101-test-f9-03-retry-integration`
   - Result: `baae82c test(llm): port retry failure coverage`
   - Main kept the current `generateRecommendationCards()` flow and ported retry/failure classification coverage.
+- P4 `origin/feat/103-test-f2-01-card-query-test`
+  - Result: `1191997 test(rec): port recommendation query gwt coverage`
+  - Main kept the current recommendation query implementation and ported GWT coverage for required fields, entry ranges, and auth failure propagation.
+- P5 `origin/feat/38-push-c02-morning-briefing-cron`
+  - Result: P5 reconciliation commit in this update
+  - Main reconciles push cron revocation sync, Vercel Cron config, App Router `/login`, and `updateWatchlist()` without direct-merging stale UI/report deletions.
 
 ## Remaining Branches
 
 Current unmerged remote branches:
-- `origin/feat/103-test-f2-01-card-query-test`
 - `origin/feat/16-ux-002-user-journey-ia`
 - `origin/feat/33-ux-004-responsive-accessibility`
 - `origin/feat/34-ux-005-auth-session-ux`
-- `origin/feat/38-push-c02-morning-briefing-cron`
 
 ## Updated Priority Summary
 
 | Priority | Branch | Why | Recommended Strategy |
 |---|---|---|---|
-| P4 | `origin/feat/103-test-f2-01-card-query-test` | Adds recommendation card query GWT coverage. It should be next because P3 LLM/retry assumptions are now reconciled. | Port only query tests that still apply to current Prisma/query DTOs. Do not direct-merge stale admin/cron/LLM files. |
-| P5 | `origin/feat/38-push-c02-morning-briefing-cron` | Broadest functional branch: push cron, login UI, onboarding update, and multiple UX docs. High value but high blast radius. | Split into small reconciliation branches by feature slice. |
 | P6 | `origin/feat/16-ux-002-user-journey-ia` | Mostly UX documentation. Lower runtime risk and useful product reference. | Extract doc/report artifacts only. Skip stale package/runtime changes. |
 | P7 | `origin/feat/33-ux-004-responsive-accessibility` | UX accessibility documentation. Useful after core query/push work. | Extract doc/report artifacts only and align with current UX docs. |
 | P8 | `origin/feat/34-ux-005-auth-session-ux` | Auth-session UX documentation should reflect the already reconciled P0/P1 auth behavior. | Extract doc/report artifacts only after auth behavior is stable, which it now is. |
-
-## P4 - Recommendation Card Query Tests
-
-Branch:
-- `origin/feat/103-test-f2-01-card-query-test`
-
-Known conflict theme:
-- The branch carries stale shared files from old admin health, cron, Server Action, DTO, and LLM work.
-- The useful target is likely `src/lib/queries/__tests__/getTodayRecommendations.test.ts`.
-
-Steps:
-1. Start clean:
-   - `git status --short --branch`
-2. Inspect query-only delta:
-   - `git diff HEAD..origin/feat/103-test-f2-01-card-query-test -- src/lib/queries src/lib/dto`
-3. Port only missing `getTodayRecommendations` GWT cases into current tests.
-4. Do not accept changes to:
-   - admin health route files
-   - morning briefing cron files
-   - old LLM pipeline files
-   - already reconciled DTO files unless the query test requires a small current-compatible addition
-5. Run:
-   - `npm run typecheck`
-   - `npx vitest run src/lib/queries/__tests__/getTodayRecommendations.test.ts src/lib/dto/__tests__/todayRecommendations.test.ts`
-   - `DATABASE_URL=file:./dev.db npm test`
-6. Commit with:
-   - `test(rec): port recommendation query gwt coverage`
-7. Delete the remote branch after successful push:
-   - `git push origin --delete feat/103-test-f2-01-card-query-test`
 
 ## P5 - Push Cron / Login / Onboarding Split
 
@@ -95,30 +68,19 @@ Known conflict theme:
 - It includes several PR histories and multiple feature slices.
 - Direct merge should be avoided.
 
-Recommended split:
-- `reconcile/push-cron`
-- `reconcile/login-ui`
-- `reconcile/onboarding-update-watchlist`
-- `reconcile/ux-docs`
+Completed runtime slices:
+- Push cron invalid OneSignal external user IDs are now synced to `consentPush=false`.
+- Vercel Cron config now schedules `/api/cron/morning-briefing`.
+- App Router `/login` page now exists for the P0/P1 auth flow.
+- `updateWatchlist()` Server Action now supports post-onboarding settings updates.
 
-Steps:
-1. For push cron only, inspect:
-   - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/app/api/cron/morning-briefing src/lib/push vercel.json`
-2. Keep current `main` cron auth behavior:
-   - `CRON_SECRET` remains the cron guard.
-   - NextAuth middleware must not block `/api/cron/*`.
-3. For login UI only, inspect:
-   - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/app/login src/app/pages/LoginPage.tsx src/app/pages/LoginPageV2.tsx`
-4. Confirm it aligns with current auth behavior:
-   - middleware redirects unauthenticated users to `/login`
-   - `authOptions.pages.signIn` is `/login`
-5. For onboarding update action only, inspect:
-   - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/lib/actions src/app/pages/SettingsPageV2.tsx src/app/pages/OnboardingPageV2.tsx`
-6. Run targeted tests per slice, then:
-   - `npm run typecheck`
-   - `DATABASE_URL=file:./dev.db npm test`
-7. Delete the original remote branch only after all useful slices are reconciled:
-   - `git push origin --delete feat/38-push-c02-morning-briefing-cron`
+Skipped stale slices:
+- Prototype `OnboardingPageV2` and `SettingsPageV2` changes that would remove current selection helpers.
+- Component/report deletions that would undo newer `main` work.
+- Email login UI because current `authOptions` only configures Google and Kakao providers.
+
+Delete after this P5 pass is pushed:
+- `git push origin --delete feat/38-push-c02-morning-briefing-cron`
 
 ## P6 - UX-002 User Journey IA
 
