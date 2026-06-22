@@ -3,296 +3,209 @@
 ## Current Baseline
 
 - Base branch: `main`
-- Base commit at analysis time: `b38e87a fix(test): preserve finnhub status literals`
-- Already merged in previous pass:
-  - `origin/feat/30-dto-010-price-validation`
-  - `origin/feat/31-dto-006-rec-detail-dto`
-  - `origin/feat/32-dto-004-llm-output-schema`
-  - `origin/feat/33-llm-c02-market-data`
-  - `origin/feat/44-dto-006-rec-detail`
-- Verification already passing on base:
-  - `npm run typecheck`
-  - `npx vitest run src/lib/dto/__tests__/llmOutput.test.ts src/lib/dto/__tests__/recommendationCard.test.ts src/lib/market-data/__tests__/finnhub.test.ts src/lib/market-data/__tests__/yahooFinance.test.ts`
+- Base commit at latest update: `baae82c test(llm): port retry failure coverage`
+- Working tree status at latest update: clean
+- Completed branch cleanup: remote branches already merged or reconciled into `main` were deleted from GitHub.
 
-## Priority Summary
+## Completed and Deleted Branches
 
-| Priority | Branch | Why | Merge Strategy |
+These branches have already been merged directly or reconciled into current `main`, then deleted from `origin`.
+
+Directly merged into `main`:
+- `origin/app-router-remaining-issues-20260619`
+- `origin/issue-cleanup-20260619`
+- `origin/feat/27-conf-c01-save-riskprofile`
+- `origin/feat/28-onb-c01-save-watchlist`
+- `origin/feat/30-dto-010-price-validation`
+- `origin/feat/31-dto-006-rec-detail-dto`
+- `origin/feat/32-dto-004-llm-output-schema`
+- `origin/feat/33-llm-c02-market-data`
+- `origin/feat/42-trust-q01-performance-query`
+- `origin/feat/44-dto-006-rec-detail`
+
+Reconciled into `main` without direct merge because the branch contained stale shared history:
+- P0 `origin/feat/34-auth-c02-middleware-auth`
+  - Result: `f810e60 fix(auth): align middleware guard with srs`
+  - Main keeps the newer custom middleware, protects `/`, preserves query-string `callbackUrl`, handles token refresh errors, and excludes cron/health routes from NextAuth middleware.
+- P1 `origin/feat/44-auth-c02-middleware`
+  - Result: `31f5915 fix(auth): use app login page for sign-in`
+  - Main only adopted the valid `authOptions.pages.signIn = "/login"` behavior.
+- P2 `origin/feat/89-llm-q01-gemini-model-swap`
+  - Result: `49ee284 test(llm): cover gemini model env swap`
+  - Main kept the correct Vercel AI SDK provider-call style and added env-swap tests without requiring a real API key.
+- P3 `origin/feat/101-test-f9-03-retry-integration`
+  - Result: `baae82c test(llm): port retry failure coverage`
+  - Main kept the current `generateRecommendationCards()` flow and ported retry/failure classification coverage.
+
+## Remaining Branches
+
+Current unmerged remote branches:
+- `origin/feat/103-test-f2-01-card-query-test`
+- `origin/feat/16-ux-002-user-journey-ia`
+- `origin/feat/33-ux-004-responsive-accessibility`
+- `origin/feat/34-ux-005-auth-session-ux`
+- `origin/feat/38-push-c02-morning-briefing-cron`
+
+## Updated Priority Summary
+
+| Priority | Branch | Why | Recommended Strategy |
 |---|---|---|---|
-| P0 | `origin/feat/34-auth-c02-middleware-auth` | Smallest conflict surface, auth protection is core SRS stack work. Current `main` already has middleware, so this is likely superseded or needs selective test/code comparison. | Do not blind merge. Compare two files, cherry-pick only missing behavior/tests. |
-| P1 | `origin/feat/44-auth-c02-middleware` | Same product area as P0 but includes middleware GWT tests. It overlaps larger stale LLM/admin/cron work, so resolve after P0 decision. | Extract only middleware/auth delta; avoid reintroducing stale shared files. |
-| P2 | `origin/feat/89-llm-q01-gemini-model-swap` | High-value low product risk: validates `GEMINI_MODEL` env swap, aligned with SRS C-TEC. Current `main` already supports model env, so likely test-only or minor test hardening. | Cherry-pick or manually port only Gemini test delta. |
-| P3 | `origin/feat/101-test-f9-03-retry-integration` | Adds LLM retry integration coverage, but branch also carries old LLM pipeline/admin/cron/action files already diverged from `main`. | Rebase conceptually onto current LLM modules; port tests one slice at a time. |
-| P4 | `origin/feat/103-test-f2-01-card-query-test` | Adds card query GWT tests. Useful, but conflicts with stale query/admin/cron/action history. | Port query tests only after P3 LLM conflicts are understood. |
-| P5 | `origin/feat/38-push-c02-morning-briefing-cron` | Broadest functional branch: push cron, login UI, onboarding update, multiple UX docs. Highest blast radius and multiple merge bases. | Split into sub-branches by feature before merging. |
-| P6 | `origin/feat/16-ux-002-user-journey-ia` | Mostly UX documentation plus stale shared app/package changes. Lower runtime urgency. | Port doc artifact only; skip stale package/runtime changes unless explicitly needed. |
-| P7 | `origin/feat/33-ux-004-responsive-accessibility` | UX documentation with same stale shared conflict set as P6. | Port doc artifact only after P6. |
-| P8 | `origin/feat/34-ux-005-auth-session-ux` | UX auth-session documentation with same stale shared conflict set. | Port doc artifact only after auth middleware decision. |
+| P4 | `origin/feat/103-test-f2-01-card-query-test` | Adds recommendation card query GWT coverage. It should be next because P3 LLM/retry assumptions are now reconciled. | Port only query tests that still apply to current Prisma/query DTOs. Do not direct-merge stale admin/cron/LLM files. |
+| P5 | `origin/feat/38-push-c02-morning-briefing-cron` | Broadest functional branch: push cron, login UI, onboarding update, and multiple UX docs. High value but high blast radius. | Split into small reconciliation branches by feature slice. |
+| P6 | `origin/feat/16-ux-002-user-journey-ia` | Mostly UX documentation. Lower runtime risk and useful product reference. | Extract doc/report artifacts only. Skip stale package/runtime changes. |
+| P7 | `origin/feat/33-ux-004-responsive-accessibility` | UX accessibility documentation. Useful after core query/push work. | Extract doc/report artifacts only and align with current UX docs. |
+| P8 | `origin/feat/34-ux-005-auth-session-ux` | Auth-session UX documentation should reflect the already reconciled P0/P1 auth behavior. | Extract doc/report artifacts only after auth behavior is stable, which it now is. |
 
-## Branch Details and Required Steps
+## P4 - Recommendation Card Query Tests
 
-### P0 - `origin/feat/34-auth-c02-middleware-auth`
+Branch:
+- `origin/feat/103-test-f2-01-card-query-test`
 
-Conflict files:
-- `src/__tests__/middleware.test.ts`
-- `src/middleware.ts`
-
-Current finding:
-- `main` already has `src/middleware.ts` and `src/__tests__/middleware.test.ts`.
-- This branch appears to be an older or alternate AUTH-C02 implementation rather than a clean additive change.
+Known conflict theme:
+- The branch carries stale shared files from old admin health, cron, Server Action, DTO, and LLM work.
+- The useful target is likely `src/lib/queries/__tests__/getTodayRecommendations.test.ts`.
 
 Steps:
-1. Compare current `main` against branch files:
-   - `git diff HEAD..origin/feat/34-auth-c02-middleware-auth -- src/middleware.ts src/__tests__/middleware.test.ts`
-2. Identify behavior missing from `main`, if any:
-   - protected route list
-   - public route exemptions
-   - `callbackUrl` preservation
-   - token error handling
-   - matcher behavior
-3. If no behavior is missing, close or delete the branch as superseded.
-4. If tests are stronger on the branch, manually port only the missing test cases.
-5. Run:
-   - `npm run typecheck`
-   - `npx vitest run src/__tests__/middleware.test.ts`
-6. Commit with:
-   - `test(auth): reconcile middleware branch coverage`
-
-### P1 - `origin/feat/44-auth-c02-middleware`
-
-Conflict files:
-- `src/__tests__/middleware.test.ts`
-- `src/middleware.ts`
-- stale shared files: admin health, morning briefing cron, `src/app/page.tsx`, action tests, LLM prompt files
-
-Current finding:
-- This branch includes AUTH-C02 plus older shared work that now conflicts with `main`.
-- Treat it as a source branch for missing middleware tests, not as a direct merge candidate.
-
-Steps:
-1. Complete P0 first.
-2. Inspect only auth-specific changes:
-   - `git diff HEAD..origin/feat/44-auth-c02-middleware -- src/middleware.ts src/__tests__/middleware.test.ts src/lib/auth/authOptions.ts`
-3. Ignore conflicts in admin health, cron, action tests, and LLM files unless a clear auth dependency exists.
-4. Port any missing GWT cases into current `src/__tests__/middleware.test.ts`.
-5. Run:
-   - `npm run typecheck`
-   - `npx vitest run src/__tests__/middleware.test.ts src/lib/auth/__tests__/authOptions.test.ts`
-6. Commit with:
-   - `test(auth): port middleware gwt coverage`
-
-### P2 - `origin/feat/89-llm-q01-gemini-model-swap`
-
-Conflict files:
-- stale shared files: admin health, morning briefing cron, `src/app/page.tsx`, action tests
-- LLM files: `src/lib/llm/__tests__/promptBuilder.test.ts`, `src/lib/llm/promptBuilder.ts`
-
-Current finding:
-- `main` already has `GEMINI_MODEL` support in `src/lib/llm/gemini.ts`.
-- This branch's likely useful delta is stronger Gemini model env-var validation in `src/lib/llm/__tests__/gemini.test.ts`.
-
-Steps:
-1. Inspect only Gemini-specific delta:
-   - `git diff HEAD..origin/feat/89-llm-q01-gemini-model-swap -- src/lib/llm/gemini.ts src/lib/llm/__tests__/gemini.test.ts`
-2. Port missing tests manually into current `src/lib/llm/__tests__/gemini.test.ts`.
-3. Avoid merging branch-wide stale LLM pipeline files unless they are required by the test.
-4. Run:
-   - `npm run typecheck`
-   - `npx vitest run src/lib/llm/__tests__/gemini.test.ts`
-5. Commit with:
-   - `test(llm): cover gemini model env swap`
-
-### P3 - `origin/feat/101-test-f9-03-retry-integration`
-
-Conflict files:
-- admin health route and tests
-- morning briefing cron route and tests
-- `src/app/page.tsx`
-- `saveRiskProfile` and `saveWatchlist` tests
-- `src/lib/dto/__tests__/llmOutput.test.ts`
-- `src/lib/llm/__tests__/promptBuilder.test.ts`
-- `src/lib/llm/promptBuilder.ts`
-
-Current finding:
-- The branch carries broad stale LLM pipeline work plus TEST-F9-01/02/03 tests.
-- Direct merge risks overwriting newer DTO, market-data, cron, and app-router decisions.
-
-Steps:
-1. Create a temporary working branch from current `main`:
-   - `git switch -c reconcile/llm-retry-tests`
-2. Inspect only LLM retry/test files:
-   - `git diff HEAD..origin/feat/101-test-f9-03-retry-integration -- src/lib/llm src/lib/dto`
-3. Port tests in this order:
-   - DTO boundary tests that are still missing
-   - LLM failure scenario tests
-   - retry integration tests
-4. For each test group, adapt imports to current module names. Do not recreate older `generateCards*` APIs unless current `main` still needs them.
-5. Run after each group:
-   - `npx vitest run src/lib/llm src/lib/dto`
-6. Final verification:
-   - `npm run typecheck`
-   - `npm test`
-7. Merge the reconciliation branch into `main` only after all tests pass.
-
-### P4 - `origin/feat/103-test-f2-01-card-query-test`
-
-Conflict files:
-- same stale shared files as P3
-- additional conflict: `src/lib/queries/__tests__/getTodayRecommendations.test.ts`
-
-Current finding:
-- Useful delta is likely TEST-F2-01 card query GWT coverage.
-- It should be handled after P3 because both touch recommendation DTO/LLM/query assumptions.
-
-Steps:
-1. Start after P3 is merged or explicitly skipped.
+1. Start clean:
+   - `git status --short --branch`
 2. Inspect query-only delta:
    - `git diff HEAD..origin/feat/103-test-f2-01-card-query-test -- src/lib/queries src/lib/dto`
-3. Port only missing `getTodayRecommendations` test cases.
-4. Confirm tests align with current Prisma schema and mock data.
+3. Port only missing `getTodayRecommendations` GWT cases into current tests.
+4. Do not accept changes to:
+   - admin health route files
+   - morning briefing cron files
+   - old LLM pipeline files
+   - already reconciled DTO files unless the query test requires a small current-compatible addition
 5. Run:
    - `npm run typecheck`
    - `npx vitest run src/lib/queries/__tests__/getTodayRecommendations.test.ts src/lib/dto/__tests__/todayRecommendations.test.ts`
+   - `DATABASE_URL=file:./dev.db npm test`
 6. Commit with:
    - `test(rec): port recommendation query gwt coverage`
+7. Delete the remote branch after successful push:
+   - `git push origin --delete feat/103-test-f2-01-card-query-test`
 
-### P5 - `origin/feat/38-push-c02-morning-briefing-cron`
+## P5 - Push Cron / Login / Onboarding Split
 
-Conflict files:
-- package files
-- docs loop file
-- admin health
-- app pages
-- action tests
-- auth tests
-- LLM prompt/Gemini files
-- performance query files
+Branch:
+- `origin/feat/38-push-c02-morning-briefing-cron`
 
-Current finding:
-- This is not a single-feature branch anymore. It contains several merged PR histories and multiple merge bases.
+Known conflict theme:
+- This is not a single-feature branch anymore.
+- It includes several PR histories and multiple feature slices.
 - Direct merge should be avoided.
 
+Recommended split:
+- `reconcile/push-cron`
+- `reconcile/login-ui`
+- `reconcile/onboarding-update-watchlist`
+- `reconcile/ux-docs`
+
 Steps:
-1. Split into isolated reconciliation branches:
-   - `reconcile/push-cron`
-   - `reconcile/login-ui`
-   - `reconcile/onboarding-update-watchlist`
-   - `reconcile/ux-docs`
-2. For push cron only, inspect:
+1. For push cron only, inspect:
    - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/app/api/cron/morning-briefing src/lib/push vercel.json`
-3. Keep current `main` route shape unless the branch has missing OneSignal behavior.
-4. For login UI only, inspect:
+2. Keep current `main` cron auth behavior:
+   - `CRON_SECRET` remains the cron guard.
+   - NextAuth middleware must not block `/api/cron/*`.
+3. For login UI only, inspect:
    - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/app/login src/app/pages/LoginPage.tsx src/app/pages/LoginPageV2.tsx`
+4. Confirm it aligns with current auth behavior:
+   - middleware redirects unauthenticated users to `/login`
+   - `authOptions.pages.signIn` is `/login`
 5. For onboarding update action only, inspect:
    - `git diff HEAD..origin/feat/38-push-c02-morning-briefing-cron -- src/lib/actions src/app/pages/SettingsPageV2.tsx src/app/pages/OnboardingPageV2.tsx`
-6. Run targeted tests per slice, then full verification:
+6. Run targeted tests per slice, then:
    - `npm run typecheck`
-   - `npm test`
-7. Merge only completed slices; leave the original broad branch unmerged.
+   - `DATABASE_URL=file:./dev.db npm test`
+7. Delete the original remote branch only after all useful slices are reconciled:
+   - `git push origin --delete feat/38-push-c02-morning-briefing-cron`
 
-### P6 - `origin/feat/16-ux-002-user-journey-ia`
+## P6 - UX-002 User Journey IA
 
-Conflict files:
-- package files
-- docs loop file
-- stale shared app/API/action/LLM/query files
+Branch:
+- `origin/feat/16-ux-002-user-journey-ia`
 
-Current finding:
-- Primary valuable artifact is `docs/ux/UX-002-user-journey-ia.md`.
-- Runtime changes in this branch are stale and should not be merged blindly.
+Primary useful artifacts:
+- `docs/ux/UX-002-user-journey-ia.md`
+- `reports/issue-16-ux-002.md`
 
 Steps:
-1. Extract only the UX document and report if still useful:
+1. Extract only docs/report artifacts:
    - `git show origin/feat/16-ux-002-user-journey-ia:docs/ux/UX-002-user-journey-ia.md`
    - `git show origin/feat/16-ux-002-user-journey-ia:reports/issue-16-ux-002.md`
-2. Add or update docs manually on current `main`.
-3. Do not accept package or runtime conflicts from this branch.
+2. Add/update docs manually on current `main`.
+3. Do not accept stale package/runtime changes.
 4. Run:
    - `npm run typecheck`
 5. Commit with:
    - `docs(ux): port user journey ia`
+6. Delete the remote branch after successful push:
+   - `git push origin --delete feat/16-ux-002-user-journey-ia`
 
-### P7 - `origin/feat/33-ux-004-responsive-accessibility`
+## P7 - UX-004 Responsive Accessibility
 
-Conflict files:
-- same stale package/runtime conflict set as P6
+Branch:
+- `origin/feat/33-ux-004-responsive-accessibility`
 
-Current finding:
-- Primary valuable artifact is `docs/ux/UX-004-responsive-accessibility-baseline.md`.
+Primary useful artifacts:
+- `docs/ux/UX-004-responsive-accessibility-baseline.md`
+- `reports/issue-33-ux-004.md`
 
 Steps:
-1. Complete P6 first so UX docs can be reviewed in sequence.
-2. Extract only:
-   - `docs/ux/UX-004-responsive-accessibility-baseline.md`
-   - `reports/issue-33-ux-004.md`
-3. Check consistency with existing `docs/ux/UX-016-design-qa-usability-handoff.md`.
-4. Do not accept stale package/runtime conflicts.
+1. Complete or intentionally skip P6 first so UX docs stay ordered.
+2. Extract only docs/report artifacts:
+   - `git show origin/feat/33-ux-004-responsive-accessibility:docs/ux/UX-004-responsive-accessibility-baseline.md`
+   - `git show origin/feat/33-ux-004-responsive-accessibility:reports/issue-33-ux-004.md`
+3. Check consistency with:
+   - `docs/ux/UX-016-design-qa-usability-handoff.md`
+4. Do not accept stale package/runtime changes.
 5. Run:
    - `npm run typecheck`
 6. Commit with:
    - `docs(ux): port responsive accessibility baseline`
+7. Delete the remote branch after successful push:
+   - `git push origin --delete feat/33-ux-004-responsive-accessibility`
 
-### P8 - `origin/feat/34-ux-005-auth-session-ux`
+## P8 - UX-005 Auth Session UX
 
-Conflict files:
-- same stale package/runtime conflict set as P6/P7
+Branch:
+- `origin/feat/34-ux-005-auth-session-ux`
 
-Current finding:
-- Primary valuable artifact is `docs/ux/UX-005-auth-session-ux.md`.
-- It should follow P0/P1 so the documentation reflects the actual middleware/session behavior in `main`.
+Primary useful artifacts:
+- `docs/ux/UX-005-auth-session-ux.md`
+- `reports/issue-34-ux-005.md`
 
 Steps:
-1. Finish auth middleware reconciliation first.
-2. Extract only:
-   - `docs/ux/UX-005-auth-session-ux.md`
-   - `reports/issue-34-ux-005.md`
-3. Align copy with current `src/middleware.ts`, `src/app/api/auth/[...nextauth]/route.ts`, and login routes.
-4. Do not accept stale package/runtime conflicts.
-5. Run:
+1. Extract only docs/report artifacts:
+   - `git show origin/feat/34-ux-005-auth-session-ux:docs/ux/UX-005-auth-session-ux.md`
+   - `git show origin/feat/34-ux-005-auth-session-ux:reports/issue-34-ux-005.md`
+2. Align the document with current auth behavior:
+   - `src/middleware.ts` protects `/` and app routes.
+   - `/api/cron/*` and `/api/admin/health` are public to NextAuth middleware but guarded by their own route logic where applicable.
+   - `src/lib/auth/authOptions.ts` uses `pages.signIn = "/login"`.
+3. Do not accept stale package/runtime changes.
+4. Run:
    - `npm run typecheck`
-6. Commit with:
+5. Commit with:
    - `docs(ux): port auth session ux`
+6. Delete the remote branch after successful push:
+   - `git push origin --delete feat/34-ux-005-auth-session-ux`
 
-## General Merge Procedure
+## General Reconciliation Procedure
 
-Use this procedure for each remaining branch or extracted slice:
+Use this procedure for each remaining branch:
 
 1. Start clean:
    - `git status --short --branch`
 2. Update remote refs:
    - `git fetch --all --prune`
-3. Create a reconciliation branch from `main`:
-   - `git switch main`
-   - `git pull --ff-only origin main`
-   - `git switch -c reconcile/<topic>`
-4. Inspect branch-specific delta before editing:
+3. Inspect only target paths:
    - `git diff HEAD..<branch> -- <target paths>`
-5. Prefer manual porting or targeted cherry-pick over full branch merge when the branch carries stale shared files.
-6. Keep each reconciliation branch to one purpose:
-   - auth middleware
-   - Gemini model test
-   - LLM retry tests
-   - recommendation query tests
-   - push cron
-   - UX docs
-7. Run targeted tests first.
-8. Run final verification:
+4. Prefer manual porting over direct merge if the branch includes stale shared history.
+5. Keep each commit to one purpose.
+6. Run targeted tests first.
+7. Run final verification:
    - `npm run typecheck`
-   - `npm test`
-9. Merge reconciliation branch into `main`.
-10. Push `main`.
-
-## Branches Recommended to Close After Reconciliation
-
-After the targeted work is ported and verified, these original branches should be closed instead of force-merged:
-
-- `origin/feat/34-auth-c02-middleware-auth`
-- `origin/feat/44-auth-c02-middleware`
-- `origin/feat/89-llm-q01-gemini-model-swap`
-- `origin/feat/101-test-f9-03-retry-integration`
-- `origin/feat/103-test-f2-01-card-query-test`
-- `origin/feat/38-push-c02-morning-briefing-cron`
-- `origin/feat/16-ux-002-user-journey-ia`
-- `origin/feat/33-ux-004-responsive-accessibility`
-- `origin/feat/34-ux-005-auth-session-ux`
-
-Rationale: the remaining branches include useful work, but most also include stale commits already superseded by current `main`. Closing them after targeted reconciliation keeps history understandable and avoids reintroducing outdated package, API, and App Router changes.
+   - `DATABASE_URL=file:./dev.db npm test`
+8. Push `main`.
+9. Delete the completed remote branch.
