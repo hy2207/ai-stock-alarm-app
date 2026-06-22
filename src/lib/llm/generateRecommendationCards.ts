@@ -15,6 +15,13 @@ const FALLBACK_NO_CALL_REASON =
   "Recommendation generation is unavailable. Review the watchlist later.";
 const LLM_GENERATION_TIMEOUT_MS = 25_000;
 
+class LlmGenerationTimeoutError extends Error {
+  constructor() {
+    super(`Gemini request timed out after ${LLM_GENERATION_TIMEOUT_MS}ms`);
+    this.name = "TimeoutError";
+  }
+}
+
 type LlmFailureReason =
   | "api_error"
   | "api_key"
@@ -212,7 +219,7 @@ export async function generateRecommendationCards({
   try {
     const prompt = buildRecommendationPrompt(promptInput);
     const modelToUse = model ?? getGeminiModel();
-    const callStream = () =>
+    const callStream = (abortSignal: AbortSignal) =>
       stream({
         model: modelToUse,
         schema: recommendationGenerationSchema,
@@ -221,11 +228,31 @@ export async function generateRecommendationCards({
           "Decision Layer recommendation output with exactly three confidence variants or No Call.",
         system: prompt.system,
         prompt: prompt.user,
+        abortSignal,
         timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
       });
+    const readObject = async () => {
+      const controller = new AbortController();
+      let timeoutId: ReturnType<typeof setTimeout>;
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          controller.abort();
+          reject(new LlmGenerationTimeoutError());
+        }, LLM_GENERATION_TIMEOUT_MS);
+      });
+
+      try {
+        return await Promise.race([
+          callStream(controller.signal).object,
+          timeoutPromise,
+        ]);
+      } finally {
+        clearTimeout(timeoutId!);
+      }
+    };
 
     try {
-      return recommendationGenerationSchema.parse(await callStream().object);
+      return recommendationGenerationSchema.parse(await readObject());
     } catch (error) {
       if (!(error instanceof z.ZodError)) {
         throw error;
@@ -233,7 +260,7 @@ export async function generateRecommendationCards({
     }
 
     try {
-      return recommendationGenerationSchema.parse(await callStream().object);
+      return recommendationGenerationSchema.parse(await readObject());
     } catch (error) {
       if (error instanceof z.ZodError) {
         await captureEvent("rec_validation_failed", {

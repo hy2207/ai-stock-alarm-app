@@ -91,4 +91,30 @@ describe("POST /api/dev/generate-recommendations", () => {
       message: "Gemini unavailable",
     });
   });
+
+  it("returns a timeout stage when generation does not finish", async () => {
+    vi.useFakeTimers();
+    vi.stubEnv("NODE_ENV", "development");
+    mockGetCurrentUserId.mockResolvedValue("clxuserid00000000000001");
+    mockGenerateRecommendationsForUser.mockReturnValue(
+      new Promise(() => undefined),
+    );
+
+    try {
+      const { POST } = await import("../route");
+      const pending = POST();
+
+      await vi.advanceTimersByTimeAsync(30_000);
+      const response = await pending;
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toEqual({
+        error: "Internal server error",
+        stage: "generation_timeout",
+        message: "Recommendation generation timed out after 30000ms",
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

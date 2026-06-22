@@ -16,6 +16,8 @@ type GenerationSummary = {
   hint?: string;
 };
 
+const CLIENT_GENERATION_TIMEOUT_MS = 35_000;
+
 async function readGenerationSummary(response: Response): Promise<GenerationSummary> {
   try {
     return (await response.json()) as GenerationSummary;
@@ -52,9 +54,15 @@ export function DevRecommendationGenerator() {
     setState("running");
     setFailureMessage(null);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, CLIENT_GENERATION_TIMEOUT_MS);
+
     try {
       const response = await fetch("/api/dev/generate-recommendations", {
         method: "POST",
+        signal: controller.signal,
       });
 
       if (response.status === 404) {
@@ -103,11 +111,16 @@ export function DevRecommendationGenerator() {
 
       setFailureMessage("추천 카드가 생성되지 않았습니다. 설정과 API 응답을 확인해 주세요.");
       setState("failed");
-    } catch {
-      const message = "추천 생성 중 오류가 발생했습니다.";
+    } catch (error) {
+      const message =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "추천 생성 요청 시간이 초과되었습니다. Gemini 응답 지연 또는 외부 API 대기를 확인해 주세요."
+          : "추천 생성 중 오류가 발생했습니다.";
       setState("failed");
       setFailureMessage(message);
       toast.warning(message);
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 

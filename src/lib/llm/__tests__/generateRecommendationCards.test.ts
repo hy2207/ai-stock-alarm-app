@@ -354,6 +354,34 @@ describe("generateRecommendationCards", () => {
     });
   });
 
+  it("GWT: Given hanging object resolution When generation exceeds timeout Then returns No Call", async () => {
+    vi.useFakeTimers();
+    const captureEvent = vi.fn().mockResolvedValue(undefined);
+    const stream = vi.fn().mockReturnValue({
+      object: new Promise(() => undefined),
+    });
+
+    try {
+      const pending = generateRecommendationCards({
+        promptInput: basePromptInput,
+        model,
+        stream,
+        captureEvent,
+      });
+
+      await vi.advanceTimersByTimeAsync(25_000);
+      const result = await pending;
+
+      expect(result.status).toBe("no_call");
+      expect(captureEvent).toHaveBeenCalledWith("llm_call_failed", {
+        reason: "timeout",
+        status: null,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("GWT: Given API key failure When streamObject fails Then emits api_key reason and returns No Call", async () => {
     const captureEvent = vi.fn().mockResolvedValue(undefined);
     const stream = vi.fn().mockImplementation(() => {
