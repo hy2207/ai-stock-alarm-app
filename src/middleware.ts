@@ -7,6 +7,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/api/auth",
   "/api/cron",
   "/api/admin/health",
+  "/api/dev",
   "/_next",
   "/favicon.ico",
   "/assets",

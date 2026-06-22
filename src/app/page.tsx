@@ -1,5 +1,10 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getTodayRecommendations } from "@/lib/queries/getTodayRecommendations";
+import { userHasWatchlist } from "@/lib/queries/getUserWatchlist";
+import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { Disclaimer } from "./components/Disclaimer";
+import { DevRecommendationGenerator } from "./components/DevRecommendationGenerator";
 import { PostHogEvent } from "./components/PostHogEvent";
 import { RecommendationCardLink } from "./components/RecommendationCardLink";
 
@@ -11,6 +16,11 @@ interface HomeProps {
 }
 
 export default async function Home({ searchParams }: HomeProps) {
+  const userId = await getCurrentUserId();
+  if (userId && !(await userHasWatchlist(userId))) {
+    redirect("/onboarding");
+  }
+
   const result = await getTodayRecommendations();
   const fromPush =
     searchParams?.from === "push" || searchParams?.utm_source === "onesignal";
@@ -29,6 +39,15 @@ export default async function Home({ searchParams }: HomeProps) {
         <p className="max-w-sm text-center text-sm text-slate-600">
           {result.reason}
         </p>
+        {process.env.NODE_ENV !== "production" && <DevRecommendationGenerator />}
+        <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
+          <Link href="/settings" className="font-medium text-blue-700">
+            관심 종목 변경
+          </Link>
+          <Link href="/archive" className="font-medium text-blue-700">
+            추천 이력
+          </Link>
+        </div>
         <Disclaimer />
       </main>
     );
@@ -44,9 +63,14 @@ export default async function Home({ searchParams }: HomeProps) {
         </>
       )}
       <div className="mx-auto max-w-3xl py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">오늘의 의사결정 카드</h1>
-          <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">오늘의 의사결정 카드</h1>
+            <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
+          </div>
+          <Link href="/settings" className="text-sm font-medium text-blue-700">
+            관심 종목
+          </Link>
         </div>
 
         <div className="space-y-4">

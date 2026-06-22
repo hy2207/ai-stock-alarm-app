@@ -29,5 +29,7 @@ export async function saveWatchlist(
   });
 
   revalidatePath("/");
+  revalidatePath("/onboarding");
+  revalidatePath("/settings");
   return { success: true };
 }
