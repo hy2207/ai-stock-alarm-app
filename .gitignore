@@ -10,6 +10,10 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Environment files
+.env*
+!.env.example
 *.local
 
 # Editor directories and files
@@ -17,6 +21,8 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+.AppleDouble
+.LSOverride
 *.suo
 *.ntvs*
 *.njsproj
@@ -27,19 +33,23 @@ dist-ssr
 .next/
 tsconfig.tsbuildinfo
 
+# Local platform/tool state
+.vercel/
+.turbo/
+.cache/
+
 # Vite / React
 coverage/
 
-# Misc
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Test artifacts
+playwright-report/
+test-results/
+blob-report/
 
 # Prisma SQLite database files
 prisma/*.db
 prisma/*.db-journal
+prisma/dev.db*
 
 # Puppeteer
 screenshot.cjs
