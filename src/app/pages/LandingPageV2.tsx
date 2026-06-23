@@ -42,12 +42,12 @@ const benefitCards = [
   {
     icon: Target,
     title: '매수 여부보다 먼저 행동을 정합니다',
-    body: 'BUY/SELL, 진입가, 목표가, 손절가, 보유 기간을 한 번에 보여줘 고민 시간을 줄입니다.',
+    body: 'BUY/SELL, 진입가, 목표가, 매도 기준가, 보유 기간을 한 번에 보여줘 고민 시간을 줄입니다.',
   },
   {
     icon: ShieldCheck,
     title: '내 성향에 맞는 리스크로 바꿉니다',
-    body: '안정형, 중립형, 공격형 기준에 따라 같은 종목도 다른 진입 범위와 손절선을 제안합니다.',
+    body: '안정형, 중립형, 공격형 기준에 따라 같은 종목도 다른 진입 범위와 매도 기준을 제안합니다.',
   },
   {
     icon: BellRing,
@@ -292,7 +292,7 @@ export function LandingPageV2({ onNavigate }: LandingPageV2Props) {
               <FlowArrow />
               <ProcessStep icon={BrainCircuit} title="AI 판단 엔진" body="가격대, 이벤트, 리스크 성향을 함께 정리" emphasis />
               <FlowArrow />
-              <ProcessStep icon={Newspaper} title="의사결정 카드" body="방향, 진입가, 목표가, 손절가, 근거 출력" />
+              <ProcessStep icon={Newspaper} title="의사결정 카드" body="방향, 진입가, 목표가, 매도 기준가, 근거 출력" />
             </div>
           </div>
         </div>
@@ -474,7 +474,7 @@ function HeroProductPreview() {
             <div className="grid grid-cols-2 gap-3">
               <PreviewMetric icon={Target} label="진입 범위" value="$820-835" />
               <PreviewMetric icon={TrendingUp} label="목표 범위" value="$875-895" />
-              <PreviewMetric icon={Gauge} label="손절 기준" value="$792" />
+              <PreviewMetric icon={Gauge} label="매도 기준" value="$792" />
               <PreviewMetric icon={CalendarClock} label="보유 기간" value="5일" />
             </div>
 
@@ -520,7 +520,7 @@ function HeroProductPreview() {
               <div className="space-y-2 text-sm text-slate-600">
                 <CheckLine text="실적 이벤트 없음" />
                 <CheckLine text="거래량 회복 구간" />
-                <CheckLine text="손절가 명확" />
+                <CheckLine text="매도 기준 명확" />
               </div>
             </div>
           </div>

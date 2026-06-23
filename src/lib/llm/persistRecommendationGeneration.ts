@@ -38,6 +38,7 @@ export async function persistRecommendationGeneration({
         userId,
         ticker: variant.ticker,
         direction: variant.direction,
+        currentPrice: variant.currentPrice,
         entryPrice: variant.entryPrice ?? null,
         entryRangeLow: variant.entryRangeLow ?? null,
         entryRangeHigh: variant.entryRangeHigh ?? null,
@@ -48,6 +49,7 @@ export async function persistRecommendationGeneration({
         holdDays: variant.holdDays,
         confidenceScore: variant.confidenceMode,
         reasonLine: variant.reasonLine,
+        newsRationaleKo: variant.newsRationaleKo,
         status: "published",
         validUntil: validUntilFromHoldDays(now, variant.holdDays),
       });

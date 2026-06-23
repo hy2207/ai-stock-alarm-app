@@ -3,7 +3,22 @@ import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
 import { TrackedLink } from "./TrackedLink";
 
-function formatPrice(card: RecommendationCardOutput, kind: "entry" | "target") {
+const CONFIDENCE_LABELS = {
+  conservative: "안정형",
+  balanced: "중립형",
+  aggressive: "공격형",
+} as const;
+
+function formatPrice(
+  card: RecommendationCardOutput,
+  kind: "current" | "entry" | "target",
+): string {
+  if (kind === "current") {
+    return card.currentPrice != null
+      ? `$${card.currentPrice.toFixed(2)}`
+      : formatPrice(card, "entry");
+  }
+
   const price = kind === "entry" ? card.entryPrice : card.targetPrice;
   const low = kind === "entry" ? card.entryRangeLow : card.targetRangeLow;
   const high = kind === "entry" ? card.entryRangeHigh : card.targetRangeHigh;
@@ -14,6 +29,8 @@ function formatPrice(card: RecommendationCardOutput, kind: "entry" | "target") {
 }
 
 export function RecommendationCardLink({ card }: { card: RecommendationCardOutput }) {
+  const reasonText = card.reasonLine;
+
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
       <PostHogEvent
@@ -27,7 +44,9 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-semibold text-slate-950">{card.ticker}</h2>
-          <p className="text-sm text-slate-500">{card.confidenceScore}</p>
+          <p className="text-sm text-slate-500">
+            {CONFIDENCE_LABELS[card.confidenceScore]}
+          </p>
         </div>
         <span
           className={
@@ -42,8 +61,8 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
 
       <dl className="grid grid-cols-2 gap-3 text-sm">
         <div className="rounded-lg bg-slate-50 p-3">
-          <dt className="text-slate-500">진입가</dt>
-          <dd className="font-semibold text-slate-950">{formatPrice(card, "entry")}</dd>
+          <dt className="text-slate-500">현재가</dt>
+          <dd className="font-semibold text-slate-950">{formatPrice(card, "current")}</dd>
         </div>
         <div className="rounded-lg bg-emerald-50 p-3">
           <dt className="text-slate-500">목표가</dt>
@@ -54,14 +73,25 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
           <dd className="font-semibold text-slate-950">{card.holdDays}일</dd>
         </div>
         <div className="rounded-lg bg-slate-50 p-3">
-          <dt className="text-slate-500">손절가</dt>
+          <dt className="text-slate-500">매도 기준가</dt>
           <dd className="font-semibold text-slate-950">
             {card.stopPrice != null ? `$${card.stopPrice.toFixed(2)}` : "미지정"}
           </dd>
         </div>
       </dl>
 
-      <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{card.reasonLine}</p>
+      <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+        {reasonText}
+      </p>
+
+      {card.newsRationaleKo && (
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <h3 className="text-xs font-semibold text-blue-800">뉴스 기반 판단 근거</h3>
+          <p className="mt-1 text-sm leading-relaxed text-blue-950">
+            {card.newsRationaleKo}
+          </p>
+        </div>
+      )}
 
       <TrackedLink
         href={`/recommendations/${card.id}`}

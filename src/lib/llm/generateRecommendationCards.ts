@@ -42,6 +42,105 @@ function hasAnyPrice(...values: Array<number | null | undefined>) {
   return values.some((value) => value != null);
 }
 
+function readTargetPrice(data: {
+  targetPrice?: number | null;
+  targetRangeLow?: number | null;
+  targetRangeHigh?: number | null;
+}) {
+  if (data.targetPrice != null) {
+    return data.targetPrice;
+  }
+  if (data.targetRangeLow != null && data.targetRangeHigh != null) {
+    return (data.targetRangeLow + data.targetRangeHigh) / 2;
+  }
+  return null;
+}
+
+function hasDirectionalTarget(data: {
+  direction: "BUY" | "SELL";
+  currentPrice: number;
+  targetPrice?: number | null;
+  targetRangeLow?: number | null;
+  targetRangeHigh?: number | null;
+}) {
+  const target = readTargetPrice(data);
+  if (target == null) {
+    return false;
+  }
+  if (data.direction === "BUY") {
+    return target > data.currentPrice;
+  }
+  return target < data.currentPrice;
+}
+
+function isSamePrice(a: number, b: number) {
+  return Math.abs(a - b) < 0.01;
+}
+
+function sharesOneConsensusTarget(
+  variants: Array<{
+    ticker: string;
+    direction: string;
+    currentPrice: number;
+    targetPrice?: number | null;
+    targetRangeLow?: number | null;
+    targetRangeHigh?: number | null;
+  }>,
+) {
+  const [first] = variants;
+  if (!first) {
+    return false;
+  }
+
+  const firstTarget = readTargetPrice(first);
+  if (firstTarget == null) {
+    return false;
+  }
+
+  return variants.every((variant) => {
+    const target = readTargetPrice(variant);
+    return (
+      variant.ticker === first.ticker &&
+      variant.direction === first.direction &&
+      isSamePrice(variant.currentPrice, first.currentPrice) &&
+      target != null &&
+      isSamePrice(target, firstTarget)
+    );
+  });
+}
+
+function hasRiskOrderedStops(
+  variants: Array<{
+    direction: "BUY" | "SELL";
+    confidenceMode: "aggressive" | "balanced" | "conservative";
+    targetPrice?: number | null;
+    targetRangeLow?: number | null;
+    targetRangeHigh?: number | null;
+    stopPrice: number;
+  }>,
+) {
+  const aggressive = variants.find(
+    (variant) => variant.confidenceMode === "aggressive",
+  );
+  const balanced = variants.find(
+    (variant) => variant.confidenceMode === "balanced",
+  );
+  const conservative = variants.find(
+    (variant) => variant.confidenceMode === "conservative",
+  );
+
+  const target = aggressive ? readTargetPrice(aggressive) : null;
+  if (!aggressive || !balanced || !conservative || target == null) {
+    return false;
+  }
+
+  return (
+    aggressive.stopPrice > balanced.stopPrice &&
+    balanced.stopPrice > conservative.stopPrice &&
+    (aggressive.direction === "BUY" ? aggressive.stopPrice >= target * 0.98 : true)
+  );
+}
+
 function readErrorStatus(error: unknown) {
   if (typeof error !== "object" || error == null) {
     return null;
@@ -169,16 +268,18 @@ export const recommendationGenerationVariantSchema = z
   .object({
     ticker: z.string().trim().min(1).max(10),
     direction: directionEnum,
+    currentPrice: z.number().positive(),
     entryPrice: z.number().positive().nullable().optional(),
     entryRangeLow: z.number().positive().nullable().optional(),
     entryRangeHigh: z.number().positive().nullable().optional(),
     targetPrice: z.number().positive().nullable().optional(),
     targetRangeLow: z.number().positive().nullable().optional(),
     targetRangeHigh: z.number().positive().nullable().optional(),
-    stopPrice: z.number().positive().nullable().optional(),
+    stopPrice: z.number().positive(),
     holdDays: z.number().int().min(1).max(10),
     confidenceMode: confidenceModeEnum,
     reasonLine: z.string().trim().min(1).max(160),
+    newsRationaleKo: z.string().trim().min(1).max(240),
   })
   .refine(
     (data) =>
@@ -197,7 +298,12 @@ export const recommendationGenerationVariantSchema = z
         "At least one of targetPrice, targetRangeLow, or targetRangeHigh must be provided",
       path: ["targetPrice"],
     },
-  );
+  )
+  .refine(hasDirectionalTarget, {
+    message:
+      "BUY requires target above currentPrice; SELL requires target below currentPrice",
+    path: ["targetPrice"],
+  });
 
 const requiredModes = new Set(["aggressive", "balanced", "conservative"]);
 
@@ -220,6 +326,14 @@ export const recommendationGenerationSchema = z.discriminatedUnion("status", [
       .refine(includesEveryConfidenceMode, {
         message:
           "Exactly one aggressive, balanced, and conservative variant is required",
+      })
+      .refine(sharesOneConsensusTarget, {
+        message:
+          "All confidence variants for a ticker must share the same direction, currentPrice, and consensus targetPrice",
+      })
+      .refine(hasRiskOrderedStops, {
+        message:
+          "stopPrice must be aggressive > balanced > conservative for both BUY and SELL; BUY aggressive stopPrice must be near/above target",
       }),
   }),
   z.object({
@@ -263,11 +377,11 @@ export async function generateRecommendationCards({
 
 Return only valid JSON. Do not wrap it in Markdown.
 Use one of these shapes:
-{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"160 chars max"},{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"balanced","reasonLine":"160 chars max"},{"ticker":"AAPL","direction":"BUY","entryPrice":100,"targetPrice":110,"stopPrice":95,"holdDays":5,"confidenceMode":"conservative","reasonLine":"160 chars max"}]}
+{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"}]}
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,
-        maxOutputTokens: 1_200,
+        maxOutputTokens: 1_600,
         providerOptions: GEMINI_PROVIDER_OPTIONS,
         timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
       });

@@ -28,6 +28,7 @@ describe("todayRecommendationsOkSchema", () => {
   it("accepts 1 card", () => {
     const result = todayRecommendationsOkSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: [validCard],
     });
     expect(result.success).toBe(true);
@@ -36,6 +37,7 @@ describe("todayRecommendationsOkSchema", () => {
   it("accepts 3 cards", () => {
     const result = todayRecommendationsOkSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: [validCard, validCard, validCard],
     });
     expect(result.success).toBe(true);
@@ -44,15 +46,26 @@ describe("todayRecommendationsOkSchema", () => {
   it("rejects 0 cards", () => {
     const result = todayRecommendationsOkSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: [],
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects 4 cards", () => {
+  it("accepts 9 internal risk variants", () => {
     const result = todayRecommendationsOkSchema.safeParse({
       status: "ok",
-      cards: [validCard, validCard, validCard, validCard],
+      selectedRiskMode: "balanced",
+      cards: Array.from({ length: 9 }, () => validCard),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects more than 9 internal risk variants", () => {
+    const result = todayRecommendationsOkSchema.safeParse({
+      status: "ok",
+      selectedRiskMode: "balanced",
+      cards: Array.from({ length: 10 }, () => validCard),
     });
     expect(result.success).toBe(false);
   });
@@ -60,6 +73,7 @@ describe("todayRecommendationsOkSchema", () => {
   it("rejects invalid status value", () => {
     const result = todayRecommendationsOkSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: "not-an-array",
     });
     expect(result.success).toBe(false);
@@ -95,6 +109,7 @@ describe("todayRecommendationsResponseSchema (discriminated union)", () => {
   it("accepts ok response", () => {
     const result = todayRecommendationsResponseSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: [validCard],
     });
     expect(result.success).toBe(true);
@@ -118,6 +133,7 @@ describe("todayRecommendationsResponseSchema (discriminated union)", () => {
   it("discriminates correctly — ok with cards, no_call with reason", () => {
     const okResult = todayRecommendationsResponseSchema.safeParse({
       status: "ok",
+      selectedRiskMode: "balanced",
       cards: [validCard],
     });
     expect(okResult.success).toBe(true);

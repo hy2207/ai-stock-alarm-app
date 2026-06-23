@@ -17,6 +17,12 @@ function outcomeLabel(hitFlag: boolean | null) {
   return "평가 중";
 }
 
+const CONFIDENCE_LABELS = {
+  conservative: "안정형",
+  balanced: "중립형",
+  aggressive: "공격형",
+} as const;
+
 export default async function RecommendationDetailPage({
   params,
 }: RecommendationDetailPageProps) {
@@ -61,7 +67,9 @@ export default async function RecommendationDetailPage({
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold">{card.ticker}</h1>
-              <p className="mt-1 text-sm text-slate-600">{card.confidenceScore}</p>
+              <p className="mt-1 text-sm text-slate-600">
+                {CONFIDENCE_LABELS[card.confidenceScore]}
+              </p>
             </div>
             <span
               className={
@@ -76,11 +84,13 @@ export default async function RecommendationDetailPage({
 
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-lg bg-slate-50 p-3">
-              <dt className="text-slate-500">진입가</dt>
+              <dt className="text-slate-500">현재가</dt>
               <dd className="font-semibold">
-                {card.entryPrice != null
-                  ? `$${card.entryPrice.toFixed(2)}`
-                  : `$${card.entryRangeLow?.toFixed(2)}-${card.entryRangeHigh?.toFixed(2)}`}
+                {card.currentPrice != null
+                  ? `$${card.currentPrice.toFixed(2)}`
+                  : card.entryPrice != null
+                    ? `$${card.entryPrice.toFixed(2)}`
+                    : `$${card.entryRangeLow?.toFixed(2)}-${card.entryRangeHigh?.toFixed(2)}`}
               </dd>
             </div>
             <div className="rounded-lg bg-emerald-50 p-3">
@@ -96,7 +106,7 @@ export default async function RecommendationDetailPage({
               <dd className="font-semibold">{card.holdDays}일</dd>
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
-              <dt className="text-slate-500">손절가</dt>
+              <dt className="text-slate-500">매도 기준가</dt>
               <dd className="font-semibold">
                 {card.stopPrice != null ? `$${card.stopPrice.toFixed(2)}` : "미지정"}
               </dd>
@@ -107,6 +117,15 @@ export default async function RecommendationDetailPage({
             <h2 className="font-semibold">한 줄 이유</h2>
             <p className="mt-2 text-sm text-slate-700">{card.reasonLine}</p>
           </div>
+
+          {card.newsRationaleKo && (
+            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <h2 className="font-semibold text-blue-950">뉴스 기반 판단 근거</h2>
+              <p className="mt-2 text-sm leading-relaxed text-blue-950">
+                {card.newsRationaleKo}
+              </p>
+            </div>
+          )}
 
           <RecommendationActions
             recId={card.id}

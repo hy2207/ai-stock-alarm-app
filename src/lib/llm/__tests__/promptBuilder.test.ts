@@ -58,11 +58,29 @@ describe("buildRecommendationPrompt", () => {
     expect(system).toContain("1 to 10");
     expect(system).toContain("3-5 business days");
     expect(system).toContain("reasonLine");
+    expect(system).toContain("newsRationaleKo");
+    expect(system).toContain("Korean");
+    expect(system).toContain("why the card is BUY or SELL");
     expect(system).toContain("160");
+    expect(system).toContain("240");
     expect(system).toContain("no_call");
     expect(system).toContain("Do not include candle");
     expect(system).toContain("RSI");
     expect(system).toContain("MACD");
+  });
+
+  it("defines one consensus target with risk-specific stop and exit discipline", () => {
+    const { system } = buildRecommendationPrompt(baseInput);
+
+    expect(system).toContain("FOMO");
+    expect(system).toContain("targetPrice is the same evidence-based consensus target");
+    expect(system).toContain("Do not use confidenceMode to change targetPrice");
+    expect(system).toContain("actual sell/exit price");
+    expect(system).toContain("For both BUY and SELL, stopPrice must be ordered aggressive > balanced > conservative");
+    expect(system).toContain("close to the targetPrice or above targetPrice");
+    expect(system).toContain("highest actual sell/exit threshold");
+    expect(system).toContain("may keep holding despite BUY or SELL risk signals");
+    expect(system).toContain("Their targetPrice must remain the same");
   });
 
   it("includes watchlist, selected risk mode, OHLCV summary, and news context", () => {

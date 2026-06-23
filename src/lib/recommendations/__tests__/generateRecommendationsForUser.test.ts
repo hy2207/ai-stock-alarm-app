@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockWatchlistFindMany = vi.fn();
 const mockRiskProfileFindUnique = vi.fn();
-const mockRecommendationCardCount = vi.fn();
-const mockRecommendationCardFindFirst = vi.fn();
+const mockRecommendationCardFindMany = vi.fn();
+const mockRecommendationCardDeleteMany = vi.fn();
 const mockRecommendationCardCreate = vi.fn();
 const mockTransaction = vi.fn();
 const mockFetchFinnhubCandle = vi.fn();
@@ -20,8 +20,8 @@ vi.mock("@/lib/prisma", () => ({
       findUnique: mockRiskProfileFindUnique,
     },
     recommendationCard: {
-      count: mockRecommendationCardCount,
-      findFirst: mockRecommendationCardFindFirst,
+      findMany: mockRecommendationCardFindMany,
+      deleteMany: mockRecommendationCardDeleteMany,
       create: mockRecommendationCardCreate,
     },
     $transaction: mockTransaction,
@@ -47,37 +47,64 @@ const okGeneration = {
     {
       ticker: "AAPL",
       direction: "BUY" as const,
+      currentPrice: 197,
       entryPrice: 197,
       targetPrice: 208,
-      stopPrice: 189,
+      stopPrice: 214,
       holdDays: 3,
       confidenceMode: "aggressive" as const,
-      reasonLine: "Services margin and price momentum support a short swing.",
+      reasonLine: "서비스 마진 개선과 가격 흐름이 단기 매수 판단을 뒷받침합니다.",
+      newsRationaleKo:
+        "서비스 마진 개선 뉴스와 현재 가격 흐름을 근거로 공격형 매수 판단을 제시합니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY" as const,
+      currentPrice: 197,
       entryPrice: 195,
-      targetPrice: 205,
-      stopPrice: 188,
+      targetPrice: 208,
+      stopPrice: 206,
       holdDays: 5,
       confidenceMode: "balanced" as const,
-      reasonLine: "Earnings strength supports a measured 3-5 day setup.",
+      reasonLine: "실적 개선 신호가 3~5일 중립형 매수 판단을 뒷받침합니다.",
+      newsRationaleKo:
+        "실적 개선 뉴스가 긍정적이어서 중립형 기준의 매수 판단을 제시합니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY" as const,
+      currentPrice: 197,
       entryRangeLow: 192,
       entryRangeHigh: 196,
-      targetRangeLow: 202,
-      targetRangeHigh: 206,
-      stopPrice: 187,
+      targetPrice: 208,
+      stopPrice: 202,
       holdDays: 5,
       confidenceMode: "conservative" as const,
-      reasonLine: "Wait for a controlled entry while services strength holds.",
+      reasonLine: "서비스 강세는 유지되지만 안정형은 매도 기준을 앞당기는 접근이 적절합니다.",
+      newsRationaleKo:
+        "서비스 부문 강세는 유지되지만 안정형은 매도 기준을 앞당겨 방어적으로 접근합니다.",
     },
   ],
 };
+
+function completeCard(ticker: string, confidenceScore: string) {
+  const stopPriceByMode: Record<string, number> = {
+    aggressive: 214,
+    balanced: 206,
+    conservative: 202,
+  };
+
+  return {
+    ticker,
+    confidenceScore,
+    direction: "BUY",
+    currentPrice: 197,
+    targetPrice: 208,
+    targetRangeLow: null,
+    targetRangeHigh: null,
+    stopPrice: stopPriceByMode[confidenceScore],
+  };
+}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -86,8 +113,8 @@ beforeEach(() => {
     { ticker: "AAPL", sector: "Technology", priority: 1 },
   ]);
   mockRiskProfileFindUnique.mockResolvedValue({ riskMode: "balanced" });
-  mockRecommendationCardCount.mockResolvedValue(0);
-  mockRecommendationCardFindFirst.mockResolvedValue(null);
+  mockRecommendationCardFindMany.mockResolvedValue([]);
+  mockRecommendationCardDeleteMany.mockResolvedValue({ count: 0 });
   mockFetchFinnhubCandle.mockResolvedValue({
     ok: true,
     data: {
@@ -171,8 +198,12 @@ describe("generateRecommendationsForUser", () => {
     expect(mockGenerateRecommendationCards).not.toHaveBeenCalled();
   });
 
-  it("skips generation when cards already exist for the ticker today", async () => {
-    mockRecommendationCardFindFirst.mockResolvedValue({ id: "existing-card" });
+  it("skips generation when all risk variants already exist for the ticker today", async () => {
+    mockRecommendationCardFindMany.mockResolvedValue([
+      completeCard("AAPL", "aggressive"),
+      completeCard("AAPL", "balanced"),
+      completeCard("AAPL", "conservative"),
+    ]);
 
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
@@ -187,7 +218,17 @@ describe("generateRecommendationsForUser", () => {
   });
 
   it("skips generation when the daily card limit is already reached", async () => {
-    mockRecommendationCardCount.mockResolvedValue(3);
+    mockRecommendationCardFindMany.mockResolvedValue([
+      completeCard("AAPL", "aggressive"),
+      completeCard("AAPL", "balanced"),
+      completeCard("AAPL", "conservative"),
+      completeCard("MSFT", "aggressive"),
+      completeCard("MSFT", "balanced"),
+      completeCard("MSFT", "conservative"),
+      completeCard("NVDA", "aggressive"),
+      completeCard("NVDA", "balanced"),
+      completeCard("NVDA", "conservative"),
+    ]);
 
     const { generateRecommendationsForUser } = await import(
       "../generateRecommendationsForUser"
@@ -237,7 +278,7 @@ describe("generateRecommendationsForUser", () => {
     expect(mockFetchFinnhubCandle).not.toHaveBeenCalled();
     expect(mockFetchFinnhubNews).not.toHaveBeenCalled();
     expect(mockFetchYahooChart).toHaveBeenCalledWith("AAPL");
-    expect(result.generatedCount).toBe(3);
+    expect(result.generatedCount).toBe(1);
     expect(result.externalApiErrors).toContain(
       "Finnhub candle (AAPL): FINNHUB_API_KEY is not configured. Using Yahoo Finance fallback.",
     );
@@ -260,7 +301,7 @@ describe("generateRecommendationsForUser", () => {
       "clxuserid00000000000001",
     );
 
-    expect(result.generatedCount).toBe(3);
+    expect(result.generatedCount).toBe(1);
     expect(result.skippedCount).toBe(0);
     expect(result.validationErrors).toEqual([]);
     expect(mockGenerateRecommendationCards).toHaveBeenCalledWith({
@@ -271,6 +312,17 @@ describe("generateRecommendationsForUser", () => {
     });
     expect(mockTransaction).toHaveBeenCalledTimes(1);
     expect(mockRecommendationCardCreate).toHaveBeenCalledTimes(3);
+    expect(mockRecommendationCardDeleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: "clxuserid00000000000001",
+        ticker: "AAPL",
+        status: "published",
+        createdAt: expect.objectContaining({
+          gte: expect.any(Date),
+          lt: expect.any(Date),
+        }),
+      },
+    });
   });
 
   it("returns validation errors when Gemini returns no_call", async () => {
@@ -287,7 +339,7 @@ describe("generateRecommendationsForUser", () => {
     );
 
     expect(result.generatedCount).toBe(0);
-    expect(result.validationErrors).toEqual(["Insufficient market context."]);
+    expect(result.validationErrors).toEqual(["AAPL: Insufficient market context."]);
     expect(mockTransaction).not.toHaveBeenCalled();
   });
 
@@ -323,7 +375,7 @@ describe("generateRecommendationsForUser", () => {
     );
 
     expect(mockFetchYahooChart).toHaveBeenCalledWith("AAPL");
-    expect(result.generatedCount).toBe(3);
+    expect(result.generatedCount).toBe(1);
     expect(mockGenerateRecommendationCards).toHaveBeenCalledWith({
       promptInput: expect.objectContaining({
         marketData: {

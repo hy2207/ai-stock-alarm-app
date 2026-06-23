@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getTodayRecommendations } from "@/lib/queries/getTodayRecommendations";
-import { userHasWatchlist } from "@/lib/queries/getUserWatchlist";
+import { getUserWatchlist, userHasWatchlist } from "@/lib/queries/getUserWatchlist";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { Disclaimer } from "./components/Disclaimer";
 import { DevRecommendationGenerator } from "./components/DevRecommendationGenerator";
 import { PostHogEvent } from "./components/PostHogEvent";
-import { RecommendationCardLink } from "./components/RecommendationCardLink";
+import { RiskModeRecommendationList } from "./components/RiskModeRecommendationList";
 
 interface HomeProps {
   searchParams?: {
@@ -21,6 +21,7 @@ export default async function Home({ searchParams }: HomeProps) {
     redirect("/onboarding");
   }
 
+  const watchlist = userId ? await getUserWatchlist(userId) : [];
   const result = await getTodayRecommendations();
   const fromPush =
     searchParams?.from === "push" || searchParams?.utm_source === "onesignal";
@@ -73,11 +74,11 @@ export default async function Home({ searchParams }: HomeProps) {
           </Link>
         </div>
 
-        <div className="space-y-4">
-          {result.cards.map((card) => (
-            <RecommendationCardLink key={card.id} card={card} />
-          ))}
-        </div>
+        <RiskModeRecommendationList
+          cards={result.cards}
+          initialRiskMode={result.selectedRiskMode}
+          watchlistTickers={watchlist.map((item) => item.ticker)}
+        />
         <Disclaimer />
       </div>
     </main>

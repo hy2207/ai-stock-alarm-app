@@ -13,6 +13,22 @@ import type {
 } from "@/lib/llm/promptBuilder";
 
 const MAX_DAILY_CARDS = 3;
+const REQUIRED_RISK_MODES = new Set([
+  "aggressive",
+  "balanced",
+  "conservative",
+]);
+
+interface PublishedCardCompleteness {
+  ticker: string;
+  confidenceScore: string;
+  direction: string;
+  currentPrice: number | null;
+  targetPrice: number | null;
+  targetRangeLow: number | null;
+  targetRangeHigh: number | null;
+  stopPrice: number | null;
+}
 
 export interface GenerateRecommendationsForUserResult {
   generatedCount: number;
@@ -72,8 +88,10 @@ async function loadRiskMode(userId: string): Promise<RiskMode> {
   return "balanced";
 }
 
-async function countPublishedCardsToday(userId: string): Promise<number> {
-  return prisma.recommendationCard.count({
+async function loadPublishedCardsToday(
+  userId: string,
+): Promise<PublishedCardCompleteness[]> {
+  return prisma.recommendationCard.findMany({
     where: {
       userId,
       status: "published",
@@ -82,14 +100,134 @@ async function countPublishedCardsToday(userId: string): Promise<number> {
         lt: tomorrowStart(),
       },
     },
+    select: {
+      ticker: true,
+      confidenceScore: true,
+      direction: true,
+      currentPrice: true,
+      targetPrice: true,
+      targetRangeLow: true,
+      targetRangeHigh: true,
+      stopPrice: true,
+    },
   });
 }
 
-async function hasPublishedCardForTickerToday(
+function readTargetPrice(card: PublishedCardCompleteness) {
+  if (card.targetPrice != null) {
+    return card.targetPrice;
+  }
+  if (card.targetRangeLow != null && card.targetRangeHigh != null) {
+    return (card.targetRangeLow + card.targetRangeHigh) / 2;
+  }
+  return null;
+}
+
+function hasValidDirectionalTarget(card: PublishedCardCompleteness) {
+  const target = readTargetPrice(card);
+  if (card.currentPrice == null || card.stopPrice == null || target == null) {
+    return false;
+  }
+
+  if (card.direction === "BUY") {
+    return target > card.currentPrice;
+  }
+
+  if (card.direction === "SELL") {
+    return target < card.currentPrice;
+  }
+
+  return false;
+}
+
+function isSamePrice(a: number, b: number) {
+  return Math.abs(a - b) < 0.01;
+}
+
+function sharesOneConsensusTarget(cards: PublishedCardCompleteness[]) {
+  const [first] = cards;
+  if (!first) {
+    return false;
+  }
+
+  const firstTarget = readTargetPrice(first);
+  if (first.currentPrice == null || firstTarget == null) {
+    return false;
+  }
+
+  return cards.every((card) => {
+    const target = readTargetPrice(card);
+    return (
+      card.ticker === first.ticker &&
+      card.direction === first.direction &&
+      card.currentPrice != null &&
+      isSamePrice(card.currentPrice, first.currentPrice!) &&
+      target != null &&
+      isSamePrice(target, firstTarget)
+    );
+  });
+}
+
+function hasRiskOrderedStops(cards: PublishedCardCompleteness[]) {
+  const aggressive = cards.find(
+    (card) => card.confidenceScore === "aggressive",
+  );
+  const balanced = cards.find((card) => card.confidenceScore === "balanced");
+  const conservative = cards.find(
+    (card) => card.confidenceScore === "conservative",
+  );
+
+  if (
+    !aggressive?.stopPrice ||
+    !balanced?.stopPrice ||
+    !conservative?.stopPrice
+  ) {
+    return false;
+  }
+
+  const target = readTargetPrice(aggressive);
+  if (target == null) {
+    return false;
+  }
+
+  return (
+    aggressive.stopPrice > balanced.stopPrice &&
+    balanced.stopPrice > conservative.stopPrice &&
+    (aggressive.direction === "BUY" ? aggressive.stopPrice >= target * 0.98 : true)
+  );
+}
+
+function hasAllRiskModeVariants(cards: PublishedCardCompleteness[]) {
+  if (
+    !cards.every(hasValidDirectionalTarget) ||
+    !sharesOneConsensusTarget(cards) ||
+    !hasRiskOrderedStops(cards)
+  ) {
+    return false;
+  }
+
+  const modes = new Set(cards.map((card) => card.confidenceScore));
+  return [...REQUIRED_RISK_MODES].every((mode) => modes.has(mode));
+}
+
+function countCompletePublishedTickers(
+  cards: PublishedCardCompleteness[],
+): number {
+  const byTicker = new Map<string, PublishedCardCompleteness[]>();
+  for (const card of cards) {
+    const tickerCards = byTicker.get(card.ticker) ?? [];
+    tickerCards.push(card);
+    byTicker.set(card.ticker, tickerCards);
+  }
+
+  return [...byTicker.values()].filter(hasAllRiskModeVariants).length;
+}
+
+async function replaceTodaysTickerCards(
   userId: string,
   ticker: string,
-): Promise<boolean> {
-  const existing = await prisma.recommendationCard.findFirst({
+): Promise<void> {
+  await prisma.recommendationCard.deleteMany({
     where: {
       userId,
       ticker,
@@ -99,10 +237,36 @@ async function hasPublishedCardForTickerToday(
         lt: tomorrowStart(),
       },
     },
-    select: { id: true },
+  });
+}
+
+async function hasCompletePublishedVariantsForTickerToday(
+  userId: string,
+  ticker: string,
+): Promise<boolean> {
+  const cards = await prisma.recommendationCard.findMany({
+    where: {
+      userId,
+      ticker,
+      status: "published",
+      createdAt: {
+        gte: todayStart(),
+        lt: tomorrowStart(),
+      },
+    },
+    select: {
+      ticker: true,
+      confidenceScore: true,
+      direction: true,
+      currentPrice: true,
+      targetPrice: true,
+      targetRangeLow: true,
+      targetRangeHigh: true,
+      stopPrice: true,
+    },
   });
 
-  return existing != null;
+  return hasAllRiskModeVariants(cards);
 }
 
 async function collectMarketContext(
@@ -197,7 +361,8 @@ export async function generateRecommendationsForUser(
     };
   }
 
-  const todayCount = await countPublishedCardsToday(userId);
+  const todayCards = await loadPublishedCardsToday(userId);
+  const todayCount = countCompletePublishedTickers(todayCards);
   if (todayCount >= MAX_DAILY_CARDS) {
     return {
       generatedCount: 0,
@@ -207,28 +372,23 @@ export async function generateRecommendationsForUser(
     };
   }
 
-  if (todayCount > 0) {
-    return {
-      generatedCount: 0,
-      skippedCount: watchlist.length,
-      validationErrors,
-      externalApiErrors,
-    };
-  }
-
-  let targetTicker: WatchlistPromptItem | undefined;
+  const targetTickers: WatchlistPromptItem[] = [];
   let skippedCount = 0;
+  const remainingSlots = MAX_DAILY_CARDS - todayCount;
 
   for (const item of watchlist) {
-    if (await hasPublishedCardForTickerToday(userId, item.ticker)) {
+    if (await hasCompletePublishedVariantsForTickerToday(userId, item.ticker)) {
       skippedCount += 1;
       continue;
     }
-    targetTicker = item;
-    break;
+    if (targetTickers.length >= remainingSlots) {
+      skippedCount += 1;
+      continue;
+    }
+    targetTickers.push(item);
   }
 
-  if (!targetTicker) {
+  if (targetTickers.length === 0) {
     return {
       generatedCount: 0,
       skippedCount,
@@ -255,32 +415,33 @@ export async function generateRecommendationsForUser(
   externalApiErrors.push(...marketErrors);
 
   const riskMode = await loadRiskMode(userId);
-  const generation = await generateRecommendationCards({
-    promptInput: {
-      riskMode,
-      watchlist,
-      marketData,
-      newsSignals,
-    },
-  });
+  let generatedCount = 0;
 
-  if (generation.status === "no_call") {
-    validationErrors.push(generation.reason);
-    return {
-      generatedCount: 0,
-      skippedCount,
-      validationErrors,
-      externalApiErrors,
-    };
+  for (const targetTicker of targetTickers) {
+    const generation = await generateRecommendationCards({
+      promptInput: {
+        riskMode,
+        watchlist: [targetTicker],
+        marketData,
+        newsSignals,
+      },
+    });
+
+    if (generation.status === "no_call") {
+      validationErrors.push(`${targetTicker.ticker}: ${generation.reason}`);
+      continue;
+    }
+
+    await replaceTodaysTickerCards(userId, targetTicker.ticker);
+    await persistRecommendationGeneration({
+      userId,
+      generation,
+    });
+    generatedCount += 1;
   }
 
-  const cards = await persistRecommendationGeneration({
-    userId,
-    generation,
-  });
-
   return {
-    generatedCount: Math.min(cards.length, MAX_DAILY_CARDS),
+    generatedCount,
     skippedCount,
     validationErrors,
     externalApiErrors,

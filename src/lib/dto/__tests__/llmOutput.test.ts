@@ -9,23 +9,29 @@ const validVariant = {
   confidenceMode: "balanced" as const,
   ticker: "AAPL",
   direction: "BUY" as const,
+  currentPrice: 185.5,
   entryPrice: 185.5,
   targetPrice: 210.0,
   stopPrice: 170.0,
   holdDays: 5,
   reasonLine: "Strong earnings and buyback program",
+  newsRationaleKo:
+    "실적 개선 뉴스와 자사주 매입 기대를 근거로 단기 매수 판단을 제시합니다.",
 };
 
 const validRangeVariant = {
   confidenceMode: "aggressive" as const,
   ticker: "AAPL",
   direction: "BUY" as const,
+  currentPrice: 185.5,
   entryRangeLow: 180.0,
   entryRangeHigh: 190.0,
   targetRangeLow: 200.0,
   targetRangeHigh: 220.0,
   holdDays: 7,
   reasonLine: "Aggressive entry on momentum",
+  newsRationaleKo:
+    "모멘텀 관련 뉴스 흐름을 바탕으로 공격형 진입 판단을 제시합니다.",
 };
 
 describe("llmResponseSchema", () => {
