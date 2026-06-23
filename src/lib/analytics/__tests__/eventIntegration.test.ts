@@ -25,24 +25,26 @@ const requiredClientEvents = [
   "push_open",
   "deeplink_success",
   "deeplink_fail",
+  "push_consent_change",
 ] as const;
 
 const requiredServerEvents = [
   "rec_validation_failed",
   "llm_call_failed",
   "push_sent",
+  "performance_evaluation_run",
 ] as const;
 
 describe("PostHog event integration contract", () => {
-  it("GWT: Given SRS client events When validating taxonomy Then all 16 events are accepted", () => {
-    expect(CLIENT_EVENT_NAMES).toHaveLength(16);
+  it("GWT: Given SRS client events When validating taxonomy Then all 17 events are accepted", () => {
+    expect(CLIENT_EVENT_NAMES).toHaveLength(17);
     for (const eventName of requiredClientEvents) {
       expect(clientEventNameSchema.parse(eventName)).toBe(eventName);
     }
   });
 
-  it("GWT: Given SRS server events When validating taxonomy Then all 3 events are accepted", () => {
-    expect(SERVER_EVENT_NAMES).toHaveLength(3);
+  it("GWT: Given SRS server events When validating taxonomy Then all 4 events are accepted", () => {
+    expect(SERVER_EVENT_NAMES).toHaveLength(4);
     for (const eventName of requiredServerEvents) {
       expect(serverEventNameSchema.parse(eventName)).toBe(eventName);
     }

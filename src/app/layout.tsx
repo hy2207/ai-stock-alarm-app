@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { AppToaster } from "@/app/components/AppToaster";
+import { OneSignalInit } from "@/app/components/OneSignalInit";
 import "../styles/index.css";
 
 export const metadata: Metadata = {
@@ -14,9 +16,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          strategy="afterInteractive"
+        />
+      </head>
       <body>
         {children}
         <AppToaster />
+        <OneSignalInit />
       </body>
     </html>
   );

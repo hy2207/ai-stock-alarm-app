@@ -19,12 +19,14 @@ export const CLIENT_EVENT_NAMES = [
   "push_open",
   "deeplink_success",
   "deeplink_fail",
+  "push_consent_change",
 ] as const;
 
 export const SERVER_EVENT_NAMES = [
   "rec_validation_failed",
   "llm_call_failed",
   "push_sent",
+  "performance_evaluation_run",
 ] as const;
 
 export const ALL_EVENT_NAMES = [
