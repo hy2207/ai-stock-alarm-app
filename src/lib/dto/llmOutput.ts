@@ -4,6 +4,7 @@ import { z } from "zod";
 const llmCardSchema = z.object({
   ticker: z.string().min(1).max(10),
   direction: z.enum(["BUY", "SELL"]),
+  currentPrice: z.number().positive(),
   entryPrice: z.number().positive().nullable().optional(),
   entryRangeLow: z.number().positive().nullable().optional(),
   entryRangeHigh: z.number().positive().nullable().optional(),
@@ -13,6 +14,7 @@ const llmCardSchema = z.object({
   stopPrice: z.number().positive().nullable().optional(),
   holdDays: z.number().int().min(1).max(10),
   reasonLine: z.string().trim().min(1).max(160),
+  newsRationaleKo: z.string().trim().min(1).max(240),
 });
 
 /** LLM generates 3 card variants in one call. */

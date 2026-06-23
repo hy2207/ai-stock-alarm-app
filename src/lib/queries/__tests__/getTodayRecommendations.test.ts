@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockGetCurrentUserId = vi.fn();
 const mockFindMany = vi.fn();
+const mockFindUnique = vi.fn();
 
 vi.mock("@/lib/auth/getServerSession", () => ({
   getCurrentUserId: mockGetCurrentUserId,
@@ -9,6 +10,9 @@ vi.mock("@/lib/auth/getServerSession", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
+    riskProfile: {
+      findUnique: mockFindUnique,
+    },
     recommendationCard: {
       findMany: mockFindMany,
     },
@@ -28,12 +32,13 @@ function publishedCard(overrides: Record<string, unknown> = {}) {
     ticker: "NVDA",
     direction: "BUY" as const,
     entryPrice: 880.5,
+    currentPrice: 900.0,
     entryRangeLow: null,
     entryRangeHigh: null,
     targetPrice: 960.0,
     targetRangeLow: null,
     targetRangeHigh: null,
-    stopPrice: null,
+    stopPrice: 970.0,
     holdDays: 5,
     confidenceScore: "aggressive" as const,
     reasonLine: "AI data-center demand continues to accelerate",
@@ -42,6 +47,61 @@ function publishedCard(overrides: Record<string, unknown> = {}) {
     validUntil: new Date("2026-06-04T00:00:00.000Z"),
     ...overrides,
   };
+}
+
+function validBuySet(ticker = "NVDA") {
+  return [
+    publishedCard({
+      id: "cvalidaggressive001",
+      ticker,
+      confidenceScore: "aggressive",
+      stopPrice: 970,
+    }),
+    publishedCard({
+      id: "cvalidbalanced00001",
+      ticker,
+      confidenceScore: "balanced",
+      stopPrice: 955,
+    }),
+    publishedCard({
+      id: "cvalidconserv00001",
+      ticker,
+      confidenceScore: "conservative",
+      stopPrice: 930,
+    }),
+  ];
+}
+
+function validSellSet(ticker = "TSLA") {
+  return [
+    publishedCard({
+      id: "cvalidsellaggr001",
+      ticker,
+      direction: "SELL",
+      currentPrice: 300,
+      targetPrice: 250,
+      confidenceScore: "aggressive",
+      stopPrice: 330,
+    }),
+    publishedCard({
+      id: "cvalidsellbal0001",
+      ticker,
+      direction: "SELL",
+      currentPrice: 300,
+      targetPrice: 250,
+      confidenceScore: "balanced",
+      stopPrice: 315,
+    }),
+    publishedCard({
+      id: "cvalidsellcons001",
+      ticker,
+      direction: "SELL",
+      currentPrice: 300,
+      targetPrice: 250,
+      confidenceScore: "conservative",
+      stopPrice: 305,
+    }),
+  ];
 }
 
 const requiredDisplayFields = [
@@ -62,6 +122,10 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+beforeEach(() => {
+  mockFindUnique.mockResolvedValue({ riskMode: "balanced" });
+});
+
 describe("getTodayRecommendations", () => {
   it("returns no_call when user is not authenticated", async () => {
     mockGetCurrentUserId.mockResolvedValue(null);
@@ -74,6 +138,7 @@ describe("getTodayRecommendations", () => {
       reason: "Sign in to see your daily recommendations",
     });
     expect(mockFindMany).not.toHaveBeenCalled();
+    expect(mockFindUnique).not.toHaveBeenCalled();
   });
 
   it("returns no_call when no published cards exist for today", async () => {
@@ -97,20 +162,22 @@ describe("getTodayRecommendations", () => {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 3,
+      take: 9,
     });
+    expect(mockFindUnique).toHaveBeenCalledWith({ where: { userId: "user-1" } });
   });
 
   it("returns ok with cards when published cards exist for today", async () => {
     mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue([publishedCard()]);
+    mockFindMany.mockResolvedValue(validBuySet());
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
     const result = await getTodayRecommendations();
 
     expect(result.status).toBe("ok");
     if (result.status === "ok") {
-      expect(result.cards).toHaveLength(1);
+      expect(result.selectedRiskMode).toBe("balanced");
+      expect(result.cards).toHaveLength(3);
       expect(result.cards[0]).toMatchObject({
         ticker: "NVDA",
         direction: "BUY",
@@ -121,17 +188,38 @@ describe("getTodayRecommendations", () => {
     }
   });
 
+  it("returns the saved risk profile so the home UI can select the matching variant", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindUnique.mockResolvedValue({ riskMode: "conservative" });
+    mockFindMany.mockResolvedValue(validBuySet());
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.selectedRiskMode).toBe("conservative");
+      expect(result.cards.some((card) => card.confidenceScore === "conservative")).toBe(true);
+    }
+  });
+
+  it("falls back to balanced when the user has no saved risk profile", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindUnique.mockResolvedValue(null);
+    mockFindMany.mockResolvedValue(validBuySet());
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.selectedRiskMode).toBe("balanced");
+    }
+  });
+
   it("returns at most 3 cards ordered by createdAt desc", async () => {
     mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue(
-      Array.from({ length: 3 }, (_, i) => publishedCard({
-        id: `clh456xyz00${String(i).padStart(3, "0")}`,
-        ticker: "AAPL",
-        entryPrice: 180 + i,
-        targetPrice: 200 + i,
-        createdAt: new Date(`2026-05-30T0${9 - i}:00:00.000Z`),
-      })),
-    );
+    mockFindMany.mockResolvedValue(validBuySet("AAPL"));
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
     const result = await getTodayRecommendations();
@@ -149,15 +237,7 @@ describe("getTodayRecommendations", () => {
 
   it("returns cards with ticker, direction, and confidenceScore present", async () => {
     mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue(
-      Array.from({ length: 3 }, (_, i) => publishedCard({
-        id: `clh101xyz${i}`,
-        ticker: i === 0 ? "AAPL" : i === 1 ? "MSFT" : "GOOGL",
-        direction: i === 0 ? "BUY" : "SELL",
-        confidenceScore: i === 0 ? "aggressive" : i === 1 ? "balanced" : "conservative",
-        createdAt: new Date(`2026-05-30T0${9 - i}:00:00.000Z`),
-      })),
-    );
+    mockFindMany.mockResolvedValue(validBuySet("AAPL"));
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
     const result = await getTodayRecommendations();
@@ -178,12 +258,7 @@ describe("getTodayRecommendations", () => {
 
   it("returns cards with required display fields for card UI", async () => {
     mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue(
-      Array.from({ length: 2 }, (_, i) => publishedCard({
-        id: `clh102xyz${i}`,
-        createdAt: new Date(`2026-05-30T0${9 - i}:00:00.000Z`),
-      })),
-    );
+    mockFindMany.mockResolvedValue(validBuySet());
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
     const result = await getTodayRecommendations();
@@ -202,11 +277,14 @@ describe("getTodayRecommendations", () => {
   it("returns entry range fields when a card uses range instead of single entry price", async () => {
     mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([
-      publishedCard({
-        entryPrice: null,
-        entryRangeLow: 850.0,
-        entryRangeHigh: 900.0,
-      }),
+      ...validBuySet().map((card) =>
+        publishedCard({
+          ...card,
+          entryPrice: null,
+          entryRangeLow: 850.0,
+          entryRangeHigh: 900.0,
+        }),
+      ),
     ]);
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
@@ -219,6 +297,111 @@ describe("getTodayRecommendations", () => {
       expect(card.entryRangeLow).toBe(850.0);
       expect(card.entryRangeHigh).toBe(900.0);
     }
+  });
+
+  it("hides stale BUY cards when aggressive sell price is below conservative sell price", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindMany.mockResolvedValue([
+      publishedCard({
+        confidenceScore: "aggressive",
+        stopPrice: 910,
+      }),
+      publishedCard({
+        confidenceScore: "balanced",
+        stopPrice: 930,
+      }),
+      publishedCard({
+        confidenceScore: "conservative",
+        stopPrice: 950,
+      }),
+    ]);
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result).toEqual({
+      status: "no_call",
+      reason:
+        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
+    });
+  });
+
+  it("hides stale BUY cards when aggressive sell price is far below the target", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindMany.mockResolvedValue([
+      publishedCard({
+        confidenceScore: "aggressive",
+        stopPrice: 920,
+      }),
+      publishedCard({
+        confidenceScore: "balanced",
+        stopPrice: 910,
+      }),
+      publishedCard({
+        confidenceScore: "conservative",
+        stopPrice: 900,
+      }),
+    ]);
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result).toEqual({
+      status: "no_call",
+      reason:
+        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
+    });
+  });
+
+  it("returns SELL cards when aggressive sell price is highest", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindMany.mockResolvedValue(validSellSet());
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.cards).toHaveLength(3);
+      expect(result.cards.find((card) => card.confidenceScore === "aggressive"))
+        .toMatchObject({ direction: "SELL", stopPrice: 330 });
+    }
+  });
+
+  it("hides stale SELL cards when aggressive sell price is lowest", async () => {
+    mockGetCurrentUserId.mockResolvedValue("user-1");
+    mockFindMany.mockResolvedValue([
+      publishedCard({
+        direction: "SELL",
+        currentPrice: 300,
+        targetPrice: 250,
+        confidenceScore: "aggressive",
+        stopPrice: 285,
+      }),
+      publishedCard({
+        direction: "SELL",
+        currentPrice: 300,
+        targetPrice: 250,
+        confidenceScore: "balanced",
+        stopPrice: 300,
+      }),
+      publishedCard({
+        direction: "SELL",
+        currentPrice: 300,
+        targetPrice: 250,
+        confidenceScore: "conservative",
+        stopPrice: 315,
+      }),
+    ]);
+
+    const { getTodayRecommendations } = await import("../getTodayRecommendations");
+    const result = await getTodayRecommendations();
+
+    expect(result).toEqual({
+      status: "no_call",
+      reason:
+        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
+    });
   });
 
   it("propagates getCurrentUserId errors to the caller", async () => {

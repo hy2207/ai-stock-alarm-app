@@ -20,32 +20,41 @@ const generation = {
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 190,
       entryPrice: 190,
       targetPrice: 205,
-      stopPrice: 184,
+      stopPrice: 211,
       holdDays: 3,
       confidenceMode: "aggressive",
-      reasonLine: "Strong demand and volume support a short swing setup.",
+      reasonLine: "수요 강세와 거래 흐름이 단기 매수 판단을 뒷받침합니다.",
+      newsRationaleKo:
+        "수요 강세 뉴스와 거래 흐름을 근거로 공격형 단기 매수 판단을 제시합니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 190,
       entryPrice: 188,
-      targetPrice: 201,
-      stopPrice: 183,
+      targetPrice: 205,
+      stopPrice: 203,
       holdDays: 4,
       confidenceMode: "balanced",
-      reasonLine: "Balanced entry keeps downside controlled while trend holds.",
+      reasonLine: "추세가 유지되어 중립형 기준의 매수 판단이 유효합니다.",
+      newsRationaleKo:
+        "긍정적 뉴스는 유지되지만 진입가를 낮춰 중립형 리스크를 관리하는 판단입니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 190,
       entryPrice: 185,
-      targetPrice: 197,
-      stopPrice: 180,
+      targetPrice: 205,
+      stopPrice: 198,
       holdDays: 5,
       confidenceMode: "conservative",
-      reasonLine: "Wait for a lower entry while the broader setup remains intact.",
+      reasonLine: "우호적 흐름은 유지되지만 안정형은 방어적 접근이 적절합니다.",
+      newsRationaleKo:
+        "뉴스 흐름은 우호적이지만 보수형은 더 낮은 진입 가격을 기다리는 판단입니다.",
     },
   ],
 } satisfies RecommendationGeneration;
@@ -74,6 +83,9 @@ describe("persistRecommendationGeneration", () => {
         data: expect.objectContaining({
           status: "published",
           confidenceScore: "aggressive",
+          currentPrice: 190,
+          newsRationaleKo:
+            "수요 강세 뉴스와 거래 흐름을 근거로 공격형 단기 매수 판단을 제시합니다.",
           validUntil: new Date("2026-06-22T00:00:00.000Z"),
           evidenceSnapshots: {
             create: {

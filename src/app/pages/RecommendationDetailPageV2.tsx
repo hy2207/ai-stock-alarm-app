@@ -198,7 +198,7 @@ export function RecommendationDetailPageV2({ recId, onNavigate }: Recommendation
               </div>
             </div>
             <div className="bg-rose-50 rounded-lg p-4 border border-red-100">
-              <div className="text-xs text-slate-600 mb-1">손절가</div>
+              <div className="text-xs text-slate-600 mb-1">매도 기준가</div>
               <div className="text-xl font-bold text-red-700">${rec.stopPrice.toFixed(2)}</div>
             </div>
             <div className="bg-[#f7f8f5] rounded-lg p-4 border border-purple-100">

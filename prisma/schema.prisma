@@ -63,6 +63,7 @@ model RecommendationCard {
   userId          String
   ticker          String
   direction       String   // "BUY" | "SELL" (Zod-validated)
+  currentPrice    Float?
   entryPrice      Float?
   entryRangeLow   Float?
   entryRangeHigh  Float?
@@ -73,6 +74,7 @@ model RecommendationCard {
   holdDays        Int      // 1-10 integer (Zod-validated)
   confidenceScore String   // "aggressive" | "balanced" | "conservative" (Zod-validated)
   reasonLine      String   // min 1, max 160 chars (Zod-validated)
+  newsRationaleKo String?
   status          String   // "published" | "no_call" | "validation_failed" (Zod-validated)
   createdAt       DateTime @default(now())
   validUntil      DateTime

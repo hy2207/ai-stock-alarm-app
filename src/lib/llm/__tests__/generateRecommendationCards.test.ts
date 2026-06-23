@@ -43,34 +43,42 @@ const okGeneration = {
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 197,
       entryPrice: 197,
       targetPrice: 208,
-      stopPrice: 189,
+      stopPrice: 214,
       holdDays: 3,
       confidenceMode: "aggressive",
-      reasonLine: "Services margin and price momentum support a short swing.",
+      reasonLine: "서비스 마진 개선과 가격 흐름이 단기 매수 판단을 뒷받침합니다.",
+      newsRationaleKo:
+        "서비스 매출 개선 뉴스와 단기 가격 회복 흐름을 함께 반영해 공격형 매수 판단을 제시합니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 197,
       entryPrice: 195,
-      targetPrice: 205,
-      stopPrice: 188,
+      targetPrice: 208,
+      stopPrice: 206,
       holdDays: 5,
       confidenceMode: "balanced",
-      reasonLine: "Earnings strength supports a measured 3-5 day setup.",
+      reasonLine: "실적 개선 신호가 3~5일 중립형 매수 판단을 뒷받침합니다.",
+      newsRationaleKo:
+        "실적 개선 신호는 긍정적이지만 진입가를 조절해 중립형 기준의 균형 잡힌 매수 판단을 제시합니다.",
     },
     {
       ticker: "AAPL",
       direction: "BUY",
+      currentPrice: 197,
       entryRangeLow: 192,
       entryRangeHigh: 196,
-      targetRangeLow: 202,
-      targetRangeHigh: 206,
-      stopPrice: 187,
+      targetPrice: 208,
+      stopPrice: 202,
       holdDays: 5,
       confidenceMode: "conservative",
-      reasonLine: "Wait for a controlled entry while services strength holds.",
+      reasonLine: "서비스 강세는 유지되지만 안정형은 매도 기준을 앞당기는 접근이 적절합니다.",
+      newsRationaleKo:
+        "서비스 부문 강세는 유지되지만 보수형은 낮은 진입 구간을 기다리는 접근이 적절합니다.",
     },
   ],
 } satisfies RecommendationGeneration;
@@ -111,6 +119,138 @@ describe("recommendationGenerationSchema", () => {
       variants: [
         { ...okGeneration.variants[0], entryPrice: undefined },
         okGeneration.variants[1],
+        okGeneration.variants[2],
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects BUY variants with target below current price", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        {
+          ...okGeneration.variants[0],
+          targetPrice: 190,
+        },
+        okGeneration.variants[1],
+        okGeneration.variants[2],
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts SELL variants when aggressive sell price is highest", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        {
+          ...okGeneration.variants[0],
+          direction: "SELL",
+          targetPrice: 180,
+          stopPrice: 220,
+        },
+        {
+          ...okGeneration.variants[1],
+          direction: "SELL",
+          targetPrice: 180,
+          stopPrice: 205,
+        },
+        {
+          ...okGeneration.variants[2],
+          direction: "SELL",
+          targetPrice: 180,
+          targetRangeLow: undefined,
+          targetRangeHigh: undefined,
+          stopPrice: 195,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects SELL variants when aggressive sell price is lowest", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        {
+          ...okGeneration.variants[0],
+          direction: "SELL",
+          targetPrice: 180,
+          stopPrice: 175,
+        },
+        {
+          ...okGeneration.variants[1],
+          direction: "SELL",
+          targetPrice: 180,
+          stopPrice: 182,
+        },
+        {
+          ...okGeneration.variants[2],
+          direction: "SELL",
+          targetPrice: 180,
+          targetRangeLow: undefined,
+          targetRangeHigh: undefined,
+          stopPrice: 190,
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts aggressive variants with stop or exit points beyond the consensus target", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        {
+          ...okGeneration.variants[0],
+          targetPrice: 208,
+          stopPrice: 216,
+        },
+        okGeneration.variants[1],
+        okGeneration.variants[2],
+      ],
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects BUY variants when aggressive stop is lower than conservative stop", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        { ...okGeneration.variants[0], stopPrice: 200 },
+        okGeneration.variants[1],
+        { ...okGeneration.variants[2], stopPrice: 214 },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects BUY variants when aggressive sell price is ordered but too far below target", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        { ...okGeneration.variants[0], stopPrice: 195 },
+        { ...okGeneration.variants[1], stopPrice: 190 },
+        { ...okGeneration.variants[2], stopPrice: 185 },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects variants that change the consensus target by risk mode", () => {
+    const result = recommendationGenerationSchema.safeParse({
+      ...okGeneration,
+      variants: [
+        okGeneration.variants[0],
+        { ...okGeneration.variants[1], targetPrice: 210 },
         okGeneration.variants[2],
       ],
     });
@@ -210,7 +350,7 @@ describe("generateRecommendationCards", () => {
         model,
         system: expect.stringContaining("Decision Layer"),
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
-        maxOutputTokens: 1_200,
+        maxOutputTokens: 1_600,
         providerOptions: {
           google: {
             thinkingConfig: {
