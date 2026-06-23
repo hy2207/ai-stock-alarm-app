@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/morning-briefing",
       "schedule": "0 22 * * 0-4"
+    },
+    {
+      "path": "/api/cron/evaluate-performance",
+      "schedule": "0 21 * * 1-5"
     }
   ]
 }
