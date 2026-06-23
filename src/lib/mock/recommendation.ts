@@ -10,7 +10,7 @@ export const mockAggressiveCard: RecommendationCardCreateInput = {
   direction: "BUY",
   entryPrice: 890.5,
   targetPrice: 980.0,
-  stopPrice: 840.0,
+  exitPrice: 840.0,
   holdDays: 5,
   confidenceScore: "aggressive",
   reasonLine:
@@ -27,7 +27,7 @@ export const mockBalancedCard: RecommendationCardCreateInput = {
   entryRangeHigh: 186.0,
   targetRangeLow: 195.0,
   targetRangeHigh: 200.0,
-  stopPrice: 175.0,
+  exitPrice: 175.0,
   holdDays: 7,
   confidenceScore: "balanced",
   reasonLine:
@@ -42,7 +42,7 @@ export const mockConservativeCard: RecommendationCardCreateInput = {
   direction: "BUY",
   entryPrice: 415.0,
   targetPrice: 445.0,
-  stopPrice: 400.0,
+  exitPrice: 400.0,
   holdDays: 10,
   confidenceScore: "conservative",
   reasonLine:

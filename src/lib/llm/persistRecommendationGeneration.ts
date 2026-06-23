@@ -45,7 +45,7 @@ export async function persistRecommendationGeneration({
         targetPrice: variant.targetPrice ?? null,
         targetRangeLow: variant.targetRangeLow ?? null,
         targetRangeHigh: variant.targetRangeHigh ?? null,
-        stopPrice: variant.stopPrice ?? null,
+        exitPrice: variant.exitPrice ?? null,
         holdDays: variant.holdDays,
         confidenceScore: variant.confidenceMode,
         reasonLine: variant.reasonLine,
@@ -68,6 +68,13 @@ export async function persistRecommendationGeneration({
                 create: evidenceData,
               }
             : undefined,
+          performanceRecords: {
+            create: {
+              ticker: cardData.ticker,
+              predictedDirection: cardData.direction,
+              evaluationWindowDays: cardData.holdDays,
+            },
+          },
         },
       });
     }),

@@ -11,7 +11,7 @@ const llmCardSchema = z.object({
   targetPrice: z.number().positive().nullable().optional(),
   targetRangeLow: z.number().positive().nullable().optional(),
   targetRangeHigh: z.number().positive().nullable().optional(),
-  stopPrice: z.number().positive().nullable().optional(),
+  exitPrice: z.number().positive().nullable().optional(),
   holdDays: z.number().int().min(1).max(10),
   reasonLine: z.string().trim().min(1).max(160),
   newsRationaleKo: z.string().trim().min(1).max(240),

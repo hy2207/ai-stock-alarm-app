@@ -108,7 +108,7 @@ export default async function RecommendationDetailPage({
             <div className="rounded-lg bg-slate-50 p-3">
               <dt className="text-slate-500">매도 기준가</dt>
               <dd className="font-semibold">
-                {card.stopPrice != null ? `$${card.stopPrice.toFixed(2)}` : "미지정"}
+                {card.exitPrice != null ? `$${card.exitPrice.toFixed(2)}` : "미지정"}
               </dd>
             </div>
           </dl>

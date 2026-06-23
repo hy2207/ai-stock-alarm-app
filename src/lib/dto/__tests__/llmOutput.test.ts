@@ -12,7 +12,7 @@ const validVariant = {
   currentPrice: 185.5,
   entryPrice: 185.5,
   targetPrice: 210.0,
-  stopPrice: 170.0,
+  exitPrice: 170.0,
   holdDays: 5,
   reasonLine: "Strong earnings and buyback program",
   newsRationaleKo:

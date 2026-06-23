@@ -36,7 +36,7 @@ const validCard = {
   targetPrice: 960.0,
   targetRangeLow: null,
   targetRangeHigh: null,
-  stopPrice: null,
+  exitPrice: null,
   holdDays: 5,
   confidenceScore: "aggressive",
   reasonLine: "AI demand continues to accelerate",

@@ -56,9 +56,9 @@ function hasValidRiskModeSet(cards: RecommendationCard[]) {
     !balanced ||
     !conservative ||
     aggressive.currentPrice == null ||
-    aggressive.stopPrice == null ||
-    balanced.stopPrice == null ||
-    conservative.stopPrice == null
+    aggressive.exitPrice == null ||
+    balanced.exitPrice == null ||
+    conservative.exitPrice == null
   ) {
     return false;
   }
@@ -91,17 +91,17 @@ function hasValidRiskModeSet(cards: RecommendationCard[]) {
   if (aggressive.direction === "BUY") {
     return (
       target > aggressive.currentPrice &&
-      aggressive.stopPrice > balanced.stopPrice &&
-      balanced.stopPrice > conservative.stopPrice &&
-      aggressive.stopPrice >= target * 0.98
+      aggressive.exitPrice > balanced.exitPrice &&
+      balanced.exitPrice > conservative.exitPrice &&
+      aggressive.exitPrice >= target * 0.98
     );
   }
 
   if (aggressive.direction === "SELL") {
     return (
       target < aggressive.currentPrice &&
-      aggressive.stopPrice > balanced.stopPrice &&
-      balanced.stopPrice > conservative.stopPrice
+      aggressive.exitPrice > balanced.exitPrice &&
+      balanced.exitPrice > conservative.exitPrice
     );
   }
 

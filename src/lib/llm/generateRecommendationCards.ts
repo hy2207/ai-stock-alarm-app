@@ -116,7 +116,7 @@ function hasRiskOrderedStops(
     targetPrice?: number | null;
     targetRangeLow?: number | null;
     targetRangeHigh?: number | null;
-    stopPrice: number;
+    exitPrice: number;
   }>,
 ) {
   const aggressive = variants.find(
@@ -135,9 +135,9 @@ function hasRiskOrderedStops(
   }
 
   return (
-    aggressive.stopPrice > balanced.stopPrice &&
-    balanced.stopPrice > conservative.stopPrice &&
-    (aggressive.direction === "BUY" ? aggressive.stopPrice >= target * 0.98 : true)
+    aggressive.exitPrice > balanced.exitPrice &&
+    balanced.exitPrice > conservative.exitPrice &&
+    (aggressive.direction === "BUY" ? aggressive.exitPrice >= target * 0.98 : true)
   );
 }
 
@@ -275,7 +275,7 @@ export const recommendationGenerationVariantSchema = z
     targetPrice: z.number().positive().nullable().optional(),
     targetRangeLow: z.number().positive().nullable().optional(),
     targetRangeHigh: z.number().positive().nullable().optional(),
-    stopPrice: z.number().positive(),
+    exitPrice: z.number().positive(),
     holdDays: z.number().int().min(1).max(10),
     confidenceMode: confidenceModeEnum,
     reasonLine: z.string().trim().min(1).max(160),
@@ -333,7 +333,7 @@ export const recommendationGenerationSchema = z.discriminatedUnion("status", [
       })
       .refine(hasRiskOrderedStops, {
         message:
-          "stopPrice must be aggressive > balanced > conservative for both BUY and SELL; BUY aggressive stopPrice must be near/above target",
+          "exitPrice must be aggressive > balanced > conservative for both BUY and SELL; BUY aggressive exitPrice must be near/above target",
       }),
   }),
   z.object({
@@ -377,7 +377,7 @@ export async function generateRecommendationCards({
 
 Return only valid JSON. Do not wrap it in Markdown.
 Use one of these shapes:
-{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"stopPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"}]}
+{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"}]}
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,

@@ -150,7 +150,7 @@ export function RecommendationDetailPage({ recId, onNavigate }: RecommendationDe
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">매도 기준가</span>
-              <span className="text-red-600">${rec.stopPrice.toFixed(2)}</span>
+              <span className="text-red-600">${rec.exitPrice.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-slate-600">권장 보유</span>

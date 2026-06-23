@@ -81,7 +81,7 @@ export function RecommendationCard({ rec, onCardClick }: RecommendationCardProps
             <TrendingDown className="w-4 h-4 text-red-600" />
             <span className="text-xs text-slate-600">손절가</span>
           </div>
-          <div className="text-lg font-bold text-red-700">${rec.stopPrice.toFixed(2)}</div>
+          <div className="text-lg font-bold text-red-700">${rec.exitPrice.toFixed(2)}</div>
         </div>
         <div className="rounded-lg border border-slate-200 bg-[#f7f8f5] p-4">
           <div className="flex items-center gap-2 mb-1">

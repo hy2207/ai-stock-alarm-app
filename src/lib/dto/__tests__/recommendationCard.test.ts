@@ -42,14 +42,14 @@ describe("recommendationCardCreateSchema", () => {
     expect(result.targetRangeHigh).toBe(220.0);
   });
 
-  it("parses a card with stopPrice", () => {
+  it("parses a card with exitPrice", () => {
     const result = recommendationCardCreateSchema.parse({
       ...validBase,
       entryPrice: 185.5,
       targetPrice: 210.0,
-      stopPrice: 170.0,
+      exitPrice: 170.0,
     });
-    expect(result.stopPrice).toBe(170.0);
+    expect(result.exitPrice).toBe(170.0);
   });
 
   it("rejects a card without any entry price", () => {
@@ -296,7 +296,7 @@ describe("recommendationCardOutputSchema", () => {
       targetPrice: 980.0,
       targetRangeLow: null,
       targetRangeHigh: null,
-      stopPrice: 840.0,
+      exitPrice: 840.0,
       holdDays: 5,
       confidenceScore: "aggressive",
       reasonLine: "Strong earnings momentum continues.",
@@ -349,7 +349,7 @@ describe("recommendationCardSchema (full output)", () => {
       targetPrice: null,
       targetRangeLow: 200.0,
       targetRangeHigh: 220.0,
-      stopPrice: 270.0,
+      exitPrice: 270.0,
       holdDays: 7,
       confidenceScore: "aggressive",
       reasonLine: "Overvaluation risk, margin pressure expected",

@@ -38,7 +38,7 @@ function publishedCard(overrides: Record<string, unknown> = {}) {
     targetPrice: 960.0,
     targetRangeLow: null,
     targetRangeHigh: null,
-    stopPrice: 970.0,
+    exitPrice: 970.0,
     holdDays: 5,
     confidenceScore: "aggressive" as const,
     reasonLine: "AI data-center demand continues to accelerate",
@@ -55,19 +55,19 @@ function validBuySet(ticker = "NVDA") {
       id: "cvalidaggressive001",
       ticker,
       confidenceScore: "aggressive",
-      stopPrice: 970,
+      exitPrice: 970,
     }),
     publishedCard({
       id: "cvalidbalanced00001",
       ticker,
       confidenceScore: "balanced",
-      stopPrice: 955,
+      exitPrice: 955,
     }),
     publishedCard({
       id: "cvalidconserv00001",
       ticker,
       confidenceScore: "conservative",
-      stopPrice: 930,
+      exitPrice: 930,
     }),
   ];
 }
@@ -81,7 +81,7 @@ function validSellSet(ticker = "TSLA") {
       currentPrice: 300,
       targetPrice: 250,
       confidenceScore: "aggressive",
-      stopPrice: 330,
+      exitPrice: 330,
     }),
     publishedCard({
       id: "cvalidsellbal0001",
@@ -90,7 +90,7 @@ function validSellSet(ticker = "TSLA") {
       currentPrice: 300,
       targetPrice: 250,
       confidenceScore: "balanced",
-      stopPrice: 315,
+      exitPrice: 315,
     }),
     publishedCard({
       id: "cvalidsellcons001",
@@ -99,7 +99,7 @@ function validSellSet(ticker = "TSLA") {
       currentPrice: 300,
       targetPrice: 250,
       confidenceScore: "conservative",
-      stopPrice: 305,
+      exitPrice: 305,
     }),
   ];
 }
@@ -304,15 +304,15 @@ describe("getTodayRecommendations", () => {
     mockFindMany.mockResolvedValue([
       publishedCard({
         confidenceScore: "aggressive",
-        stopPrice: 910,
+        exitPrice: 910,
       }),
       publishedCard({
         confidenceScore: "balanced",
-        stopPrice: 930,
+        exitPrice: 930,
       }),
       publishedCard({
         confidenceScore: "conservative",
-        stopPrice: 950,
+        exitPrice: 950,
       }),
     ]);
 
@@ -331,15 +331,15 @@ describe("getTodayRecommendations", () => {
     mockFindMany.mockResolvedValue([
       publishedCard({
         confidenceScore: "aggressive",
-        stopPrice: 920,
+        exitPrice: 920,
       }),
       publishedCard({
         confidenceScore: "balanced",
-        stopPrice: 910,
+        exitPrice: 910,
       }),
       publishedCard({
         confidenceScore: "conservative",
-        stopPrice: 900,
+        exitPrice: 900,
       }),
     ]);
 
@@ -364,7 +364,7 @@ describe("getTodayRecommendations", () => {
     if (result.status === "ok") {
       expect(result.cards).toHaveLength(3);
       expect(result.cards.find((card) => card.confidenceScore === "aggressive"))
-        .toMatchObject({ direction: "SELL", stopPrice: 330 });
+        .toMatchObject({ direction: "SELL", exitPrice: 330 });
     }
   });
 
@@ -376,21 +376,21 @@ describe("getTodayRecommendations", () => {
         currentPrice: 300,
         targetPrice: 250,
         confidenceScore: "aggressive",
-        stopPrice: 285,
+        exitPrice: 285,
       }),
       publishedCard({
         direction: "SELL",
         currentPrice: 300,
         targetPrice: 250,
         confidenceScore: "balanced",
-        stopPrice: 300,
+        exitPrice: 300,
       }),
       publishedCard({
         direction: "SELL",
         currentPrice: 300,
         targetPrice: 250,
         confidenceScore: "conservative",
-        stopPrice: 315,
+        exitPrice: 315,
       }),
     ]);
 

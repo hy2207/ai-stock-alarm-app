@@ -46,7 +46,7 @@ const okGeneration = {
       currentPrice: 197,
       entryPrice: 197,
       targetPrice: 208,
-      stopPrice: 214,
+      exitPrice: 214,
       holdDays: 3,
       confidenceMode: "aggressive",
       reasonLine: "서비스 마진 개선과 가격 흐름이 단기 매수 판단을 뒷받침합니다.",
@@ -59,7 +59,7 @@ const okGeneration = {
       currentPrice: 197,
       entryPrice: 195,
       targetPrice: 208,
-      stopPrice: 206,
+      exitPrice: 206,
       holdDays: 5,
       confidenceMode: "balanced",
       reasonLine: "실적 개선 신호가 3~5일 중립형 매수 판단을 뒷받침합니다.",
@@ -73,7 +73,7 @@ const okGeneration = {
       entryRangeLow: 192,
       entryRangeHigh: 196,
       targetPrice: 208,
-      stopPrice: 202,
+      exitPrice: 202,
       holdDays: 5,
       confidenceMode: "conservative",
       reasonLine: "서비스 강세는 유지되지만 안정형은 매도 기준을 앞당기는 접근이 적절합니다.",
@@ -150,13 +150,13 @@ describe("recommendationGenerationSchema", () => {
           ...okGeneration.variants[0],
           direction: "SELL",
           targetPrice: 180,
-          stopPrice: 220,
+          exitPrice: 220,
         },
         {
           ...okGeneration.variants[1],
           direction: "SELL",
           targetPrice: 180,
-          stopPrice: 205,
+          exitPrice: 205,
         },
         {
           ...okGeneration.variants[2],
@@ -164,7 +164,7 @@ describe("recommendationGenerationSchema", () => {
           targetPrice: 180,
           targetRangeLow: undefined,
           targetRangeHigh: undefined,
-          stopPrice: 195,
+          exitPrice: 195,
         },
       ],
     });
@@ -180,13 +180,13 @@ describe("recommendationGenerationSchema", () => {
           ...okGeneration.variants[0],
           direction: "SELL",
           targetPrice: 180,
-          stopPrice: 175,
+          exitPrice: 175,
         },
         {
           ...okGeneration.variants[1],
           direction: "SELL",
           targetPrice: 180,
-          stopPrice: 182,
+          exitPrice: 182,
         },
         {
           ...okGeneration.variants[2],
@@ -194,7 +194,7 @@ describe("recommendationGenerationSchema", () => {
           targetPrice: 180,
           targetRangeLow: undefined,
           targetRangeHigh: undefined,
-          stopPrice: 190,
+          exitPrice: 190,
         },
       ],
     });
@@ -209,7 +209,7 @@ describe("recommendationGenerationSchema", () => {
         {
           ...okGeneration.variants[0],
           targetPrice: 208,
-          stopPrice: 216,
+          exitPrice: 216,
         },
         okGeneration.variants[1],
         okGeneration.variants[2],
@@ -223,9 +223,9 @@ describe("recommendationGenerationSchema", () => {
     const result = recommendationGenerationSchema.safeParse({
       ...okGeneration,
       variants: [
-        { ...okGeneration.variants[0], stopPrice: 200 },
+        { ...okGeneration.variants[0], exitPrice: 200 },
         okGeneration.variants[1],
-        { ...okGeneration.variants[2], stopPrice: 214 },
+        { ...okGeneration.variants[2], exitPrice: 214 },
       ],
     });
 
@@ -236,9 +236,9 @@ describe("recommendationGenerationSchema", () => {
     const result = recommendationGenerationSchema.safeParse({
       ...okGeneration,
       variants: [
-        { ...okGeneration.variants[0], stopPrice: 195 },
-        { ...okGeneration.variants[1], stopPrice: 190 },
-        { ...okGeneration.variants[2], stopPrice: 185 },
+        { ...okGeneration.variants[0], exitPrice: 195 },
+        { ...okGeneration.variants[1], exitPrice: 190 },
+        { ...okGeneration.variants[2], exitPrice: 185 },
       ],
     });
 

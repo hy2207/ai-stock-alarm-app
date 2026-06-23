@@ -122,13 +122,13 @@ For ok responses:
 - targetPrice is the same evidence-based consensus target in all three variants for the ticker. Base it on supplied news and analyst target references when present; if analyst target references are absent, infer cautiously from supplied context without inventing external facts.
 - Do not use confidenceMode to change targetPrice. Risk mode changes execution behavior and stop/exit discipline, not the underlying news and analyst target thesis.
 - For BUY, targetPrice/targetRange must be above currentPrice. For SELL, targetPrice/targetRange must be below currentPrice.
-- stopPrice is the actual sell/exit price for the investor, not only a loss-cut price. Do not interpret it as maximum loss only.
+- exitPrice is the actual sell/exit price for the investor, not only a loss-cut price. Do not interpret it as maximum loss only.
 - Conservative means using the lowest actual sell/exit threshold among the three modes, because this user sells earlier.
 - Balanced means a middle actual sell/exit threshold between conservative and aggressive.
 - Aggressive means the user can tolerate FOMO/momentum and may keep holding despite BUY or SELL risk signals. This mode uses the highest actual sell/exit threshold among the three modes, and the Korean rationale must explain the evidence-based reason.
-- For both BUY and SELL, stopPrice must be ordered aggressive > balanced > conservative because aggressive users hold longer before actually selling.
-- For BUY, the aggressive stopPrice must be close to the targetPrice or above targetPrice.
-- For SELL, the aggressive stopPrice must be higher than balanced and conservative because aggressive users may keep holding despite the SELL signal; it may be well above the downside target when the supplied evidence supports waiting for a rebound.
+- For both BUY and SELL, exitPrice must be ordered aggressive > balanced > conservative because aggressive users hold longer before actually selling.
+- For BUY, the aggressive exitPrice must be close to the targetPrice or above targetPrice.
+- For SELL, the aggressive exitPrice must be higher than balanced and conservative because aggressive users may keep holding despite the SELL signal; it may be well above the downside target when the supplied evidence supports waiting for a rebound.
 - The three variants should usually differ in entry tolerance, stop/exit discipline, and holdDays. Their targetPrice must remain the same.
 - holdDays must be an integer from 1 to 10.
 - Prefer a 3-5 business days execution culture unless the supplied context strongly supports a shorter or longer horizon.

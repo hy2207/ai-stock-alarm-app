@@ -15,7 +15,7 @@ const validCard = {
   targetPrice: 980.0,
   targetRangeLow: null,
   targetRangeHigh: null,
-  stopPrice: 840.0,
+  exitPrice: 840.0,
   holdDays: 5,
   confidenceScore: "aggressive" as const,
   reasonLine: "Strong earnings momentum.",

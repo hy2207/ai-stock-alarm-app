@@ -26,7 +26,7 @@ export interface RecommendationCard {
   targetPrice?: number;
   targetRangeMin?: number;
   targetRangeMax?: number;
-  stopPrice: number;
+  exitPrice: number;
   holdDays: number;
   confidenceScore: ConfidenceScore;
   actionLabel: string;

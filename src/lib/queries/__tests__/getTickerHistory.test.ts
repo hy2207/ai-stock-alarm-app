@@ -37,7 +37,7 @@ const baseCard = {
   targetPrice: 920.0,
   targetRangeLow: null,
   targetRangeHigh: null,
-  stopPrice: null,
+  exitPrice: null,
   holdDays: 5,
   confidenceScore: "aggressive" as const,
   reasonLine: "Strong AI demand outlook",

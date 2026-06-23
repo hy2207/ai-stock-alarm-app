@@ -50,7 +50,7 @@ const okGeneration = {
       currentPrice: 197,
       entryPrice: 197,
       targetPrice: 208,
-      stopPrice: 214,
+      exitPrice: 214,
       holdDays: 3,
       confidenceMode: "aggressive" as const,
       reasonLine: "서비스 마진 개선과 가격 흐름이 단기 매수 판단을 뒷받침합니다.",
@@ -63,7 +63,7 @@ const okGeneration = {
       currentPrice: 197,
       entryPrice: 195,
       targetPrice: 208,
-      stopPrice: 206,
+      exitPrice: 206,
       holdDays: 5,
       confidenceMode: "balanced" as const,
       reasonLine: "실적 개선 신호가 3~5일 중립형 매수 판단을 뒷받침합니다.",
@@ -77,7 +77,7 @@ const okGeneration = {
       entryRangeLow: 192,
       entryRangeHigh: 196,
       targetPrice: 208,
-      stopPrice: 202,
+      exitPrice: 202,
       holdDays: 5,
       confidenceMode: "conservative" as const,
       reasonLine: "서비스 강세는 유지되지만 안정형은 매도 기준을 앞당기는 접근이 적절합니다.",
@@ -88,7 +88,7 @@ const okGeneration = {
 };
 
 function completeCard(ticker: string, confidenceScore: string) {
-  const stopPriceByMode: Record<string, number> = {
+  const exitPriceByMode: Record<string, number> = {
     aggressive: 214,
     balanced: 206,
     conservative: 202,
@@ -102,7 +102,7 @@ function completeCard(ticker: string, confidenceScore: string) {
     targetPrice: 208,
     targetRangeLow: null,
     targetRangeHigh: null,
-    stopPrice: stopPriceByMode[confidenceScore],
+    exitPrice: exitPriceByMode[confidenceScore],
   };
 }
 

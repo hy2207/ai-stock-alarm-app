@@ -76,7 +76,7 @@ describe("buildRecommendationPrompt", () => {
     expect(system).toContain("targetPrice is the same evidence-based consensus target");
     expect(system).toContain("Do not use confidenceMode to change targetPrice");
     expect(system).toContain("actual sell/exit price");
-    expect(system).toContain("For both BUY and SELL, stopPrice must be ordered aggressive > balanced > conservative");
+    expect(system).toContain("For both BUY and SELL, exitPrice must be ordered aggressive > balanced > conservative");
     expect(system).toContain("close to the targetPrice or above targetPrice");
     expect(system).toContain("highest actual sell/exit threshold");
     expect(system).toContain("may keep holding despite BUY or SELL risk signals");

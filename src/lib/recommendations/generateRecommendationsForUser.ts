@@ -27,7 +27,7 @@ interface PublishedCardCompleteness {
   targetPrice: number | null;
   targetRangeLow: number | null;
   targetRangeHigh: number | null;
-  stopPrice: number | null;
+  exitPrice: number | null;
 }
 
 export interface GenerateRecommendationsForUserResult {
@@ -108,7 +108,7 @@ async function loadPublishedCardsToday(
       targetPrice: true,
       targetRangeLow: true,
       targetRangeHigh: true,
-      stopPrice: true,
+      exitPrice: true,
     },
   });
 }
@@ -125,7 +125,7 @@ function readTargetPrice(card: PublishedCardCompleteness) {
 
 function hasValidDirectionalTarget(card: PublishedCardCompleteness) {
   const target = readTargetPrice(card);
-  if (card.currentPrice == null || card.stopPrice == null || target == null) {
+  if (card.currentPrice == null || card.exitPrice == null || target == null) {
     return false;
   }
 
@@ -178,9 +178,9 @@ function hasRiskOrderedStops(cards: PublishedCardCompleteness[]) {
   );
 
   if (
-    !aggressive?.stopPrice ||
-    !balanced?.stopPrice ||
-    !conservative?.stopPrice
+    !aggressive?.exitPrice ||
+    !balanced?.exitPrice ||
+    !conservative?.exitPrice
   ) {
     return false;
   }
@@ -191,9 +191,9 @@ function hasRiskOrderedStops(cards: PublishedCardCompleteness[]) {
   }
 
   return (
-    aggressive.stopPrice > balanced.stopPrice &&
-    balanced.stopPrice > conservative.stopPrice &&
-    (aggressive.direction === "BUY" ? aggressive.stopPrice >= target * 0.98 : true)
+    aggressive.exitPrice > balanced.exitPrice &&
+    balanced.exitPrice > conservative.exitPrice &&
+    (aggressive.direction === "BUY" ? aggressive.exitPrice >= target * 0.98 : true)
   );
 }
 
@@ -262,7 +262,7 @@ async function hasCompletePublishedVariantsForTickerToday(
       targetPrice: true,
       targetRangeLow: true,
       targetRangeHigh: true,
-      stopPrice: true,
+      exitPrice: true,
     },
   });
 
