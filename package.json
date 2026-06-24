@@ -12,7 +12,10 @@
     "vite:dev": "vite",
     "vite:build": "vite build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "perf:api": "node scripts/perf/measure-p95.mjs http://localhost:3000/api/admin/health 800",
+    "perf:render": "node scripts/perf/measure-p95.mjs http://localhost:3000/ 700",
+    "perf:timeout": "node scripts/perf/check-serverless-timeout.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.80",

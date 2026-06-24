@@ -4,6 +4,7 @@ import { runPerformanceEvaluation } from "@/lib/perf/evaluatePerformance";
 import { evaluatePerformanceResponseSchema } from "@/lib/dto/evaluatePerformanceResponse";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const authHeader = request.headers.get("authorization") ?? "";
