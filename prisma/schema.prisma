@@ -1,7 +1,6 @@
-// Prisma schema — SQLite (local), PostgreSQL (production).
-// Change provider to "postgresql" and DATABASE_URL to the Supabase connection
-// string before deploying. Schema uses only the common subset (cuid PKs,
-// no native Postgres types) so both datasources are compatible.
+// Prisma schema — PostgreSQL (Supabase).
+// Local dev: set DATABASE_URL to Supabase connection string or use
+// a local PostgreSQL instance. See .env.example for the required format.
 //
 // Follows SRS §6.2 Entity & Data Model. No EventLog/NotificationLog
 // (delegated to PostHog / OneSignal per SRS v0.3).
@@ -11,8 +10,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("POSTGRES_URL")
 }
 
 // ── Core business entities ──────────────────────────────────────────
