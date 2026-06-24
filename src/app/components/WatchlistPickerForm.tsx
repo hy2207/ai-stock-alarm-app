@@ -67,8 +67,9 @@ export function WatchlistPickerForm({
       }
 
       toast.success(successMessage);
-      router.replace(redirectTo);
-      router.refresh();
+      // Hard navigate so the server re-evaluates userHasWatchlist with fresh DB data.
+      // router.replace + router.refresh races in App Router and cancels the navigation.
+      window.location.replace(redirectTo);
     } catch {
       toast.error("관심 종목 저장 중 오류가 발생했습니다.");
     } finally {
