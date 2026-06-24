@@ -93,11 +93,15 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       profile: mapGoogleProfile,
     }),
-    KakaoProvider({
-      clientId: process.env.KAKAO_CLIENT_ID ?? "",
-      clientSecret: process.env.KAKAO_CLIENT_SECRET ?? "",
-      profile: mapKakaoProfile,
-    }),
+    ...(process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET
+      ? [
+          KakaoProvider({
+            clientId: process.env.KAKAO_CLIENT_ID,
+            clientSecret: process.env.KAKAO_CLIENT_SECRET,
+            profile: mapKakaoProfile,
+          }),
+        ]
+      : []),
   ],
   session: {
     strategy: "jwt",
