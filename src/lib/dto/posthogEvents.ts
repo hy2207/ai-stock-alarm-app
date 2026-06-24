@@ -27,6 +27,7 @@ export const SERVER_EVENT_NAMES = [
   "llm_call_failed",
   "push_sent",
   "performance_evaluation_run",
+  "recommendations_generated",
 ] as const;
 
 export const ALL_EVENT_NAMES = [
