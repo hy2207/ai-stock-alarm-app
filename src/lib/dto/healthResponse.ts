@@ -15,6 +15,10 @@ export const healthResponseSchema = z.object({
     finnhub: sourceFreshnessSchema,
   }),
   nullRate: z.number().min(0).max(100),
+  db: z.object({
+    connected: z.boolean(),
+    latencyMs: z.number().int().nonnegative().nullable(),
+  }),
 });
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
