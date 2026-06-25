@@ -66,7 +66,9 @@ export function DevRecommendationGenerator() {
       });
 
       if (response.status === 404) {
-        setState("done");
+        const message = "추천 생성 기능을 사용할 수 없습니다.";
+        setState("failed");
+        setFailureMessage(message);
         return;
       }
 
@@ -128,7 +130,7 @@ export function DevRecommendationGenerator() {
     return (
       <button
         type="button"
-        className="mt-3 text-sm font-medium text-blue-700"
+        className="mt-4 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 active:bg-blue-700"
         onClick={() => void handleGenerate()}
       >
         추천 생성하기
