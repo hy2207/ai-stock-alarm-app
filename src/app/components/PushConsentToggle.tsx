@@ -19,7 +19,11 @@ export function PushConsentToggle({ initialConsent }: PushConsentToggleProps) {
     setStatus(null);
 
     if (next) {
-      await subscribePush();
+      const subscribed = await subscribePush();
+      if (!subscribed) {
+        setStatus("브라우저 알림 권한이 필요합니다. 주소창의 자물쇠 아이콘에서 알림을 허용해 주세요.");
+        return;
+      }
     } else {
       await unsubscribePush();
     }

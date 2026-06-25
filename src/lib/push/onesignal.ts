@@ -44,21 +44,25 @@ export function initOneSignal(): void {
   initialized = true;
 }
 
-export async function subscribePush(): Promise<void> {
-  if (typeof window === "undefined" || !window.OneSignal) return;
+/** Returns true if the subscription request was sent, false if OneSignal is not ready. */
+export async function subscribePush(): Promise<boolean> {
+  if (typeof window === "undefined" || !window.OneSignal) return false;
   try {
     await window.OneSignal.User.PushSubscription.optIn();
+    return true;
   } catch {
-    // user may have denied permission — silent
+    return false;
   }
 }
 
-export async function unsubscribePush(): Promise<void> {
-  if (typeof window === "undefined" || !window.OneSignal) return;
+/** Returns true if the unsubscribe request was sent, false if OneSignal is not ready. */
+export async function unsubscribePush(): Promise<boolean> {
+  if (typeof window === "undefined" || !window.OneSignal) return false;
   try {
     await window.OneSignal.User.PushSubscription.optOut();
+    return true;
   } catch {
-    // silent
+    return false;
   }
 }
 

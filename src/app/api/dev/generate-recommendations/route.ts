@@ -4,8 +4,9 @@ import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { generateRecommendationsForUser } from "@/lib/recommendations/generateRecommendationsForUser";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
-const DEV_GENERATION_TIMEOUT_MS = 30_000;
+const DEV_GENERATION_TIMEOUT_MS = 55_000;
 
 class DevGenerationTimeoutError extends Error {
   constructor() {
@@ -46,19 +47,10 @@ async function runWithTimeout<T>(task: Promise<T>): Promise<T> {
 }
 
 export async function POST(): Promise<NextResponse> {
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json(
-      {
-        error: "Unauthorized",
-        stage: "auth_session",
-        hint:
-          "Clear localhost:3000 cookies and sign in again if NEXTAUTH_SECRET changed.",
-      },
+      { error: "Unauthorized", stage: "auth_session" },
       { status: 401 },
     );
   }

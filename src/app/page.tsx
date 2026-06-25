@@ -40,7 +40,7 @@ export default async function Home({ searchParams }: HomeProps) {
         <p className="max-w-sm text-center text-sm text-slate-600">
           {result.reason}
         </p>
-        {process.env.NODE_ENV !== "production" && <DevRecommendationGenerator />}
+        <DevRecommendationGenerator />
         <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
           <Link href="/settings" className="font-medium text-blue-700">
             관심 종목 변경
