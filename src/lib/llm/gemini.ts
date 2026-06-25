@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { env } from "node:process";
 
-const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash-001";
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 
 function getGeminiApiKey(): string {
   const key = env.GEMINI_API_KEY;
