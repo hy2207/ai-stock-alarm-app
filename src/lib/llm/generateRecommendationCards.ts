@@ -17,8 +17,7 @@ const LLM_GENERATION_TIMEOUT_MS = 25_000;
 const GEMINI_PROVIDER_OPTIONS = {
   google: {
     thinkingConfig: {
-      thinkingLevel: "minimal",
-      includeThoughts: false,
+      thinkingBudget: 0,
     },
   },
 } as const;
