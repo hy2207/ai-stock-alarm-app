@@ -278,7 +278,17 @@ export const recommendationGenerationVariantSchema = z
     holdDays: z.number().int().min(1).max(10),
     confidenceMode: confidenceModeEnum,
     reasonLine: z.string().trim().min(1).max(160),
-    newsRationaleKo: z.string().trim().min(1).max(240),
+    newsItems: z
+      .array(
+        z.object({
+          source: z.string().max(80),
+          headlineKo: z.string().max(100),
+          summaryKo: z.string().max(160),
+        }),
+      )
+      .min(0)
+      .max(5)
+      .default([]),
   })
   .refine(
     (data) =>
@@ -376,7 +386,7 @@ export async function generateRecommendationCards({
 
 Return only valid JSON. Do not wrap it in Markdown.
 Use one of these shapes:
-{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsRationaleKo":"뉴스 근거를 한국어 240자 이하로 요약"}]}
+{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하"}]}]}
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,

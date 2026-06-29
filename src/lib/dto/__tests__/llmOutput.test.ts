@@ -15,8 +15,9 @@ const validVariant = {
   exitPrice: 170.0,
   holdDays: 5,
   reasonLine: "Strong earnings and buyback program",
-  newsRationaleKo:
-    "실적 개선 뉴스와 자사주 매입 기대를 근거로 단기 매수 판단을 제시합니다.",
+  newsItems: [
+    { source: "Reuters", headlineKo: "실적 개선 기대감 상승", summaryKo: "실적 개선 뉴스가 단기 매수 판단을 뒷받침합니다." },
+  ],
 };
 
 const validRangeVariant = {
@@ -30,8 +31,9 @@ const validRangeVariant = {
   targetRangeHigh: 220.0,
   holdDays: 7,
   reasonLine: "Aggressive entry on momentum",
-  newsRationaleKo:
-    "모멘텀 관련 뉴스 흐름을 바탕으로 공격형 진입 판단을 제시합니다.",
+  newsItems: [
+    { source: "Bloomberg", headlineKo: "모멘텀 강세 지속", summaryKo: "모멘텀 관련 뉴스가 공격형 진입 판단을 지지합니다." },
+  ],
 };
 
 describe("llmResponseSchema", () => {

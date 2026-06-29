@@ -1,4 +1,5 @@
 import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
+import { parseNewsItems } from "@/lib/dto/recommendationCard";
 import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
 import { TrackedLink } from "./TrackedLink";
@@ -31,6 +32,7 @@ function formatPrice(
 
 export function RecommendationCardLink({ card }: { card: RecommendationCardOutput }) {
   const reasonText = card.reasonLine;
+  const newsItems = parseNewsItems(card.newsItems);
 
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -85,14 +87,29 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         {reasonText}
       </p>
 
-      {card.newsRationaleKo && (
+      {newsItems.length > 0 ? (
+        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
+          <h3 className="mb-2 text-xs font-semibold text-blue-800">
+            뉴스 기반 판단 근거 ({newsItems.length}건)
+          </h3>
+          <ul className="space-y-2">
+            {newsItems.map((item, i) => (
+              <li key={i} className="rounded-md bg-white/70 p-2.5">
+                <p className="text-xs font-medium text-blue-700">{item.headlineKo}</p>
+                <p className="mt-0.5 text-xs text-slate-500">{item.summaryKo}</p>
+                <p className="mt-1 text-[10px] text-slate-400">{item.source}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : card.newsRationaleKo ? (
         <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
           <h3 className="text-xs font-semibold text-blue-800">뉴스 기반 판단 근거</h3>
           <p className="mt-1 text-sm leading-relaxed text-blue-950">
             {card.newsRationaleKo}
           </p>
         </div>
-      )}
+      ) : null}
 
       <PriceChartToggle ticker={card.ticker} direction={card.direction} />
 

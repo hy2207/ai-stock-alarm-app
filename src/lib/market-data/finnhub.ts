@@ -99,7 +99,7 @@ export async function fetchFinnhubNews(
   token: string,
 ): Promise<MarketDataResultOrError<NewsArticle[]>> {
   try {
-    const url = `${FINNHUB_BASE}/company-news?symbol=${encodeURIComponent(ticker)}&from=${_daysAgo(7)}&to=${_today()}&token=${encodeURIComponent(token)}`;
+    const url = `${FINNHUB_BASE}/company-news?symbol=${encodeURIComponent(ticker)}&from=${_daysAgo(3)}&to=${_today()}&token=${encodeURIComponent(token)}`;
     const res = await fetch(url, {
       next: { revalidate: 1800 },
       headers: { Accept: "application/json" },

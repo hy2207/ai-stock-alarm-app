@@ -23,6 +23,7 @@ export interface NewsSignalPromptItem {
   headline: string;
   source: string;
   summary?: string | null;
+  datetime?: number; // Unix timestamp (seconds) — used to show article date
 }
 
 export interface RecommendationPromptInput {
@@ -91,18 +92,21 @@ function formatOhlcvSummary(ticker: string, data?: MarketPromptData) {
 }
 
 function formatNewsSignals(ticker: string, signals?: NewsSignalPromptItem[]) {
-  const relevantSignals = signals?.slice(0, 3) ?? [];
+  const relevantSignals = signals?.slice(0, 5) ?? [];
 
   if (relevantSignals.length === 0) {
-    return `${ticker}: No recent news signals. Treat this as lower confidence context.`;
+    return `${ticker}: No recent news signals (last 3 days). Treat this as lower confidence context.`;
   }
 
   const lines = relevantSignals.map((signal) => {
+    const date = signal.datetime
+      ? new Date(signal.datetime * 1000).toISOString().slice(0, 10)
+      : "date unknown";
     const summary = signal.summary ? ` — ${signal.summary}` : "";
-    return `- [${signal.source}] ${signal.headline}${summary}`;
+    return `- [${signal.source}] [${date}] ${signal.headline}${summary}`;
   });
 
-  return `${ticker} news signals:\n${lines.join("\n")}`;
+  return `${ticker} news signals (last 3 days, up to 5):\n${lines.join("\n")}`;
 }
 
 function buildSystemPrompt() {
@@ -117,7 +121,11 @@ Return structured JSON only. The response must be one of:
 For ok responses:
 - Generate exactly 3 confidenceMode variants: ${CONFIDENCE_MODES.join(", ")}.
 - Each variant must include ticker, direction, currentPrice, entry price or entry range, target price or target range, holdDays, confidenceMode, and reasonLine.
-- Each variant must include newsRationaleKo: Korean, 1-2 compact sentences, 240 characters or fewer, connecting supplied news headlines/summaries to the BUY/SELL decision.
+- Each variant must include newsItems: an array of 1–5 objects (one per cited article from NEWS SIGNALS), each containing:
+  { "source": "<original source name>", "headlineKo": "<headline in Korean, ≤100 chars>", "summaryKo": "<one sentence in Korean explaining why this article supports the BUY/SELL, ≤160 chars>" }
+- Include all relevant articles from NEWS SIGNALS (minimum 1 if any are supplied, maximum 5).
+- If no NEWS SIGNALS are available, set newsItems to an empty array [].
+- All 3 variants for the same ticker must include the same newsItems array.
 - currentPrice must match the latest supplied market close/current price for that ticker; do not invent it.
 - targetPrice is the same evidence-based consensus target in all three variants for the ticker. Base it on supplied news and analyst target references when present; if analyst target references are absent, infer cautiously from supplied context without inventing external facts.
 - Do not use confidenceMode to change targetPrice. Risk mode changes execution behavior and stop/exit discipline, not the underlying news and analyst target thesis.
@@ -134,7 +142,7 @@ For ok responses:
 - Prefer a 3-5 business days execution culture unless the supplied context strongly supports a shorter or longer horizon.
 - reasonLine must be Korean, non-empty, ticker-specific, and 160 characters or fewer.
 - reasonLine must compactly summarize why the card is BUY or SELL.
-- newsRationaleKo must not invent article facts, source names, prices, or events absent from NEWS SIGNALS.
+- newsItems must not invent article facts, source names, prices, or events absent from NEWS SIGNALS.
 - Do not include candle charts, RSI, MACD, or indicator-first analysis in any user-facing wording.
 - BUY or SELL must be decided from supplied news signals plus market context. Do not invent prices, news, or evidence that is absent from the supplied context.
 - If evidence is too thin, choose no_call rather than forcing a weak BUY or SELL.`;

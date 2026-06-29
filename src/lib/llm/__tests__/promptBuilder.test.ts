@@ -58,11 +58,10 @@ describe("buildRecommendationPrompt", () => {
     expect(system).toContain("1 to 10");
     expect(system).toContain("3-5 business days");
     expect(system).toContain("reasonLine");
-    expect(system).toContain("newsRationaleKo");
+    expect(system).toContain("newsItems");
     expect(system).toContain("Korean");
     expect(system).toContain("why the card is BUY or SELL");
     expect(system).toContain("160");
-    expect(system).toContain("240");
     expect(system).toContain("no_call");
     expect(system).toContain("Do not include candle");
     expect(system).toContain("RSI");

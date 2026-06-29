@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+const newsItemKoSchema = z.object({
+  source: z.string().max(80),
+  headlineKo: z.string().max(100),
+  summaryKo: z.string().max(160),
+});
+
 /** Each card variant the LLM generates — one per confidence mode. */
 const llmCardSchema = z.object({
   ticker: z.string().min(1).max(10),
@@ -14,7 +20,7 @@ const llmCardSchema = z.object({
   exitPrice: z.number().positive().nullable().optional(),
   holdDays: z.number().int().min(1).max(10),
   reasonLine: z.string().trim().min(1).max(160),
-  newsRationaleKo: z.string().trim().min(1).max(240),
+  newsItems: z.array(newsItemKoSchema).min(0).max(5).default([]),
 });
 
 /** LLM generates 3 card variants in one call. */

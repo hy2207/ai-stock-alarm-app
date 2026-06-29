@@ -332,6 +332,7 @@ async function collectMarketContext(
           headline: article.headline,
           source: article.source,
           summary: article.summary,
+          datetime: article.datetime,
         }));
       }
     }),

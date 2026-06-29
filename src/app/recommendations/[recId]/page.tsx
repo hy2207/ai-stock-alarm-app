@@ -5,6 +5,7 @@ import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { syncPriceHistory } from "@/lib/market-data/priceSync";
+import { parseNewsItems } from "@/lib/dto/recommendationCard";
 
 interface RecommendationDetailPageProps {
   params: {
@@ -55,6 +56,8 @@ export default async function RecommendationDetailPage({
       close: p.close,
     };
   });
+
+  const newsItems = parseNewsItems(card.newsItems);
 
   const completed = performance.filter((record) => record.hitFlag != null);
   const wins = completed.filter((record) => record.hitFlag === true).length;
@@ -137,14 +140,36 @@ export default async function RecommendationDetailPage({
             <p className="mt-2 text-sm text-slate-700">{card.reasonLine}</p>
           </div>
 
-          {card.newsRationaleKo && (
+          {newsItems.length > 0 ? (
+            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <h2 className="font-semibold text-blue-950">
+                뉴스 기반 판단 근거{" "}
+                <span className="text-sm font-normal text-blue-600">
+                  ({newsItems.length}건)
+                </span>
+              </h2>
+              <ul className="mt-3 space-y-3">
+                {newsItems.map((item, i) => (
+                  <li key={i} className="rounded-lg bg-white/80 p-3">
+                    <p className="text-sm font-semibold text-blue-800">
+                      {item.headlineKo}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-700">
+                      {item.summaryKo}
+                    </p>
+                    <p className="mt-1.5 text-xs text-slate-400">{item.source}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : card.newsRationaleKo ? (
             <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
               <h2 className="font-semibold text-blue-950">뉴스 기반 판단 근거</h2>
               <p className="mt-2 text-sm leading-relaxed text-blue-950">
                 {card.newsRationaleKo}
               </p>
             </div>
-          )}
+          ) : null}
 
           <RecommendationActions
             recId={card.id}

@@ -1,5 +1,20 @@
 import { z } from "zod";
 
+/** Shape of each news item stored in the newsItems Json field. */
+export const newsItemKoSchema = z.object({
+  source: z.string(),
+  headlineKo: z.string(),
+  summaryKo: z.string(),
+});
+export type NewsItemKo = z.infer<typeof newsItemKoSchema>;
+
+/** Safely parse the raw Prisma Json value into a typed array. */
+export function parseNewsItems(raw: unknown): NewsItemKo[] {
+  if (!raw) return [];
+  const result = z.array(newsItemKoSchema).safeParse(raw);
+  return result.success ? result.data : [];
+}
+
 export const directionEnum = z.enum(["BUY", "SELL"]);
 export const confidenceModeEnum = z.enum([
   "aggressive",
@@ -68,6 +83,8 @@ export const recommendationCardCreateSchema = z
     confidenceScore: confidenceModeEnum,
     reasonLine: z.string().trim().min(1).max(160),
     newsRationaleKo: z.string().trim().min(1).max(240).nullable().optional(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    newsItems: z.any().nullable().optional(),
     status: cardStatusEnum,
     validUntil: z.date(),
   })
@@ -104,6 +121,8 @@ export const recommendationCardSchema = z.object({
   confidenceScore: confidenceModeEnum,
   reasonLine: z.string().min(1).max(160),
   newsRationaleKo: z.string().min(1).max(240).nullable().optional().default(null),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  newsItems: z.any().nullable().optional().default(null),
   status: cardStatusEnum,
   createdAt: z.date(),
   validUntil: z.date(),

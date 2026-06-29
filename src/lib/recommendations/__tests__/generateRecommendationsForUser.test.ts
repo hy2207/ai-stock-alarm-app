@@ -54,8 +54,7 @@ const okGeneration = {
       holdDays: 3,
       confidenceMode: "aggressive" as const,
       reasonLine: "서비스 마진 개선과 가격 흐름이 단기 매수 판단을 뒷받침합니다.",
-      newsRationaleKo:
-        "서비스 마진 개선 뉴스와 현재 가격 흐름을 근거로 공격형 매수 판단을 제시합니다.",
+      newsItems: [{ source: "Reuters", headlineKo: "서비스 마진 개선", summaryKo: "서비스 마진 개선 뉴스가 공격형 매수 판단을 뒷받침합니다." }],
     },
     {
       ticker: "AAPL",
@@ -67,8 +66,7 @@ const okGeneration = {
       holdDays: 5,
       confidenceMode: "balanced" as const,
       reasonLine: "실적 개선 신호가 3~5일 중립형 매수 판단을 뒷받침합니다.",
-      newsRationaleKo:
-        "실적 개선 뉴스가 긍정적이어서 중립형 기준의 매수 판단을 제시합니다.",
+      newsItems: [{ source: "Reuters", headlineKo: "실적 개선 신호", summaryKo: "실적 개선 뉴스가 중립형 매수 판단을 지지합니다." }],
     },
     {
       ticker: "AAPL",
@@ -81,8 +79,7 @@ const okGeneration = {
       holdDays: 5,
       confidenceMode: "conservative" as const,
       reasonLine: "서비스 강세는 유지되지만 안정형은 매도 기준을 앞당기는 접근이 적절합니다.",
-      newsRationaleKo:
-        "서비스 부문 강세는 유지되지만 안정형은 매도 기준을 앞당겨 방어적으로 접근합니다.",
+      newsItems: [{ source: "Reuters", headlineKo: "서비스 강세 지속", summaryKo: "서비스 강세는 유지되지만 안정형은 방어적 접근이 적절합니다." }],
     },
   ],
 };

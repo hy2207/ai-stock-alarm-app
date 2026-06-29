@@ -49,7 +49,8 @@ export async function persistRecommendationGeneration({
         holdDays: variant.holdDays,
         confidenceScore: variant.confidenceMode,
         reasonLine: variant.reasonLine,
-        newsRationaleKo: variant.newsRationaleKo,
+        newsRationaleKo: null,
+        newsItems: variant.newsItems.length > 0 ? variant.newsItems : null,
         status: "published",
         validUntil: validUntilFromHoldDays(now, variant.holdDays),
       });
