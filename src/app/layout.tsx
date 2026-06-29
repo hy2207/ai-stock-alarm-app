@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { AppToaster } from "@/app/components/AppToaster";
+import { AppNav } from "@/app/components/AppNav";
 import { OneSignalInit } from "@/app/components/OneSignalInit";
 import "../styles/index.css";
 
@@ -23,6 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body>
+        <AppNav />
         {children}
         <AppToaster />
         <OneSignalInit />

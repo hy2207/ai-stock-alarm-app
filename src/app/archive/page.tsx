@@ -272,10 +272,6 @@ export default async function ArchivePage() {
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
       <div className="mx-auto max-w-3xl py-8">
-        <Link href="/" className="text-sm font-medium text-blue-700">
-          홈으로
-        </Link>
-
         {/* Summary header */}
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between">

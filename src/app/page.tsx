@@ -71,14 +71,9 @@ export default async function Home({ searchParams }: HomeProps) {
         </>
       )}
       <div className="mx-auto max-w-3xl py-8">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">오늘의 의사결정 카드</h1>
-            <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
-          </div>
-          <Link href="/settings" className="text-sm font-medium text-blue-700">
-            관심 종목
-          </Link>
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">오늘의 의사결정 카드</h1>
+          <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
         </div>
 
         <RiskModeRecommendationList

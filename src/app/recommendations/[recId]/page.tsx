@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Disclaimer } from "@/app/components/Disclaimer";
 import { PostHogEvent } from "@/app/components/PostHogEvent";
@@ -59,11 +58,7 @@ export default async function RecommendationDetailPage({
       />
 
       <div className="mx-auto max-w-3xl py-8">
-        <Link href="/" className="text-sm font-medium text-blue-700">
-          홈으로
-        </Link>
-
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-4 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-3xl font-semibold">{card.ticker}</h1>

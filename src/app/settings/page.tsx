@@ -27,11 +27,7 @@ export default async function SettingsPage() {
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
       <div className="mx-auto max-w-2xl py-8">
-        <Link href="/" className="text-sm font-medium text-blue-700">
-          홈으로
-        </Link>
-
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h1 className="text-xl font-semibold">관심 종목 설정</h1>
           <p className="mt-1 text-sm text-slate-600">
             변경 사항은 다음 추천 생성부터 반영됩니다.
