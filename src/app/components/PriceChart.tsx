@@ -5,6 +5,7 @@ import {
   Area,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   type TooltipProps,
@@ -28,13 +29,18 @@ function fmtPrice(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
+function fmtYAxis(n: number) {
+  if (n >= 1000) return `$${(n / 1000).toFixed(1)}K`;
+  return `$${n.toFixed(0)}`;
+}
+
 function computeDomain(ohlcv: PricePoint[]): [number, number] {
   if (ohlcv.length === 0) return [0, 1];
   const lows = ohlcv.map((p) => p.low);
   const highs = ohlcv.map((p) => p.high);
   const min = Math.min(...lows);
   const max = Math.max(...highs);
-  const pad = (max - min) * 0.06 || max * 0.04;
+  const pad = (max - min) * 0.08 || max * 0.04;
   return [
     Math.floor((min - pad) * 100) / 100,
     Math.ceil((max + pad) * 100) / 100,
@@ -65,7 +71,7 @@ function ChartTooltipContent({
 export function PriceChart({
   ohlcv,
   direction,
-  height = 160,
+  height = 180,
 }: PriceChartProps) {
   if (ohlcv.length === 0) {
     return (
@@ -83,21 +89,26 @@ export function PriceChart({
   const gradientId = `price-grad-${direction}`;
   const domain = computeDomain(ohlcv);
 
-  // Show every 5th date label to avoid crowding on 1-month data
   const tickInterval = Math.max(1, Math.floor(ohlcv.length / 6));
 
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart
         data={ohlcv}
-        margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+        margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={strokeColor} stopOpacity={0.15} />
+            <stop offset="5%" stopColor={strokeColor} stopOpacity={0.12} />
             <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
           </linearGradient>
         </defs>
+
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#e2e8f0"
+          vertical={false}
+        />
 
         <XAxis
           dataKey="date"
@@ -106,7 +117,17 @@ export function PriceChart({
           tickLine={false}
           axisLine={false}
         />
-        <YAxis domain={domain} hide />
+
+        <YAxis
+          domain={domain}
+          tickFormatter={fmtYAxis}
+          tick={{ fontSize: 9, fill: "#94a3b8" }}
+          tickLine={false}
+          axisLine={false}
+          width={44}
+          tickCount={5}
+        />
+
         <Tooltip content={<ChartTooltipContent />} />
 
         <Area

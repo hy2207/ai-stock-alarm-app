@@ -12,6 +12,7 @@ export interface OhlcvPoint {
 export interface MarketDataResult {
   ticker: string;
   regularMarketPrice: number;
+  regularMarketTime?: number; // Unix timestamp (seconds) of the last market price
   previousClose: number;
   ohlcv: OhlcvPoint[];
 }

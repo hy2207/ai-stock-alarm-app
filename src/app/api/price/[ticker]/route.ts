@@ -64,6 +64,7 @@ export async function GET(
     return NextResponse.json({
       ticker,
       regularMarketPrice: Math.round(result.data.regularMarketPrice * 100) / 100,
+      regularMarketTime: result.data.regularMarketTime ?? null,
       ohlcv: points,
       source: "yahoo",
     });
@@ -78,10 +79,12 @@ export async function GET(
     priceResult?.ok
       ? Math.round(priceResult.data.regularMarketPrice * 100) / 100
       : stored[stored.length - 1]?.close ?? 0;
+  const regularMarketTime = priceResult?.ok ? (priceResult.data.regularMarketTime ?? null) : null;
 
   return NextResponse.json({
     ticker,
     regularMarketPrice,
+    regularMarketTime,
     ohlcv: stored.map((p) => ({
       date: fmtDateKo(p.date),
       open: p.open,

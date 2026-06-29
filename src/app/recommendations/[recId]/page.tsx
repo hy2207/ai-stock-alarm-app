@@ -43,6 +43,7 @@ export default async function RecommendationDetailPage({
   // Serve 1-month price data from DB cache; fetch from Yahoo if stale
   let ohlcv: { date: string; open: number; high: number; low: number; close: number }[] = [];
   let regularMarketPrice: number | null = null;
+  let regularMarketTime: number | null = null;
 
   const fresh = await hasFreshPriceData(card.ticker).catch(() => false);
   if (!fresh) {
@@ -63,6 +64,7 @@ export default async function RecommendationDetailPage({
           };
         });
       regularMarketPrice = Math.round(result.data.regularMarketPrice * 100) / 100;
+      regularMarketTime = result.data.regularMarketTime ?? null;
     }
   } else {
     const stored = await getStoredPriceHistory(card.ticker, 35).catch(() => []);
@@ -81,6 +83,7 @@ export default async function RecommendationDetailPage({
     const priceResult = await fetchYahooChart(card.ticker, "5d").catch(() => null);
     if (priceResult?.ok) {
       regularMarketPrice = Math.round(priceResult.data.regularMarketPrice * 100) / 100;
+      regularMarketTime = priceResult.data.regularMarketTime ?? null;
     }
   }
 
@@ -193,6 +196,16 @@ export default async function RecommendationDetailPage({
             {regularMarketPrice != null && (
               <span className="text-xs text-slate-400">
                 현재 ${regularMarketPrice.toFixed(2)}
+                {regularMarketTime != null && (
+                  <span className="ml-1">
+                    ({new Date(regularMarketTime * 1000).toLocaleTimeString("en-US", {
+                      timeZone: "America/New_York",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })} ET 기준)
+                  </span>
+                )}
               </span>
             )}
           </div>

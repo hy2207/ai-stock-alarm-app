@@ -11,14 +11,24 @@ interface PriceChartToggleProps {
 type State =
   | { kind: "closed" }
   | { kind: "loading" }
-  | { kind: "open"; ohlcv: PricePoint[]; marketPrice: number }
+  | { kind: "open"; ohlcv: PricePoint[]; marketPrice: number; marketTime: number | null }
   | { kind: "error"; message: string };
 
 interface PriceApiResponse {
   ticker: string;
   regularMarketPrice: number;
+  regularMarketTime?: number | null;
   ohlcv: PricePoint[];
   error?: string;
+}
+
+function fmtEasternTime(unixSec: number): string {
+  return new Date(unixSec * 1000).toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
@@ -46,6 +56,7 @@ export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
         kind: "open",
         ohlcv: data.ohlcv,
         marketPrice: data.regularMarketPrice,
+        marketTime: data.regularMarketTime ?? null,
       });
     } catch {
       setState({ kind: "error", message: "네트워크 오류가 발생했습니다." });
@@ -83,13 +94,18 @@ export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
 
       {state.kind === "open" && (
         <div className="mt-3">
-          <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+          <div className="mb-2 flex items-center justify-between text-xs text-slate-400">
             <span>최근 1개월</span>
             <span className="font-medium text-slate-600">
               현재 ${state.marketPrice.toFixed(2)}
+              {state.marketTime != null && (
+                <span className="ml-1 font-normal text-slate-400">
+                  ({fmtEasternTime(state.marketTime)} ET 기준)
+                </span>
+              )}
             </span>
           </div>
-          <PriceChart ohlcv={state.ohlcv} direction={direction} height={160} />
+          <PriceChart ohlcv={state.ohlcv} direction={direction} height={180} />
         </div>
       )}
     </div>

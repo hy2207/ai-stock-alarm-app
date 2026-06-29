@@ -11,6 +11,7 @@ interface YahooChartResponse {
         currency: string;
         symbol: string;
         regularMarketPrice: number;
+        regularMarketTime?: number;
         previousClose: number;
       };
       timestamp: number[];
@@ -84,6 +85,7 @@ export async function fetchYahooChart(
       data: {
         ticker: result.meta.symbol,
         regularMarketPrice: result.meta.regularMarketPrice,
+        regularMarketTime: result.meta.regularMarketTime,
         previousClose: result.meta.previousClose,
         ohlcv,
       },
