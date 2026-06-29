@@ -6,9 +6,6 @@ import { PriceChart, type PricePoint } from "./PriceChart";
 interface PriceChartToggleProps {
   ticker: string;
   direction: "BUY" | "SELL";
-  entryPrice?: number | null;
-  targetPrice?: number | null;
-  exitPrice?: number | null;
 }
 
 type State =
@@ -24,13 +21,7 @@ interface PriceApiResponse {
   error?: string;
 }
 
-export function PriceChartToggle({
-  ticker,
-  direction,
-  entryPrice,
-  targetPrice,
-  exitPrice,
-}: PriceChartToggleProps) {
+export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
   const [state, setState] = useState<State>({ kind: "closed" });
 
   async function handleOpen() {
@@ -65,13 +56,12 @@ export function PriceChartToggle({
 
   return (
     <div className="mt-3 border-t border-slate-100 pt-3">
-      {/* Toggle button */}
       <button
         type="button"
         onClick={() => void handleOpen()}
         className="flex w-full items-center justify-between text-xs font-medium text-slate-500 hover:text-slate-700"
       >
-        <span>가격 추이 5일</span>
+        <span>가격 추이 1개월</span>
         <span
           className={`transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
           aria-hidden
@@ -80,7 +70,6 @@ export function PriceChartToggle({
         </span>
       </button>
 
-      {/* Expanded content */}
       {state.kind === "loading" && (
         <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
           <span className="inline-block h-3 w-3 animate-spin rounded-full border border-slate-300 border-t-slate-600" />
@@ -95,19 +84,12 @@ export function PriceChartToggle({
       {state.kind === "open" && (
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
-            <span>최근 5거래일</span>
+            <span>최근 1개월</span>
             <span className="font-medium text-slate-600">
               현재 ${state.marketPrice.toFixed(2)}
             </span>
           </div>
-          <PriceChart
-            ohlcv={state.ohlcv}
-            direction={direction}
-            entryPrice={entryPrice}
-            targetPrice={targetPrice}
-            exitPrice={exitPrice}
-            height={160}
-          />
+          <PriceChart ohlcv={state.ohlcv} direction={direction} height={160} />
         </div>
       )}
     </div>

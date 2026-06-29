@@ -110,6 +110,21 @@ model PerformanceRecord {
   recommendationCard RecommendationCard @relation(fields: [recId], references: [id], onDelete: Cascade)
 }
 
+model TickerPriceHistory {
+  id        String   @id @default(cuid())
+  ticker    String
+  date      String   // "2024-06-25" trading date (YYYY-MM-DD)
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    BigInt?
+  updatedAt DateTime @updatedAt
+
+  @@unique([ticker, date])
+  @@index([ticker])
+}
+
 // ── NextAuth.js adapter models ───────────────────────────────────────
 // Follows the @next-auth/prisma-adapter schema contract.
 // Fields use the common Prisma subset (no @db.Text) for SQLite compat.

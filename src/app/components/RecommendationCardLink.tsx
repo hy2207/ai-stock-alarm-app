@@ -94,13 +94,7 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         </div>
       )}
 
-      <PriceChartToggle
-        ticker={card.ticker}
-        direction={card.direction}
-        entryPrice={card.entryPrice}
-        targetPrice={card.targetPrice}
-        exitPrice={card.exitPrice}
-      />
+      <PriceChartToggle ticker={card.ticker} direction={card.direction} />
 
       <TrackedLink
         href={`/recommendations/${card.id}`}

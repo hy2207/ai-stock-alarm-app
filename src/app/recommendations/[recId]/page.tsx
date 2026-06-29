@@ -5,6 +5,11 @@ import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
+import {
+  hasFreshPriceData,
+  getStoredPriceHistory,
+  upsertPriceHistory,
+} from "@/lib/market-data/storePriceHistory";
 
 interface RecommendationDetailPageProps {
   params: {
@@ -35,7 +40,49 @@ export default async function RecommendationDetailPage({
 
   const { card, evidence, performance } = detail;
 
-  const tickerPriceResult = await fetchYahooChart(card.ticker).catch(() => null);
+  // Serve 1-month price data from DB cache; fetch from Yahoo if stale
+  let ohlcv: { date: string; open: number; high: number; low: number; close: number }[] = [];
+  let regularMarketPrice: number | null = null;
+
+  const fresh = await hasFreshPriceData(card.ticker).catch(() => false);
+  if (!fresh) {
+    const result = await fetchYahooChart(card.ticker, "1mo").catch(() => null);
+    if (result?.ok) {
+      await upsertPriceHistory(card.ticker, result.data.ohlcv).catch(() => null);
+      ohlcv = result.data.ohlcv
+        .filter((p) => p.close != null && isFinite(p.close))
+        .map((p) => {
+          const d = new Date(p.timestamp * 1000).toISOString().slice(0, 10);
+          const [, m, day] = d.split("-");
+          return {
+            date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
+            open: Math.round(p.open * 100) / 100,
+            high: Math.round(p.high * 100) / 100,
+            low: Math.round(p.low * 100) / 100,
+            close: Math.round(p.close * 100) / 100,
+          };
+        });
+      regularMarketPrice = Math.round(result.data.regularMarketPrice * 100) / 100;
+    }
+  } else {
+    const stored = await getStoredPriceHistory(card.ticker, 35).catch(() => []);
+    ohlcv = stored.map((p) => {
+      const [, m, day] = p.date.split("-");
+      return {
+        date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
+        open: p.open,
+        high: p.high,
+        low: p.low,
+        close: p.close,
+      };
+    });
+    regularMarketPrice = stored[stored.length - 1]?.close ?? null;
+    // Refresh current price from Yahoo (lightweight)
+    const priceResult = await fetchYahooChart(card.ticker, "5d").catch(() => null);
+    if (priceResult?.ok) {
+      regularMarketPrice = Math.round(priceResult.data.regularMarketPrice * 100) / 100;
+    }
+  }
 
   const completed = performance.filter((record) => record.hitFlag != null);
   const wins = completed.filter((record) => record.hitFlag === true).length;
@@ -46,19 +93,6 @@ export default async function RecommendationDetailPage({
       ? performance.reduce((sum, record) => sum + (record.realizedReturn ?? 0), 0) /
         performance.length
       : null;
-
-  const ohlcv = tickerPriceResult?.ok
-    ? tickerPriceResult.data.ohlcv.map((p) => ({
-        date: new Date(p.timestamp * 1000).toLocaleDateString("ko-KR", {
-          month: "numeric",
-          day: "numeric",
-        }),
-        open: Math.round(p.open * 100) / 100,
-        high: Math.round(p.high * 100) / 100,
-        low: Math.round(p.low * 100) / 100,
-        close: Math.round(p.close * 100) / 100,
-      }))
-    : [];
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
@@ -155,21 +189,14 @@ export default async function RecommendationDetailPage({
         {/* Price chart section */}
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">가격 추이 (최근 5거래일)</h2>
-            {tickerPriceResult?.ok && (
+            <h2 className="font-semibold">가격 추이 (최근 1개월)</h2>
+            {regularMarketPrice != null && (
               <span className="text-xs text-slate-400">
-                현재 ${tickerPriceResult.data.regularMarketPrice.toFixed(2)}
+                현재 ${regularMarketPrice.toFixed(2)}
               </span>
             )}
           </div>
-          <PriceChart
-            ohlcv={ohlcv}
-            direction={card.direction}
-            entryPrice={card.entryPrice}
-            targetPrice={card.targetPrice ?? undefined}
-            exitPrice={card.exitPrice ?? undefined}
-            height={200}
-          />
+          <PriceChart ohlcv={ohlcv} direction={card.direction} height={200} />
           {ohlcv.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>
           )}

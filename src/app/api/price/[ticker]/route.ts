@@ -1,27 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
+import {
+  upsertPriceHistory,
+  getStoredPriceHistory,
+  hasFreshPriceData,
+} from "@/lib/market-data/storePriceHistory";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 3600; // 1-hour cache
 
-interface PricePoint {
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-}
-
-function fmtDate(ts: number): string {
-  return new Date(ts * 1000).toLocaleDateString("ko-KR", {
-    month: "numeric",
-    day: "numeric",
-  });
-}
-
-function round2(n: number | null | undefined): number {
-  if (n == null || !isFinite(n)) return 0;
-  return Math.round(n * 100) / 100;
+function fmtDateKo(dateStr: string): string {
+  // dateStr is "YYYY-MM-DD" — format to "M/D" for chart x-axis
+  const [, m, d] = dateStr.split("-");
+  return `${parseInt(m, 10)}/${parseInt(d, 10)}`;
 }
 
 export async function GET(
@@ -34,30 +24,71 @@ export async function GET(
     return NextResponse.json({ error: "Invalid ticker" }, { status: 400 });
   }
 
-  const result = await fetchYahooChart(ticker);
+  // ── 1. Check if DB has fresh data (last 3 calendar days) ───────────
+  const fresh = await hasFreshPriceData(ticker);
 
-  if (!result.ok) {
-    return NextResponse.json(
-      { error: result.error.message },
-      { status: 502 },
-    );
+  if (!fresh) {
+    // ── 2. Fetch 1-month OHLCV from Yahoo Finance ───────────────────
+    const result = await fetchYahooChart(ticker, "1mo");
+
+    if (!result.ok) {
+      // Fall back to whatever is in the DB even if stale
+      const stored = await getStoredPriceHistory(ticker, 35);
+      if (stored.length === 0) {
+        return NextResponse.json(
+          { error: result.error.message },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json({
+        ticker,
+        regularMarketPrice: stored[stored.length - 1]?.close ?? 0,
+        ohlcv: stored.map((p) => ({ ...p, date: fmtDateKo(p.date), volume: undefined })),
+        source: "db_stale",
+      });
+    }
+
+    // ── 3. Persist to DB ────────────────────────────────────────────
+    await upsertPriceHistory(ticker, result.data.ohlcv);
+
+    const points = result.data.ohlcv
+      .filter((p) => p.close != null && isFinite(p.close))
+      .map((p) => ({
+        date: fmtDateKo(new Date(p.timestamp * 1000).toISOString().slice(0, 10)),
+        open: Math.round(p.open * 100) / 100,
+        high: Math.round(p.high * 100) / 100,
+        low: Math.round(p.low * 100) / 100,
+        close: Math.round(p.close * 100) / 100,
+      }));
+
+    return NextResponse.json({
+      ticker,
+      regularMarketPrice: Math.round(result.data.regularMarketPrice * 100) / 100,
+      ohlcv: points,
+      source: "yahoo",
+    });
   }
 
-  const { regularMarketPrice, ohlcv } = result.data;
+  // ── 4. Serve from DB (fast path) ───────────────────────────────────
+  const stored = await getStoredPriceHistory(ticker, 35);
 
-  const points: PricePoint[] = ohlcv
-    .filter((p) => p.close != null && p.open != null)
-    .map((p) => ({
-      date: fmtDate(p.timestamp),
-      open: round2(p.open),
-      high: round2(p.high),
-      low: round2(p.low),
-      close: round2(p.close),
-    }));
+  // Still fetch latest regularMarketPrice from Yahoo (cheap — metadata only)
+  const priceResult = await fetchYahooChart(ticker, "5d").catch(() => null);
+  const regularMarketPrice =
+    priceResult?.ok
+      ? Math.round(priceResult.data.regularMarketPrice * 100) / 100
+      : stored[stored.length - 1]?.close ?? 0;
 
   return NextResponse.json({
     ticker,
-    regularMarketPrice: round2(regularMarketPrice),
-    ohlcv: points,
+    regularMarketPrice,
+    ohlcv: stored.map((p) => ({
+      date: fmtDateKo(p.date),
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+    })),
+    source: "db",
   });
 }

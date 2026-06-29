@@ -36,9 +36,10 @@ const BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
  */
 export async function fetchYahooChart(
   ticker: string,
+  range: "5d" | "1mo" | "3mo" = "5d",
 ): Promise<MarketDataResultOrError<MarketDataResult>> {
   try {
-    const url = `${BASE_URL}/${encodeURIComponent(ticker)}?range=5d&interval=1d`;
+    const url = `${BASE_URL}/${encodeURIComponent(ticker)}?range=${range}&interval=1d`;
     const res = await fetch(url, {
       next: { revalidate: 3600 },
       headers: { Accept: "application/json" },
