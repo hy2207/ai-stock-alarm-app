@@ -63,3 +63,29 @@ screenshot.cjs
 # harness
 README-*.md
 .vercel
+
+# Planning / issue tracking (local only)
+tasks/
+reports/
+docs/issues/
+docs/loop/
+
+# Development logs (local only)
+docs/*-log-*.md
+docs/work-log-*.md
+docs/remaining-branch-merge-plan-*.md
+
+# Prototype / legacy
+index.html
+default_shadcn_theme.css
+src/imports/
+scripts/debug-stream.log
+
+# Vite prototype legacy source (src/vite-app/ is canonical)
+src/app/App.tsx
+src/app/routes.ts
+src/app/mockData.ts
+src/app/types.ts
+src/app/context/
+src/app/pages/
+src/app/lib/confidenceRecommendations.ts
