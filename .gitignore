@@ -64,6 +64,13 @@ screenshot.cjs
 README-*.md
 .vercel
 
+# AI agent config (local only)
+AGENTS.md
+CLAUDE.md
+
+# Next.js auto-generated (do not edit)
+next-env.d.ts
+
 # Planning / issue tracking (local only)
 tasks/
 reports/
