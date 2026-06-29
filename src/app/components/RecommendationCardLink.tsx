@@ -2,6 +2,7 @@ import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
 import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
 import { TrackedLink } from "./TrackedLink";
+import { PriceChartToggle } from "./PriceChartToggle";
 
 const CONFIDENCE_LABELS = {
   conservative: "안정형",
@@ -92,6 +93,14 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
           </p>
         </div>
       )}
+
+      <PriceChartToggle
+        ticker={card.ticker}
+        direction={card.direction}
+        entryPrice={card.entryPrice}
+        targetPrice={card.targetPrice}
+        exitPrice={card.exitPrice}
+      />
 
       <TrackedLink
         href={`/recommendations/${card.id}`}

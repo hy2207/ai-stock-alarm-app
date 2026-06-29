@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { Disclaimer } from "@/app/components/Disclaimer";
 import { PostHogEvent } from "@/app/components/PostHogEvent";
 import { RecommendationActions } from "@/app/components/RecommendationActions";
+import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
+import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
 
 interface RecommendationDetailPageProps {
   params: {
@@ -32,6 +34,9 @@ export default async function RecommendationDetailPage({
   }
 
   const { card, evidence, performance } = detail;
+
+  const tickerPriceResult = await fetchYahooChart(card.ticker).catch(() => null);
+
   const completed = performance.filter((record) => record.hitFlag != null);
   const wins = completed.filter((record) => record.hitFlag === true).length;
   const losses = completed.filter((record) => record.hitFlag === false).length;
@@ -41,6 +46,19 @@ export default async function RecommendationDetailPage({
       ? performance.reduce((sum, record) => sum + (record.realizedReturn ?? 0), 0) /
         performance.length
       : null;
+
+  const ohlcv = tickerPriceResult?.ok
+    ? tickerPriceResult.data.ohlcv.map((p) => ({
+        date: new Date(p.timestamp * 1000).toLocaleDateString("ko-KR", {
+          month: "numeric",
+          day: "numeric",
+        }),
+        open: Math.round(p.open * 100) / 100,
+        high: Math.round(p.high * 100) / 100,
+        low: Math.round(p.low * 100) / 100,
+        close: Math.round(p.close * 100) / 100,
+      }))
+    : [];
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
@@ -132,6 +150,29 @@ export default async function RecommendationDetailPage({
             entryRangeHigh={card.entryRangeHigh}
             reasonLine={card.reasonLine}
           />
+        </section>
+
+        {/* Price chart section */}
+        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-semibold">가격 추이 (최근 5거래일)</h2>
+            {tickerPriceResult?.ok && (
+              <span className="text-xs text-slate-400">
+                현재 ${tickerPriceResult.data.regularMarketPrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+          <PriceChart
+            ohlcv={ohlcv}
+            direction={card.direction}
+            entryPrice={card.entryPrice}
+            targetPrice={card.targetPrice ?? undefined}
+            exitPrice={card.exitPrice ?? undefined}
+            height={200}
+          />
+          {ohlcv.length === 0 && (
+            <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>
+          )}
         </section>
 
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
