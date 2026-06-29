@@ -7,6 +7,7 @@ import { Disclaimer } from "./components/Disclaimer";
 import { DevRecommendationGenerator } from "./components/DevRecommendationGenerator";
 import { PostHogEvent } from "./components/PostHogEvent";
 import { RiskModeRecommendationList } from "./components/RiskModeRecommendationList";
+import { LandingPage } from "./components/LandingPage";
 
 interface HomeProps {
   searchParams?: {
@@ -17,7 +18,13 @@ interface HomeProps {
 
 export default async function Home({ searchParams }: HomeProps) {
   const userId = await getCurrentUserId();
-  if (userId && !(await userHasWatchlist(userId))) {
+
+  // Unauthenticated visitors see the landing page
+  if (!userId) {
+    return <LandingPage />;
+  }
+
+  if (!(await userHasWatchlist(userId))) {
     redirect("/onboarding");
   }
 

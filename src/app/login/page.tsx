@@ -24,6 +24,11 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-10">
+        <div className="mb-6">
+          <a href="/" className="text-sm font-medium text-blue-700">
+            ← 홈으로
+          </a>
+        </div>
         <section className="mb-6 space-y-3 text-center">
           <p className="text-sm font-medium text-slate-500">AI Stock Alarm</p>
           <h1 className="text-2xl font-semibold tracking-tight">

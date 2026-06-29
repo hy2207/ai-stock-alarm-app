@@ -31,10 +31,6 @@ export function isProtectedPath(pathname: string) {
     return false;
   }
 
-  if (pathname === "/") {
-    return true;
-  }
-
   return PROTECTED_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
