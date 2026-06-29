@@ -26,9 +26,15 @@
 | 기능 | 설명 |
 |------|------|
 | **AI 추천 카드** | Gemini 2.5 Flash가 BUY/SELL 방향, 진입가, 목표가, 손절가, 보유 기간, 한 줄 이유를 생성 |
+| **자동 생성** | 접속 날짜 기준으로 카드 자동 생성 — 별도 버튼 조작 없이 오늘 카드 즉시 확인 |
+| **뉴스 기반 근거** | 최근 3일 뉴스 최대 5개 기사를 개별 카드(헤드라인 + 요약 + 출처)로 표시 |
+| **가격 차트** | 1개월 OHLCV 직선 차트 (Y축·그리드·ET 현재가 시각 포함) — 카드에서 접기/펼치기 |
+| **가격 DB 캐싱** | `TickerPriceHistory`에 일별 저장 → 누락 기간 자동 gap-fill (재접속 시 차이 기간만 fetch) |
 | **리스크 모드** | 안정형 / 중립형 / 공격형 — 선택 시 카드 필터·숫자 실시간 반영 |
 | **No Call** | 시장 조건이 명확하지 않으면 추천 생성 없이 이유 표시 |
 | **Trust Layer** | 과거 카드의 적중률·실현 수익률을 이력에 공개 |
+| **랜딩 페이지** | 미인증 사용자도 `/`에서 서비스 소개 확인 가능 |
+| **글로벌 네비게이션** | 홈·추천 이력·설정·로그아웃이 sticky 상단 바에 항상 표시 |
 | **아침 푸시** | OneSignal 웹 푸시로 매일 아침 추천 브리핑 (평일 07:00 KST) |
 | **Google 로그인** | NextAuth v4 Google OAuth |
 | **관심종목** | 티커 또는 섹터 최대 3개 등록, 설정에서 언제든 수정 |
@@ -40,10 +46,11 @@
 | 레이어 | 기술 |
 |--------|------|
 | Framework | Next.js 14 (App Router) |
-| UI | Tailwind CSS v4 + shadcn/ui + Radix UI |
+| UI | Tailwind CSS v4 + shadcn/ui + Radix UI + **recharts** |
 | Auth | NextAuth v4 (Google OAuth) + `@auth/prisma-adapter` |
 | DB | PostgreSQL (Supabase) + Prisma ORM |
 | LLM | Gemini 2.5 Flash via Vercel AI SDK (`@ai-sdk/google`) |
+| Market Data | Yahoo Finance (OHLCV, 1mo) · Finnhub (뉴스, 옵션) |
 | Analytics | PostHog (client + server) |
 | Push | OneSignal Web Push |
 | Deployment | Vercel (Fluid Compute + Cron) |
@@ -54,11 +61,11 @@
 
 | 경로 | 화면 |
 |------|------|
-| `/` | 오늘의 의사결정 카드 (홈) |
+| `/` | 공개 랜딩 페이지 (미인증) / 오늘의 의사결정 카드 (인증) |
 | `/login` | Google 로그인 |
 | `/onboarding` | 관심 종목/섹터 선택 (최대 3개) |
-| `/recommendations/[recId]` | 추천 카드 상세 (차트 없는 판단 정보 중심) |
-| `/archive` | 추천 이력 + 성과 기록 |
+| `/recommendations/[recId]` | 추천 카드 상세 (1개월 가격 차트 + 뉴스 근거) |
+| `/archive` | 추천 이력 + 성과 기록 + 가격 분석 |
 | `/settings` | 관심 종목 수정, 리스크 성향, 푸시 수신 토글 |
 
 ---
@@ -67,10 +74,12 @@
 
 | 경로 | 역할 |
 |------|------|
+| `GET /api/price/[ticker]` | 가격 OHLCV (DB 캐시 우선 · 누락 기간 자동 gap-fill) |
 | `POST /api/cron/generate-recommendations` | AI 추천 카드 생성 (평일 05:00 KST) |
 | `POST /api/cron/morning-briefing` | 아침 OneSignal 푸시 발송 (평일 07:00 KST) |
 | `POST /api/cron/evaluate-performance` | 이전 카드 성과 평가 (평일 06:00 KST) |
-| `POST /api/dev/generate-recommendations` | 개발용 수동 추천 생성 (인증 필요) |
+| `POST /api/dev/generate-recommendations` | 수동 추천 생성 (인증 필요) |
+| `POST /api/dev/evaluate-performance` | 수동 성과 평가 트리거 (인증 필요) |
 | `GET /api/admin/health` | 헬스체크 + 마지막 동기화 타임스탬프 |
 
 > Cron 스케줄은 `vercel.json`에서 UTC 기준으로 관리됩니다.
@@ -80,12 +89,22 @@
 ## 데이터 모델 (Prisma)
 
 ```
-User ──< Watchlist          (관심 종목/섹터, 최대 3개)
-User ── RiskProfile         (안정형/중립형/공격형)
-User ──< RecommendationCard (AI 추천 카드)
-         ├──< EvidenceSnapshot   (뉴스·볼륨·커뮤니티 신호)
-         └──< PerformanceRecord  (실현 수익률, 적중 여부)
+User ──< Watchlist             (관심 종목/섹터, 최대 3개)
+User ── RiskProfile            (안정형/중립형/공격형)
+User ──< RecommendationCard    (AI 추천 카드)
+         ├── newsItems Json?       (뉴스 기사 3~5개: source·headlineKo·summaryKo)
+         ├──< EvidenceSnapshot     (뉴스·볼륨·커뮤니티 신호)
+         └──< PerformanceRecord    (실현 수익률, 적중 여부)
+TickerPriceHistory             (종목별 일별 OHLCV — gap-fill 캐시)
 ```
+
+### TickerPriceHistory
+
+일별 가격을 DB에 보관하여 Yahoo Finance 중복 호출을 최소화합니다.
+
+- 접속 시 `syncPriceHistory(ticker)` 호출
+- 마지막 저장일 < 오늘 → 누락 기간만 Yahoo `period1/period2` fetch
+- 마지막 저장일 = 오늘 → DB 직접 서빙 (Yahoo OHLCV 호출 없음)
 
 ---
 
@@ -107,12 +126,15 @@ cp .env.example .env.local
 | `GOOGLE_CLIENT_SECRET` | Google OAuth 클라이언트 시크릿 |
 | `GEMINI_API_KEY` | Google AI Studio API 키 |
 | `GEMINI_MODEL` | 사용할 Gemini 모델 (기본값: `gemini-2.5-flash`) |
-| `FINNHUB_API_KEY` | Finnhub 시장 데이터 API 키 |
+| `FINNHUB_API_KEY` | Finnhub 뉴스 API 키 (선택 — 없으면 뉴스 신호 생략) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog 프로젝트 API 키 |
 | `NEXT_PUBLIC_POSTHOG_HOST` | PostHog 호스트 |
 | `NEXT_PUBLIC_ONESIGNAL_APP_ID` | OneSignal 앱 ID |
 | `ONESIGNAL_REST_API_KEY` | OneSignal REST API 키 (서버 전용) |
 | `CRON_SECRET` | Cron 핸들러 인증 시크릿 |
+
+> `FINNHUB_API_KEY`가 없으면 Yahoo Finance가 가격 데이터 폴백으로 사용됩니다.  
+> 뉴스 신호는 생략되고 LLM은 가격 데이터만으로 판단합니다.
 
 ---
 
@@ -159,8 +181,8 @@ Vercel 배포는 `main` 브랜치 푸시 시 자동 실행됩니다.
 ### Decision Layer
 뉴스 요약이 아닌, 사용자가 바로 판단할 수 있는 **행동 카드** 중심 UI를 지향합니다.
 
-### Chartless UI
-상세 화면 핵심 폴드에 차트·RSI·MACD 같은 원본 지표를 두지 않습니다.  
+### Chartless Primary UI (ADR-004)
+차트는 보조 정보입니다. 홈 카드에서는 접기/펼치기 토글 안에 배치하고, 상세 페이지에서도 판단 정보(방향·가격·이유) 아래에 위치합니다.  
 방향 → 진입가 → 목표가 → 손절가 → 보유 기간 → 한 줄 이유 순으로 먼저 보여줍니다.
 
 ### Risk Choice UX
@@ -170,6 +192,10 @@ Vercel 배포는 `main` 브랜치 푸시 시 자동 실행됩니다.
 ### Trust Layer
 성공 이력만 보여주지 않습니다.  
 실패 기록, 평균 수익률, No Call 판단 이유를 함께 노출합니다.
+
+### DB-first Price Cache
+Yahoo Finance 호출을 최소화하기 위해 `TickerPriceHistory` 테이블에 일별 OHLCV를 저장합니다.  
+같은 날 두 번째 접속부터는 Yahoo 호출 없이 DB에서 서빙합니다.
 
 ---
 
