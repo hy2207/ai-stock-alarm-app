@@ -4,12 +4,7 @@ import { PostHogEvent } from "@/app/components/PostHogEvent";
 import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
-import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
-import {
-  hasFreshPriceData,
-  getStoredPriceHistory,
-  upsertPriceHistory,
-} from "@/lib/market-data/storePriceHistory";
+import { syncPriceHistory } from "@/lib/market-data/priceSync";
 
 interface RecommendationDetailPageProps {
   params: {
@@ -40,52 +35,26 @@ export default async function RecommendationDetailPage({
 
   const { card, evidence, performance } = detail;
 
-  // Serve 1-month price data from DB cache; fetch from Yahoo if stale
-  let ohlcv: { date: string; open: number; high: number; low: number; close: number }[] = [];
-  let regularMarketPrice: number | null = null;
-  let regularMarketTime: number | null = null;
+  const {
+    ohlcv: storedOhlcv,
+    regularMarketPrice,
+    regularMarketTime,
+  } = await syncPriceHistory(card.ticker).catch(() => ({
+    ohlcv: [],
+    regularMarketPrice: null,
+    regularMarketTime: null,
+  }));
 
-  const fresh = await hasFreshPriceData(card.ticker).catch(() => false);
-  if (!fresh) {
-    const result = await fetchYahooChart(card.ticker, "1mo").catch(() => null);
-    if (result?.ok) {
-      await upsertPriceHistory(card.ticker, result.data.ohlcv).catch(() => null);
-      ohlcv = result.data.ohlcv
-        .filter((p) => p.close != null && isFinite(p.close))
-        .map((p) => {
-          const d = new Date(p.timestamp * 1000).toISOString().slice(0, 10);
-          const [, m, day] = d.split("-");
-          return {
-            date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
-            open: Math.round(p.open * 100) / 100,
-            high: Math.round(p.high * 100) / 100,
-            low: Math.round(p.low * 100) / 100,
-            close: Math.round(p.close * 100) / 100,
-          };
-        });
-      regularMarketPrice = Math.round(result.data.regularMarketPrice * 100) / 100;
-      regularMarketTime = result.data.regularMarketTime ?? null;
-    }
-  } else {
-    const stored = await getStoredPriceHistory(card.ticker, 35).catch(() => []);
-    ohlcv = stored.map((p) => {
-      const [, m, day] = p.date.split("-");
-      return {
-        date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
-        open: p.open,
-        high: p.high,
-        low: p.low,
-        close: p.close,
-      };
-    });
-    regularMarketPrice = stored[stored.length - 1]?.close ?? null;
-    // Refresh current price from Yahoo (lightweight)
-    const priceResult = await fetchYahooChart(card.ticker, "5d").catch(() => null);
-    if (priceResult?.ok) {
-      regularMarketPrice = Math.round(priceResult.data.regularMarketPrice * 100) / 100;
-      regularMarketTime = priceResult.data.regularMarketTime ?? null;
-    }
-  }
+  const ohlcv = storedOhlcv.map((p) => {
+    const [, m, day] = p.date.split("-");
+    return {
+      date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+    };
+  });
 
   const completed = performance.filter((record) => record.hitFlag != null);
   const wins = completed.filter((record) => record.hitFlag === true).length;

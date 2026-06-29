@@ -80,16 +80,14 @@ export async function getStoredPriceHistory(
 }
 
 /**
- * Returns true when we have a DB record dated today or the previous
- * 3 calendar days (weekends + holidays).
+ * Returns the most recent stored date string ("YYYY-MM-DD") for a ticker,
+ * or null if no records exist.
  */
-export async function hasFreshPriceData(ticker: string): Promise<boolean> {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 3);
-  const cutoffStr = cutoff.toISOString().slice(0, 10);
-
-  const count = await prisma.tickerPriceHistory.count({
-    where: { ticker, date: { gte: cutoffStr } },
+export async function getLatestStoredDate(ticker: string): Promise<string | null> {
+  const row = await prisma.tickerPriceHistory.findFirst({
+    where: { ticker },
+    orderBy: { date: "desc" },
+    select: { date: true },
   });
-  return count > 0;
+  return row?.date ?? null;
 }
