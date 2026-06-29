@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { getTodayRecommendations } from "@/lib/queries/getTodayRecommendations";
 import { getUserWatchlist, userHasWatchlist } from "@/lib/queries/getUserWatchlist";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { Disclaimer } from "./components/Disclaimer";
-import { DevRecommendationGenerator } from "./components/DevRecommendationGenerator";
+import { TodayCardAutoLoader } from "./components/TodayCardAutoLoader";
+import { RefreshCardsButton } from "./components/RefreshCardsButton";
 import { PostHogEvent } from "./components/PostHogEvent";
 import { RiskModeRecommendationList } from "./components/RiskModeRecommendationList";
 import { LandingPage } from "./components/LandingPage";
@@ -33,6 +33,12 @@ export default async function Home({ searchParams }: HomeProps) {
   const fromPush =
     searchParams?.from === "push" || searchParams?.utm_source === "onesignal";
 
+  const todayLabel = new Date().toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    timeZone: "Asia/Seoul",
+  });
+
   if (result.status === "no_call") {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center bg-slate-50 p-4 text-slate-950">
@@ -43,19 +49,12 @@ export default async function Home({ searchParams }: HomeProps) {
             <PostHogEvent event="deeplink_success" properties={{ route: "/" }} />
           </>
         )}
-        <h1 className="mb-2 text-2xl font-semibold">오늘은 명확한 추천을 만들지 않았습니다</h1>
-        <p className="max-w-sm text-center text-sm text-slate-600">
-          {result.reason}
+        <p className="mb-1 text-xs font-medium text-slate-400">{todayLabel}</p>
+        <h1 className="mb-2 text-xl font-semibold">오늘 추천 카드를 준비하고 있습니다</h1>
+        <p className="max-w-sm text-center text-sm text-slate-500">
+          관심 종목을 기반으로 시장 데이터를 분석합니다.
         </p>
-        <DevRecommendationGenerator />
-        <div className="mt-4 flex flex-wrap justify-center gap-3 text-sm">
-          <Link href="/settings" className="font-medium text-blue-700">
-            관심 종목 변경
-          </Link>
-          <Link href="/archive" className="font-medium text-blue-700">
-            추천 이력
-          </Link>
-        </div>
+        <TodayCardAutoLoader />
         <Disclaimer />
       </main>
     );
@@ -71,9 +70,13 @@ export default async function Home({ searchParams }: HomeProps) {
         </>
       )}
       <div className="mx-auto max-w-3xl py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">오늘의 의사결정 카드</h1>
-          <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium text-slate-400">{todayLabel}</p>
+            <h1 className="mt-0.5 text-2xl font-semibold">오늘의 의사결정 카드</h1>
+            <p className="mt-1 text-sm text-slate-600">관심 종목 기준 3개 이하로 압축했습니다.</p>
+          </div>
+          <RefreshCardsButton />
         </div>
 
         <RiskModeRecommendationList

@@ -341,11 +341,14 @@ async function collectMarketContext(
 }
 
 /**
- * Development-oriented orchestration for one daily recommendation batch.
- * Reuses LLM generation, Zod validation, and Prisma persistence helpers.
+ * Orchestration for one daily recommendation batch.
+ *
+ * @param force When true, re-generates today's cards even if complete
+ *              variants already exist (replaces them with fresh market data).
  */
 export async function generateRecommendationsForUser(
   userId: string,
+  { force = false }: { force?: boolean } = {},
 ): Promise<GenerateRecommendationsForUserResult> {
   const validationErrors: string[] = [];
   const externalApiErrors: string[] = [];
@@ -363,7 +366,7 @@ export async function generateRecommendationsForUser(
 
   const todayCards = await loadPublishedCardsToday(userId);
   const todayCount = countCompletePublishedTickers(todayCards);
-  if (todayCount >= MAX_DAILY_CARDS) {
+  if (!force && todayCount >= MAX_DAILY_CARDS) {
     return {
       generatedCount: 0,
       skippedCount: watchlist.length,
@@ -374,10 +377,10 @@ export async function generateRecommendationsForUser(
 
   const targetTickers: WatchlistPromptItem[] = [];
   let skippedCount = 0;
-  const remainingSlots = MAX_DAILY_CARDS - todayCount;
+  const remainingSlots = force ? watchlist.length : MAX_DAILY_CARDS - todayCount;
 
   for (const item of watchlist) {
-    if (await hasCompletePublishedVariantsForTickerToday(userId, item.ticker)) {
+    if (!force && await hasCompletePublishedVariantsForTickerToday(userId, item.ticker)) {
       skippedCount += 1;
       continue;
     }
@@ -397,18 +400,8 @@ export async function generateRecommendationsForUser(
     };
   }
 
+  // Always allow Yahoo Finance as fallback when Finnhub is not configured
   const finnhubToken = getFinnhubApiKey();
-  if (!finnhubToken && process.env.NODE_ENV === "production") {
-    externalApiErrors.push(
-      "FINNHUB_API_KEY is not configured. Set it in your environment.",
-    );
-    return {
-      generatedCount: 0,
-      skippedCount,
-      validationErrors,
-      externalApiErrors,
-    };
-  }
 
   const { marketData, newsSignals, externalApiErrors: marketErrors } =
     await collectMarketContext(watchlist, finnhubToken);

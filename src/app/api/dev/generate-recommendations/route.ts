@@ -46,7 +46,7 @@ async function runWithTimeout<T>(task: Promise<T>): Promise<T> {
   }
 }
 
-export async function POST(): Promise<NextResponse> {
+export async function POST(request: Request): Promise<NextResponse> {
   const userId = await getCurrentUserId();
   if (!userId) {
     return NextResponse.json(
@@ -55,8 +55,16 @@ export async function POST(): Promise<NextResponse> {
     );
   }
 
+  let force = false;
   try {
-    const result = await runWithTimeout(generateRecommendationsForUser(userId));
+    const body = (await request.json().catch(() => ({}))) as { force?: boolean };
+    force = body.force === true;
+  } catch {
+    // no body — use default
+  }
+
+  try {
+    const result = await runWithTimeout(generateRecommendationsForUser(userId, { force }));
     if (result.generatedCount > 0) {
       revalidatePath("/");
     }
