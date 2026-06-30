@@ -97,7 +97,10 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
               <li key={i} className="rounded-md bg-white/70 p-2.5">
                 <p className="text-xs font-medium text-blue-700">{item.headlineKo}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{item.summaryKo}</p>
-                <p className="mt-1 text-[10px] text-slate-400">{item.source}</p>
+                <p className="mt-1 text-[10px] text-slate-400">
+                  {item.source}
+                  {item.publishedAt && <span className="ml-1.5">· {item.publishedAt}</span>}
+                </p>
               </li>
             ))}
           </ul>

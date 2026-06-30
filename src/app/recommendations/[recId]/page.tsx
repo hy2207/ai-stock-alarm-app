@@ -157,7 +157,10 @@ export default async function RecommendationDetailPage({
                     <p className="mt-1 text-sm leading-relaxed text-slate-700">
                       {item.summaryKo}
                     </p>
-                    <p className="mt-1.5 text-xs text-slate-400">{item.source}</p>
+                    <p className="mt-1.5 text-xs text-slate-400">
+                      {item.source}
+                      {item.publishedAt && <span className="ml-1.5">· {item.publishedAt}</span>}
+                    </p>
                   </li>
                 ))}
               </ul>

@@ -4,6 +4,7 @@ const newsItemKoSchema = z.object({
   source: z.string().max(80),
   headlineKo: z.string().max(100),
   summaryKo: z.string().max(160),
+  publishedAt: z.string().optional(),
 });
 
 /** Each card variant the LLM generates — one per confidence mode. */

@@ -99,11 +99,20 @@ function formatNewsSignals(ticker: string, signals?: NewsSignalPromptItem[]) {
   }
 
   const lines = relevantSignals.map((signal) => {
-    const date = signal.datetime
-      ? new Date(signal.datetime * 1000).toISOString().slice(0, 10)
-      : "date unknown";
+    let dateLabel = "date unknown";
+    if (signal.datetime) {
+      const d = new Date(signal.datetime * 1000);
+      const datePart = d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const timePart = d.toLocaleTimeString("en-US", {
+        timeZone: "America/New_York",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      dateLabel = `${datePart} ${timePart} ET`;
+    }
     const summary = signal.summary ? ` — ${signal.summary}` : "";
-    return `- [${signal.source}] [${date}] ${signal.headline}${summary}`;
+    return `- [${signal.source}] [${dateLabel}] ${signal.headline}${summary}`;
   });
 
   return `${ticker} news signals (last 3 days, up to 5):\n${lines.join("\n")}`;
@@ -122,7 +131,7 @@ For ok responses:
 - Generate exactly 3 confidenceMode variants: ${CONFIDENCE_MODES.join(", ")}.
 - Each variant must include ticker, direction, currentPrice, entry price or entry range, target price or target range, holdDays, confidenceMode, and reasonLine.
 - Each variant must include newsItems: an array of 1–5 objects (one per cited article from NEWS SIGNALS), each containing:
-  { "source": "<original source name>", "headlineKo": "<headline in Korean, ≤100 chars>", "summaryKo": "<one sentence in Korean explaining why this article supports the BUY/SELL, ≤160 chars>" }
+  { "source": "<original source name>", "headlineKo": "<headline in Korean, ≤100 chars>", "summaryKo": "<one sentence in Korean explaining why this article supports the BUY/SELL, ≤160 chars>", "publishedAt": "<copy the date+time label from the NEWS SIGNALS bracket verbatim, e.g. '2026-06-27 14:30 ET'>" }
 - Include all relevant articles from NEWS SIGNALS (minimum 1 if any are supplied, maximum 5).
 - If no NEWS SIGNALS are available, set newsItems to an empty array [].
 - All 3 variants for the same ticker must include the same newsItems array.
