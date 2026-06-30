@@ -16,17 +16,19 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.onesignal.com https://onesignal.com",
-      "worker-src 'self' blob: https://cdn.onesignal.com",
+      // PUSH_DISABLED: restore https://cdn.onesignal.com https://onesignal.com to script-src when re-enabling push
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com",
+      // PUSH_DISABLED: restore blob: https://cdn.onesignal.com to worker-src when re-enabling push
+      "worker-src 'self' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
       [
         "connect-src 'self'",
+        "https://us-assets.i.posthog.com",
         "https://us.i.posthog.com",
         "https://app.posthog.com",
-        "https://onesignal.com",
-        "https://api.onesignal.com",
+        // PUSH_DISABLED: restore https://onesignal.com https://api.onesignal.com when re-enabling push
         "https://accounts.google.com",
         "https://oauth2.googleapis.com",
       ].join(" "),
