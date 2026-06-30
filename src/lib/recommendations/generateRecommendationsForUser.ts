@@ -354,7 +354,11 @@ export async function generateRecommendationsForUser(
   const validationErrors: string[] = [];
   const externalApiErrors: string[] = [];
 
-  const watchlist = await loadWatchlist(userId);
+  const [watchlist, todayCards] = await Promise.all([
+    loadWatchlist(userId),
+    loadPublishedCardsToday(userId),
+  ]);
+
   if (watchlist.length === 0) {
     validationErrors.push("Watchlist is empty. Add at least one ticker first.");
     return {
@@ -365,7 +369,6 @@ export async function generateRecommendationsForUser(
     };
   }
 
-  const todayCards = await loadPublishedCardsToday(userId);
   const todayCount = countCompletePublishedTickers(todayCards);
   if (!force && todayCount >= MAX_DAILY_CARDS) {
     return {
@@ -376,12 +379,21 @@ export async function generateRecommendationsForUser(
     };
   }
 
-  const targetTickers: WatchlistPromptItem[] = [];
-  let skippedCount = 0;
   const remainingSlots = force ? watchlist.length : MAX_DAILY_CARDS - todayCount;
 
-  for (const item of watchlist) {
-    if (!force && await hasCompletePublishedVariantsForTickerToday(userId, item.ticker)) {
+  const skipFlags = await Promise.all(
+    watchlist.map((item) =>
+      force
+        ? Promise.resolve(false)
+        : hasCompletePublishedVariantsForTickerToday(userId, item.ticker),
+    ),
+  );
+
+  const targetTickers: WatchlistPromptItem[] = [];
+  let skippedCount = 0;
+
+  for (let i = 0; i < watchlist.length; i++) {
+    if (skipFlags[i]) {
       skippedCount += 1;
       continue;
     }
@@ -389,7 +401,7 @@ export async function generateRecommendationsForUser(
       skippedCount += 1;
       continue;
     }
-    targetTickers.push(item);
+    targetTickers.push(watchlist[i]);
   }
 
   if (targetTickers.length === 0) {
@@ -401,14 +413,14 @@ export async function generateRecommendationsForUser(
     };
   }
 
-  // Always allow Yahoo Finance as fallback when Finnhub is not configured
   const finnhubToken = getFinnhubApiKey();
 
-  const { marketData, newsSignals, externalApiErrors: marketErrors } =
-    await collectMarketContext(watchlist, finnhubToken);
+  const [{ marketData, newsSignals, externalApiErrors: marketErrors }, riskMode] =
+    await Promise.all([
+      collectMarketContext(watchlist, finnhubToken),
+      loadRiskMode(userId),
+    ]);
   externalApiErrors.push(...marketErrors);
-
-  const riskMode = await loadRiskMode(userId);
   let generatedCount = 0;
 
   for (const targetTicker of targetTickers) {

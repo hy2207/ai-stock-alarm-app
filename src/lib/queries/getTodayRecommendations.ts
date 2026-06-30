@@ -131,8 +131,10 @@ function filterValidRiskModeSets(cards: RecommendationCard[]) {
  *
  * Max 3 cards are returned, ordered by creation time descending.
  */
-export async function getTodayRecommendations(): Promise<TodayRecommendationsResponse> {
-  const userId = await getCurrentUserId();
+export async function getTodayRecommendations(
+  resolvedUserId?: string,
+): Promise<TodayRecommendationsResponse> {
+  const userId = resolvedUserId ?? (await getCurrentUserId());
 
   if (!userId) {
     return { status: "no_call", reason: "Sign in to see your daily recommendations" };

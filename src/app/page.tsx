@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTodayRecommendations } from "@/lib/queries/getTodayRecommendations";
-import { getUserWatchlist, userHasWatchlist } from "@/lib/queries/getUserWatchlist";
+import { getUserWatchlist } from "@/lib/queries/getUserWatchlist";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { Disclaimer } from "./components/Disclaimer";
 import { TodayCardAutoLoader } from "./components/TodayCardAutoLoader";
@@ -24,12 +24,14 @@ export default async function Home({ searchParams }: HomeProps) {
     return <LandingPage />;
   }
 
-  if (!(await userHasWatchlist(userId))) {
+  const [watchlist, result] = await Promise.all([
+    getUserWatchlist(userId),
+    getTodayRecommendations(userId),
+  ]);
+
+  if (watchlist.length === 0) {
     redirect("/onboarding");
   }
-
-  const watchlist = userId ? await getUserWatchlist(userId) : [];
-  const result = await getTodayRecommendations();
   const fromPush =
     searchParams?.from === "push" || searchParams?.utm_source === "onesignal";
 
