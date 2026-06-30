@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { AppToaster } from "@/app/components/AppToaster";
 import { AppNav } from "@/app/components/AppNav";
-import { OneSignalInit } from "@/app/components/OneSignalInit";
+// PUSH_DISABLED: re-enable these two lines when OneSignal is configured
+// import Script from "next/script";
+// import { OneSignalInit } from "@/app/components/OneSignalInit";
 import "../styles/index.css";
 
 export const metadata: Metadata = {
@@ -17,17 +18,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <Script
-          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
-          strategy="afterInteractive"
-        />
-      </head>
       <body>
         <AppNav />
         {children}
         <AppToaster />
+        {/* PUSH_DISABLED: re-enable when OneSignal is configured
+        <Script
+          src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js"
+          strategy="afterInteractive"
+        />
         <OneSignalInit />
+        */}
       </body>
     </html>
   );
