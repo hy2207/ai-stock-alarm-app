@@ -188,9 +188,6 @@ export default async function RecommendationDetailPage({
             ticker={card.ticker}
             riskMode={card.confidenceScore}
             page="detail"
-            entryPrice={card.entryPrice}
-            entryRangeLow={card.entryRangeLow}
-            entryRangeHigh={card.entryRangeHigh}
             reasonLine={card.reasonLine}
           />
         </section>

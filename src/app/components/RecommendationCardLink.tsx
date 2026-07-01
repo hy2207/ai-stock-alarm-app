@@ -145,9 +145,6 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         ticker={card.ticker}
         riskMode={card.confidenceScore}
         page="home"
-        entryPrice={card.entryPrice}
-        entryRangeLow={card.entryRangeLow}
-        entryRangeHigh={card.entryRangeHigh}
       />
     </article>
   );
