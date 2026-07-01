@@ -1,11 +1,28 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
-import { getUserWatchlist } from "@/lib/queries/getUserWatchlist";
-// PUSH_DISABLED: import { prisma } from "@/lib/prisma";
 import { Disclaimer } from "@/app/components/Disclaimer";
-import { WatchlistPickerForm } from "@/app/components/WatchlistPickerForm";
-// PUSH_DISABLED: import { PushConsentToggle } from "@/app/components/PushConsentToggle";
+
+const SETTINGS_MENU = [
+  {
+    href: "/settings/profile",
+    title: "프로필 수정",
+    description: "표시 이름, 타임존 변경",
+    icon: "👤",
+  },
+  {
+    href: "/settings/notifications",
+    title: "알림 설정",
+    description: "아침 브리핑 푸시 알림 관리",
+    icon: "🔔",
+  },
+  {
+    href: "/settings/watchlist",
+    title: "관심 종목",
+    description: "추천 카드를 생성할 종목 선택 (최대 3개)",
+    icon: "📈",
+  },
+];
 
 export default async function SettingsPage() {
   const userId = await getCurrentUserId();
@@ -13,43 +30,30 @@ export default async function SettingsPage() {
     redirect("/login?callbackUrl=/settings");
   }
 
-  const watchlist = await getUserWatchlist(userId);
-  // PUSH_DISABLED: restore prisma.user query for consentPush when re-enabling push
-  // const user = await prisma.user.findUnique({ where: { id: userId }, select: { consentPush: true } });
-  // const initialConsent = user?.consentPush ?? false;
-
-  const initialSelected = watchlist.map((item) => item.ticker);
-
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
       <div className="mx-auto max-w-2xl py-8">
-        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h1 className="text-xl font-semibold">관심 종목 설정</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            변경 사항은 다음 추천 생성부터 반영됩니다.
-          </p>
+        <h1 className="text-2xl font-semibold">설정</h1>
+        <p className="mt-1 text-sm text-slate-600">계정 및 서비스 환경을 관리합니다.</p>
 
-          <div className="mt-6">
-            <WatchlistPickerForm
-              initialSelected={initialSelected}
-              submitLabel="변경사항 저장"
-              successMessage="관심 종목이 업데이트되었습니다."
-              redirectTo="/"
-            />
-          </div>
-        </section>
-
-        {/* PUSH_DISABLED: restore this section when OneSignal is configured
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold">알림 설정</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            브라우저 푸시 알림을 허용하면 매일 아침 브리핑을 받을 수 있습니다.
-          </p>
-          <div className="mt-6">
-            <PushConsentToggle initialConsent={initialConsent} />
-          </div>
-        </section>
-        */}
+        <nav className="mt-6 space-y-3">
+          {SETTINGS_MENU.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-2xl" aria-hidden="true">{item.icon}</span>
+                <div>
+                  <p className="font-medium text-slate-900">{item.title}</p>
+                  <p className="mt-0.5 text-sm text-slate-500">{item.description}</p>
+                </div>
+              </div>
+              <span className="text-slate-300">›</span>
+            </Link>
+          ))}
+        </nav>
 
         <Disclaimer />
       </div>
