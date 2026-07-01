@@ -229,7 +229,10 @@ export function classifyLlmCallFailure(error: unknown): {
 
   if (
     message.includes("empty response") ||
-    message.includes("no response")
+    message.includes("no response") ||
+    message.includes("unterminated") ||
+    message.includes("unexpected end") ||
+    name === "syntaxerror"
   ) {
     return { reason: "no_response", status };
   }
@@ -415,7 +418,7 @@ Use one of these shapes:
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,
-        maxOutputTokens: 1_600,
+        maxOutputTokens: 4_000,
         providerOptions: GEMINI_PROVIDER_OPTIONS,
         timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
       });
