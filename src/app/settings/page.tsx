@@ -34,7 +34,7 @@ export default async function SettingsPage() {
               initialSelected={initialSelected}
               submitLabel="변경사항 저장"
               successMessage="관심 종목이 업데이트되었습니다."
-              redirectTo="/settings"
+              redirectTo="/"
             />
           </div>
         </section>
