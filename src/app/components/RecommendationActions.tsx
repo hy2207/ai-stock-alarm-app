@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { captureClientEvent } from "@/lib/analytics/posthog";
+import { TrackedLink } from "./TrackedLink";
 import {
   captureBookmarkAdd,
   captureReasonExpand,
@@ -15,6 +16,7 @@ interface RecommendationActionsProps {
   riskMode: string;
   page: RecommendationActionPage;
   reasonLine?: string;
+  detailHref?: string;
 }
 
 function baseAction(input: RecommendationActionsProps): RecommendationActionInput {
@@ -48,6 +50,16 @@ export function RecommendationActions(props: RecommendationActionsProps) {
   return (
     <div className="mt-4 space-y-3">
       <div className="flex flex-wrap gap-2">
+        {props.detailHref && (
+          <TrackedLink
+            href={props.detailHref}
+            event="rec_card_click"
+            eventProperties={{ recId: props.recId, ticker: props.ticker, riskMode: props.riskMode }}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+          >
+            상세 보기
+          </TrackedLink>
+        )}
         <button type="button" className={buttonClass} onClick={handleBookmarkAdd}>
           관심 저장
         </button>

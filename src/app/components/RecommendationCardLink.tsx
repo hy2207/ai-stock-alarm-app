@@ -2,7 +2,6 @@ import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
 import { parseNewsItems } from "@/lib/dto/recommendationCard";
 import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
-import { TrackedLink } from "./TrackedLink";
 import { PriceChartToggle } from "./PriceChartToggle";
 
 const CONFIDENCE_LABELS = {
@@ -127,24 +126,12 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
 
       <PriceChartToggle ticker={card.ticker} direction={card.direction} />
 
-      <TrackedLink
-        href={`/recommendations/${card.id}`}
-        event="rec_card_click"
-        eventProperties={{
-          recId: card.id,
-          ticker: card.ticker,
-          riskMode: card.confidenceScore,
-        }}
-        className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white"
-      >
-        상세 보기
-      </TrackedLink>
-
       <RecommendationActions
         recId={card.id}
         ticker={card.ticker}
         riskMode={card.confidenceScore}
         page="home"
+        detailHref={`/recommendations/${card.id}`}
       />
     </article>
   );
