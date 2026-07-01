@@ -24,6 +24,7 @@ export interface NewsSignalPromptItem {
   source: string;
   summary?: string | null;
   datetime?: number; // Unix timestamp (seconds) — used to show article date
+  url?: string;
 }
 
 export interface RecommendationPromptInput {
@@ -112,7 +113,8 @@ function formatNewsSignals(ticker: string, signals?: NewsSignalPromptItem[]) {
       dateLabel = `${datePart} ${timePart} ET`;
     }
     const summary = signal.summary ? ` — ${signal.summary}` : "";
-    return `- [${signal.source}] [${dateLabel}] ${signal.headline}${summary}`;
+    const urlPart = signal.url ? ` [${signal.url}]` : "";
+    return `- [${signal.source}] [${dateLabel}]${urlPart} ${signal.headline}${summary}`;
   });
 
   return `${ticker} news signals (last 3 days, up to 5):\n${lines.join("\n")}`;
@@ -131,7 +133,7 @@ For ok responses:
 - Generate exactly 3 confidenceMode variants: ${CONFIDENCE_MODES.join(", ")}.
 - Each variant must include ticker, direction, currentPrice, entry price or entry range, target price or target range, holdDays, confidenceMode, and reasonLine.
 - Each variant must include newsItems: an array of 1–5 objects (one per cited article from NEWS SIGNALS), each containing:
-  { "source": "<original source name>", "headlineKo": "<headline in Korean, ≤100 chars>", "summaryKo": "<one sentence in Korean explaining why this article supports the BUY/SELL, ≤160 chars>", "publishedAt": "<copy the date+time label from the NEWS SIGNALS bracket verbatim, e.g. '2026-06-27 14:30 ET'>" }
+  { "source": "<original source name>", "headlineKo": "<headline in Korean, ≤100 chars>", "summaryKo": "<one sentence in Korean explaining why this article supports the BUY/SELL, ≤160 chars>", "publishedAt": "<copy the date+time label from the NEWS SIGNALS bracket verbatim, e.g. '2026-06-27 14:30 ET'>", "url": "<copy the URL from the NEWS SIGNALS bracket verbatim if present, otherwise omit>" }
 - Include all relevant articles from NEWS SIGNALS (minimum 1 if any are supplied, maximum 5).
 - If no NEWS SIGNALS are available, set newsItems to an empty array [].
 - All 3 variants for the same ticker must include the same newsItems array.

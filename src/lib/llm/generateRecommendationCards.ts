@@ -285,6 +285,7 @@ export const recommendationGenerationVariantSchema = z
           headlineKo: z.string().max(100),
           summaryKo: z.string().max(160),
           publishedAt: z.string().optional(),
+          url: z.string().optional(),
         }),
       )
       .min(0)
@@ -387,7 +388,7 @@ export async function generateRecommendationCards({
 
 Return only valid JSON. Do not wrap it in Markdown.
 Use one of these shapes:
-{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약","publishedAt":"2026-06-26 09:15 ET"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약","publishedAt":"2026-06-26 09:15 ET"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET"}]}]}
+{"status":"ok","variants":[{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":114,"holdDays":5,"confidenceMode":"aggressive","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET","url":"https://www.reuters.com/article/example"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약","publishedAt":"2026-06-26 09:15 ET","url":"https://www.bloomberg.com/news/example"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":108,"holdDays":5,"confidenceMode":"balanced","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET","url":"https://www.reuters.com/article/example"},{"source":"Bloomberg","headlineKo":"두 번째 헤드라인","summaryKo":"두 번째 기사 요약","publishedAt":"2026-06-26 09:15 ET","url":"https://www.bloomberg.com/news/example"}]},{"ticker":"AAPL","direction":"BUY","currentPrice":100,"entryPrice":100,"targetPrice":110,"exitPrice":102,"holdDays":5,"confidenceMode":"conservative","reasonLine":"한국어 한 줄 근거 160자 이하","newsItems":[{"source":"Reuters","headlineKo":"한국어 헤드라인 100자 이하","summaryKo":"이 기사가 BUY/SELL 판단에 영향을 주는 이유 한 줄 160자 이하","publishedAt":"2026-06-27 14:30 ET","url":"https://www.reuters.com/article/example"}]}]}
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,

@@ -95,7 +95,18 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
           <ul className="space-y-2">
             {newsItems.map((item, i) => (
               <li key={i} className="rounded-md bg-white/70 p-2.5">
-                <p className="text-xs font-medium text-blue-700">{item.headlineKo}</p>
+                {item.url ? (
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:text-blue-900"
+                  >
+                    {item.headlineKo}
+                  </a>
+                ) : (
+                  <p className="text-xs font-medium text-blue-700">{item.headlineKo}</p>
+                )}
                 <p className="mt-0.5 text-xs text-slate-500">{item.summaryKo}</p>
                 <p className="mt-1 text-[10px] text-slate-400">
                   {item.source}

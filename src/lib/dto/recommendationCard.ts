@@ -6,6 +6,7 @@ export const newsItemKoSchema = z.object({
   headlineKo: z.string(),
   summaryKo: z.string(),
   publishedAt: z.string().optional(),
+  url: z.string().optional(),
 });
 export type NewsItemKo = z.infer<typeof newsItemKoSchema>;
 

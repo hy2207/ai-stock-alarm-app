@@ -333,6 +333,7 @@ async function collectMarketContext(
           source: article.source,
           summary: article.summary,
           datetime: article.datetime,
+          url: article.url,
         }));
       }
     }),

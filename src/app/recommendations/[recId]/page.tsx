@@ -151,9 +151,18 @@ export default async function RecommendationDetailPage({
               <ul className="mt-3 space-y-3">
                 {newsItems.map((item, i) => (
                   <li key={i} className="rounded-lg bg-white/80 p-3">
-                    <p className="text-sm font-semibold text-blue-800">
-                      {item.headlineKo}
-                    </p>
+                    {item.url ? (
+                      <a
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-blue-800 underline decoration-blue-300 underline-offset-2 hover:text-blue-950"
+                      >
+                        {item.headlineKo}
+                      </a>
+                    ) : (
+                      <p className="text-sm font-semibold text-blue-800">{item.headlineKo}</p>
+                    )}
                     <p className="mt-1 text-sm leading-relaxed text-slate-700">
                       {item.summaryKo}
                     </p>
