@@ -126,6 +126,16 @@ model TickerPriceHistory {
   @@index([ticker])
 }
 
+model TickerUniverse {
+  ticker        String   @id          // "AAPL"
+  name          String                // "Apple Inc."
+  sector        String?               // "Technology"
+  marketCapRank Int?                  // 1–50 for seeded top-50; null = user-searched
+  updatedAt     DateTime @updatedAt
+
+  @@index([marketCapRank])
+}
+
 // ── NextAuth.js adapter models ───────────────────────────────────────
 // Follows the @next-auth/prisma-adapter schema contract.
 // Fields use the common Prisma subset (no @db.Text) for SQLite compat.

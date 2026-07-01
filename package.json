@@ -97,6 +97,9 @@
     "vite": "6.3.5",
     "vitest": "^4.1.7"
   },
+  "prisma": {
+    "seed": "node prisma/seed-ticker-universe.mjs"
+  },
   "peerDependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
