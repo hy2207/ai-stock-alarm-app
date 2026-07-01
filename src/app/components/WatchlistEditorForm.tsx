@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saveWatchlist } from "@/lib/actions/saveWatchlist";
+import { resetTodayCards } from "@/lib/actions/resetTodayCards";
 import { watchlistOptions } from "@/lib/constants/watchlistOptions";
 import { TickerSearchInput } from "./TickerSearchInput";
 import { Button } from "./ui/button";
@@ -29,6 +30,10 @@ export function WatchlistEditorForm({ initialSelected, top50 }: WatchlistEditorF
   const selectedTickers = selected.map((s) => s.ticker);
   const maxReached = selected.length >= MAX;
 
+  const initialTickers = initialSelected.map((s) => s.ticker).sort().join(",");
+  const currentTickers = [...selectedTickers].sort().join(",");
+  const isDirty = initialTickers !== currentTickers;
+
   function addTicker(ticker: string, name: string) {
     if (maxReached) { toast.error("최대 3개까지 선택 가능합니다."); return; }
     if (selectedTickers.includes(ticker)) return;
@@ -47,28 +52,46 @@ export function WatchlistEditorForm({ initialSelected, top50 }: WatchlistEditorF
     }
   }
 
+  function buildPayload() {
+    const allOptions = [
+      ...watchlistOptions.map((o) => ({ ticker: o.ticker, kind: o.kind as "ticker" | "sector" })),
+      ...top50.map((o) => ({ ticker: o.ticker, kind: "ticker" as const })),
+    ];
+    return {
+      items: selected.map((s) => {
+        const opt = allOptions.find((o) => o.ticker === s.ticker);
+        return { ticker: s.ticker, kind: opt?.kind ?? ("ticker" as const) };
+      }),
+    };
+  }
+
   async function handleSave() {
     if (selected.length === 0) { toast.error("최소 1개 이상 선택해 주세요."); return; }
-
     setIsSubmitting(true);
     try {
-      const allOptions = [
-        ...watchlistOptions.map((o) => ({ ticker: o.ticker, kind: o.kind as "ticker" | "sector" })),
-        ...top50.map((o) => ({ ticker: o.ticker, kind: "ticker" as const })),
-      ];
-
-      const payload = {
-        items: selected.map((s) => {
-          const opt = allOptions.find((o) => o.ticker === s.ticker);
-          return { ticker: s.ticker, kind: opt?.kind ?? ("ticker" as const) };
-        }),
-      };
-
-      const result = await saveWatchlist(payload);
+      const result = await saveWatchlist(buildPayload());
       if (!result.success) { toast.error(result.error); return; }
-
       toast.success("관심 종목이 업데이트되었습니다.");
       router.push("/settings");
+    } catch {
+      toast.error("저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleSaveAndGoHome() {
+    if (selected.length === 0) { toast.error("최소 1개 이상 선택해 주세요."); return; }
+    setIsSubmitting(true);
+    try {
+      if (isDirty) {
+        const result = await saveWatchlist(buildPayload());
+        if (!result.success) { toast.error(result.error); return; }
+        // Delete today's cards so the home page auto-generates fresh ones
+        await resetTodayCards();
+        toast.success("관심 종목이 저장되었습니다. 추천 카드를 새로 생성합니다.");
+      }
+      router.push("/");
     } catch {
       toast.error("저장 중 오류가 발생했습니다.");
     } finally {
@@ -165,14 +188,22 @@ export function WatchlistEditorForm({ initialSelected, top50 }: WatchlistEditorF
         </div>
       </div>
 
-      {/* Save */}
-      <div className="flex justify-end border-t border-slate-100 pt-4">
+      {/* Save actions */}
+      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 pt-4">
         <Button
           onClick={() => void handleSave()}
           disabled={selected.length === 0 || isSubmitting}
-          className="bg-blue-600 hover:bg-blue-700"
+          variant="outline"
+          className="border-slate-200 text-slate-700 hover:bg-slate-50"
         >
           {isSubmitting ? "저장 중…" : "변경사항 저장"}
+        </Button>
+        <Button
+          onClick={() => void handleSaveAndGoHome()}
+          disabled={selected.length === 0 || isSubmitting}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isSubmitting ? "저장 중…" : isDirty ? "저장 후 홈으로" : "홈으로"}
         </Button>
       </div>
     </div>
