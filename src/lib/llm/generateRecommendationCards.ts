@@ -145,12 +145,18 @@ function readErrorStatus(error: unknown) {
     return null;
   }
 
-  const status = "status" in error ? error.status : null;
+  // @ai-sdk uses statusCode, not status
+  const statusCode = "statusCode" in error ? (error as Record<string, unknown>).statusCode : null;
+  if (typeof statusCode === "number") {
+    return statusCode;
+  }
+
+  const status = "status" in error ? (error as Record<string, unknown>).status : null;
   if (typeof status === "number") {
     return status;
   }
 
-  const code = "code" in error ? error.code : null;
+  const code = "code" in error ? (error as Record<string, unknown>).code : null;
   if (typeof code === "number") {
     return code;
   }
@@ -160,11 +166,19 @@ function readErrorStatus(error: unknown) {
 
 function readErrorMessage(error: unknown) {
   if (error instanceof Error) {
-    return error.message;
+    // @ai-sdk APICallError has empty message; real details are in responseBody
+    if (error.message) {
+      return error.message;
+    }
+    const body = "responseBody" in error ? (error as Record<string, unknown>).responseBody : null;
+    if (typeof body === "string" && body) {
+      return body;
+    }
+    return String(error);
   }
 
   if (typeof error === "object" && error != null && "message" in error) {
-    const message = error.message;
+    const message = (error as Record<string, unknown>).message;
     return typeof message === "string" ? message : String(message);
   }
 
@@ -228,6 +242,15 @@ export function classifyLlmCallFailure(error: unknown): {
     message.includes("internal server error") ||
     message.includes("bad gateway") ||
     message.includes("service unavailable")
+  ) {
+    return { reason: "api_error", status };
+  }
+
+  if (
+    status === 400 ||
+    message.includes("400") ||
+    message.includes("invalid argument") ||
+    message.includes("bad request")
   ) {
     return { reason: "api_error", status };
   }
@@ -443,13 +466,11 @@ Use one of these shapes:
     }
   } catch (error) {
     const failure = classifyLlmCallFailure(error);
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[recommendations] Gemini generation failed", {
-        reason: failure.reason,
-        status: failure.status,
-        message: readErrorMessage(error),
-      });
-    }
+    console.warn("[recommendations] Gemini generation failed", {
+      reason: failure.reason,
+      status: failure.status,
+      message: readErrorMessage(error),
+    });
     await captureEvent("llm_call_failed", {
       reason: failure.reason,
       status: failure.status,
