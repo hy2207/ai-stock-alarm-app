@@ -114,6 +114,16 @@ export default async function RecommendationDetailPage({
                     ? `$${card.entryPrice.toFixed(2)}`
                     : `$${card.entryRangeLow?.toFixed(2)}-${card.entryRangeHigh?.toFixed(2)}`}
               </dd>
+              <dd className="mt-0.5 text-[10px] text-slate-400">
+                {new Intl.DateTimeFormat("ko-KR", {
+                  timeZone: "America/New_York",
+                  month: "numeric",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: false,
+                }).format(new Date(card.createdAt))} ET 기준
+              </dd>
             </div>
             <div className="rounded-lg bg-emerald-50 p-3">
               <dt className="text-slate-500">목표가</dt>

@@ -10,6 +10,20 @@ const CONFIDENCE_LABELS = {
   aggressive: "공격형",
 } as const;
 
+function formatPriceTime(createdAt: Date | string): string {
+  const d = new Date(createdAt);
+  return (
+    new Intl.DateTimeFormat("ko-KR", {
+      timeZone: "America/New_York",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(d) + " ET 기준"
+  );
+}
+
 function formatPrice(
   card: RecommendationCardOutput,
   kind: "current" | "entry" | "target",
@@ -65,6 +79,7 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         <div className="rounded-lg bg-slate-50 p-3">
           <dt className="text-slate-500">현재가</dt>
           <dd className="font-semibold text-slate-950">{formatPrice(card, "current")}</dd>
+          <dd className="mt-0.5 text-[10px] text-slate-400">{formatPriceTime(card.createdAt)}</dd>
         </div>
         <div className="rounded-lg bg-emerald-50 p-3">
           <dt className="text-slate-500">목표가</dt>
