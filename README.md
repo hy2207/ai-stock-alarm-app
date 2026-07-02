@@ -7,17 +7,13 @@
 
 ## 스크린샷
 
-<!-- 스크린샷 추가 방법: public/screenshots/ 에 이미지를 넣고 아래 경로를 업데이트하세요 -->
-
-| 홈 — 오늘의 의사결정 카드 | 추천 카드 상세 | 리스크 모드 선택 |
+| 랜딩 페이지 | 홈 — 오늘의 의사결정 카드 | 추천 카드 상세 |
 |:---:|:---:|:---:|
-| ![홈](public/screenshots/home.png) | ![상세](public/screenshots/detail.png) | ![리스크](public/screenshots/risk-mode.png) |
+| ![랜딩](public/screenshots/landing.png) | ![홈](public/screenshots/home.png) | ![상세](public/screenshots/detail.png) |
 
-| 관심종목 온보딩 | 추천 이력 | 설정 허브 |
+| 설정 허브 | 추천 이력 | 리스크 모드 선택 |
 |:---:|:---:|:---:|
-| ![온보딩](public/screenshots/onboarding.png) | ![이력](public/screenshots/archive.png) | ![설정](public/screenshots/settings.png) |
-
-> **이미지가 표시되지 않으면** `public/screenshots/` 폴더에 캡처 이미지를 추가해주세요.
+| ![설정](public/screenshots/settings.png) | ![이력](public/screenshots/archive.png) | ![리스크](public/screenshots/risk-mode.png) |
 
 ---
 
