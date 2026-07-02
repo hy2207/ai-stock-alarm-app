@@ -7,13 +7,17 @@
 
 ## 스크린샷
 
-| 랜딩 페이지 | 홈 — 오늘의 의사결정 카드 | 추천 카드 상세 |
+| 랜딩 페이지 | 홈 — 의사결정 카드 | 홈 — 뉴스 기반 근거 |
 |:---:|:---:|:---:|
-| ![랜딩](public/screenshots/landing.png) | ![홈](public/screenshots/home.png) | ![상세](public/screenshots/detail.png) |
+| ![랜딩](public/screenshots/landing.png) | ![홈](public/screenshots/home.png) | ![뉴스](public/screenshots/home-news.png) |
 
-| 설정 허브 | 추천 이력 | 리스크 모드 선택 |
+| 카드 상세 | 카드 상세 — 뉴스 링크 | 설정 허브 |
 |:---:|:---:|:---:|
-| ![설정](public/screenshots/settings.png) | ![이력](public/screenshots/archive.png) | ![리스크](public/screenshots/risk-mode.png) |
+| ![상세](public/screenshots/detail.png) | ![상세뉴스](public/screenshots/detail-news.png) | ![설정](public/screenshots/settings.png) |
+
+| 관심 종목 편집 | 종목 검색 | 시총 50위 그리드 |
+|:---:|:---:|:---:|
+| ![관심종목](public/screenshots/settings-watchlist.png) | ![검색](public/screenshots/settings-watchlist-search.png) | ![그리드](public/screenshots/settings-watchlist-grid.png) |
 
 ---
 
