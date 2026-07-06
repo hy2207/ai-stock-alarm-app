@@ -3,13 +3,6 @@ import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { recommendationCardOutputSchema } from "@/lib/dto/recommendationCard";
 import type { TodayRecommendationsResponse } from "@/lib/dto/todayRecommendations";
 import type { RiskMode } from "@/lib/dto/saveRiskProfile";
-import type { RecommendationCard } from "@prisma/client";
-
-const REQUIRED_RISK_MODES = new Set([
-  "aggressive",
-  "balanced",
-  "conservative",
-]);
 
 /** Start of the current calendar day (00:00:00.000 UTC). */
 function todayStart(): Date {
@@ -24,102 +17,6 @@ function tomorrowStart(): Date {
   d.setUTCHours(0, 0, 0, 0);
   d.setUTCDate(d.getUTCDate() + 1);
   return d;
-}
-
-function readTargetPrice(card: RecommendationCard) {
-  if (card.targetPrice != null) {
-    return card.targetPrice;
-  }
-  if (card.targetRangeLow != null && card.targetRangeHigh != null) {
-    return (card.targetRangeLow + card.targetRangeHigh) / 2;
-  }
-  return null;
-}
-
-function isSamePrice(a: number, b: number) {
-  return Math.abs(a - b) < 0.01;
-}
-
-function hasValidRiskModeSet(cards: RecommendationCard[]) {
-  if (cards.length < REQUIRED_RISK_MODES.size) {
-    return false;
-  }
-
-  const aggressive = cards.find((card) => card.confidenceScore === "aggressive");
-  const balanced = cards.find((card) => card.confidenceScore === "balanced");
-  const conservative = cards.find(
-    (card) => card.confidenceScore === "conservative",
-  );
-
-  if (
-    !aggressive ||
-    !balanced ||
-    !conservative ||
-    aggressive.currentPrice == null ||
-    aggressive.exitPrice == null ||
-    balanced.exitPrice == null ||
-    conservative.exitPrice == null
-  ) {
-    return false;
-  }
-
-  const target = readTargetPrice(aggressive);
-  if (target == null) {
-    return false;
-  }
-
-  const modes = new Set(cards.map((card) => card.confidenceScore));
-  if (![...REQUIRED_RISK_MODES].every((mode) => modes.has(mode))) {
-    return false;
-  }
-
-  const sameThesis = cards.every((card) => {
-    const cardTarget = readTargetPrice(card);
-    return (
-      card.direction === aggressive.direction &&
-      card.currentPrice != null &&
-      isSamePrice(card.currentPrice, aggressive.currentPrice!) &&
-      cardTarget != null &&
-      isSamePrice(cardTarget, target)
-    );
-  });
-
-  if (!sameThesis) {
-    return false;
-  }
-
-  if (aggressive.direction === "BUY") {
-    return (
-      target > aggressive.currentPrice &&
-      aggressive.exitPrice > balanced.exitPrice &&
-      balanced.exitPrice > conservative.exitPrice &&
-      aggressive.exitPrice >= target * 0.98
-    );
-  }
-
-  if (aggressive.direction === "SELL") {
-    return (
-      target < aggressive.currentPrice &&
-      aggressive.exitPrice > balanced.exitPrice &&
-      balanced.exitPrice > conservative.exitPrice
-    );
-  }
-
-  return false;
-}
-
-function filterValidRiskModeSets(cards: RecommendationCard[]) {
-  const byTicker = new Map<string, RecommendationCard[]>();
-  for (const card of cards) {
-    const tickerCards = byTicker.get(card.ticker) ?? [];
-    tickerCards.push(card);
-    byTicker.set(card.ticker, tickerCards);
-  }
-
-  return [...byTicker.values()]
-    .filter(hasValidRiskModeSet)
-    .flat()
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 /**
@@ -156,17 +53,10 @@ export async function getTodayRecommendations(
     }),
   ]);
 
-  const validCards = filterValidRiskModeSets(cards);
-
-  if (validCards.length === 0 && cards.length > 0) {
-    return {
-      status: "no_call",
-      reason:
-        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
-    };
-  }
-
-  if (validCards.length === 0) {
+  // Any published card for today is served as-is. Regeneration only happens
+  // when today's cards are deleted (e.g. resetTodayCards after a watchlist
+  // change), which sends the home page into the no_call → auto-load path.
+  if (cards.length === 0) {
     return { status: "no_call", reason: "No recommendations available today. Check back tomorrow morning." };
   }
 
@@ -180,6 +70,6 @@ export async function getTodayRecommendations(
   return {
     status: "ok",
     selectedRiskMode,
-    cards: validCards.map((c) => recommendationCardOutputSchema.parse(c)),
+    cards: cards.map((c) => recommendationCardOutputSchema.parse(c)),
   };
 }

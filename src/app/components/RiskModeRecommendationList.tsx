@@ -52,7 +52,12 @@ export function RiskModeRecommendationList({
       const tickerCards = cardsByTicker.get(ticker) ?? [];
       return {
         ticker,
-        card: tickerCards.find((card) => card.confidenceScore === selectedRiskMode),
+        // Fall back to balanced (or any available) card when the selected
+        // risk mode has no card — e.g. days where only 중립형 was generated
+        card:
+          tickerCards.find((card) => card.confidenceScore === selectedRiskMode) ??
+          tickerCards.find((card) => card.confidenceScore === "balanced") ??
+          tickerCards[0],
       };
     });
   }, [cards, selectedRiskMode, watchlistTickers]);

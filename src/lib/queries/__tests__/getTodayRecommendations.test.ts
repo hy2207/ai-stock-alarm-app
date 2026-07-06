@@ -299,58 +299,22 @@ describe("getTodayRecommendations", () => {
     }
   });
 
-  it("hides stale BUY cards when aggressive sell price is below conservative sell price", async () => {
+  it("serves today's cards as-is even when risk-mode set is incomplete (no forced regeneration)", async () => {
+    // Regression: requiring a full 3-mode set caused the home page to
+    // regenerate cards on every visit after non-balanced cards were removed.
     mockGetCurrentUserId.mockResolvedValue("user-1");
     mockFindMany.mockResolvedValue([
-      publishedCard({
-        confidenceScore: "aggressive",
-        exitPrice: 910,
-      }),
-      publishedCard({
-        confidenceScore: "balanced",
-        exitPrice: 930,
-      }),
-      publishedCard({
-        confidenceScore: "conservative",
-        exitPrice: 950,
-      }),
+      publishedCard({ confidenceScore: "balanced", exitPrice: 930 }),
     ]);
 
     const { getTodayRecommendations } = await import("../getTodayRecommendations");
     const result = await getTodayRecommendations();
 
-    expect(result).toEqual({
-      status: "no_call",
-      reason:
-        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
-    });
-  });
-
-  it("hides stale BUY cards when aggressive sell price is far below the target", async () => {
-    mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue([
-      publishedCard({
-        confidenceScore: "aggressive",
-        exitPrice: 920,
-      }),
-      publishedCard({
-        confidenceScore: "balanced",
-        exitPrice: 910,
-      }),
-      publishedCard({
-        confidenceScore: "conservative",
-        exitPrice: 900,
-      }),
-    ]);
-
-    const { getTodayRecommendations } = await import("../getTodayRecommendations");
-    const result = await getTodayRecommendations();
-
-    expect(result).toEqual({
-      status: "no_call",
-      reason:
-        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
-    });
+    expect(result.status).toBe("ok");
+    if (result.status === "ok") {
+      expect(result.cards).toHaveLength(1);
+      expect(result.cards[0].confidenceScore).toBe("balanced");
+    }
   });
 
   it("returns SELL cards when aggressive sell price is highest", async () => {
@@ -366,42 +330,6 @@ describe("getTodayRecommendations", () => {
       expect(result.cards.find((card) => card.confidenceScore === "aggressive"))
         .toMatchObject({ direction: "SELL", exitPrice: 330 });
     }
-  });
-
-  it("hides stale SELL cards when aggressive sell price is lowest", async () => {
-    mockGetCurrentUserId.mockResolvedValue("user-1");
-    mockFindMany.mockResolvedValue([
-      publishedCard({
-        direction: "SELL",
-        currentPrice: 300,
-        targetPrice: 250,
-        confidenceScore: "aggressive",
-        exitPrice: 285,
-      }),
-      publishedCard({
-        direction: "SELL",
-        currentPrice: 300,
-        targetPrice: 250,
-        confidenceScore: "balanced",
-        exitPrice: 300,
-      }),
-      publishedCard({
-        direction: "SELL",
-        currentPrice: 300,
-        targetPrice: 250,
-        confidenceScore: "conservative",
-        exitPrice: 315,
-      }),
-    ]);
-
-    const { getTodayRecommendations } = await import("../getTodayRecommendations");
-    const result = await getTodayRecommendations();
-
-    expect(result).toEqual({
-      status: "no_call",
-      reason:
-        "Today's recommendations need regeneration because saved risk-mode prices are outdated.",
-    });
   });
 
   it("propagates getCurrentUserId errors to the caller", async () => {
