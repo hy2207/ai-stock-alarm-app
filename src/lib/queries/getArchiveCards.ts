@@ -89,7 +89,7 @@ export async function getArchiveCards(): Promise<ArchiveCard[]> {
   if (!userId) return [];
 
   const rows = await prisma.recommendationCard.findMany({
-    where: { userId, status: "published" },
+    where: { userId, status: "published", confidenceScore: "balanced" },
     orderBy: { createdAt: "desc" },
     take: 60,
     select: {
