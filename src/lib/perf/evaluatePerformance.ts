@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { syncPriceHistory } from "@/lib/market-data/priceSync";
 import {
   getStoredPriceHistoryByRange,
   upsertPriceHistory,
@@ -143,59 +142,55 @@ export async function runPerformanceEvaluation(
   const pending = await loadPendingRecords(now);
   if (pending.length === 0) return { evaluated: 0, skipped: 0, errors: [] };
 
-  // Ensure DB price history is current for all affected tickers
-  const uniqueTickers = [...new Set(pending.map((r) => r.ticker))];
-  await Promise.allSettled(uniqueTickers.map((t) => syncPriceHistory(t)));
-
   let evaluated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  await Promise.all(
-    pending.map(async (record) => {
-      const entryPrice = record.recommendationCard.entryPrice;
-      if (entryPrice == null) {
-        skipped++;
-        return;
-      }
+  // Process sequentially — pgBouncer serverless pool allows only 1 concurrent
+  // connection; parallel Promise.all would exhaust it immediately.
+  for (const record of pending) {
+    const entryPrice = record.recommendationCard.entryPrice;
+    if (entryPrice == null) {
+      skipped++;
+      continue;
+    }
 
-      const { startDate, endDate } = holdWindowDates(
-        record.createdAt,
-        record.evaluationWindowDays,
+    const { startDate, endDate } = holdWindowDates(
+      record.createdAt,
+      record.evaluationWindowDays,
+    );
+
+    let candles: StoredPricePoint[];
+    try {
+      candles = await ensureOhlcvForWindow(record.ticker, startDate, endDate);
+    } catch (err) {
+      errors.push(
+        `${record.ticker}: fetch failed — ${err instanceof Error ? err.message : String(err)}`,
       );
+      skipped++;
+      continue;
+    }
 
-      let candles: StoredPricePoint[];
-      try {
-        candles = await ensureOhlcvForWindow(record.ticker, startDate, endDate);
-      } catch (err) {
-        errors.push(
-          `${record.ticker}: fetch failed — ${err instanceof Error ? err.message : String(err)}`,
-        );
-        skipped++;
-        return;
-      }
+    if (candles.length === 0) {
+      errors.push(`${record.ticker}: no price data for ${startDate}–${endDate}`);
+      skipped++;
+      continue;
+    }
 
-      if (candles.length === 0) {
-        errors.push(`${record.ticker}: no price data for ${startDate}–${endDate}`);
-        skipped++;
-        return;
-      }
+    const { realizedReturn, hitFlag } = computeEvaluationFromOhlcv(
+      record.predictedDirection,
+      entryPrice,
+      record.recommendationCard.targetPrice,
+      candles,
+    );
 
-      const { realizedReturn, hitFlag } = computeEvaluationFromOhlcv(
-        record.predictedDirection,
-        entryPrice,
-        record.recommendationCard.targetPrice,
-        candles,
-      );
+    await prisma.performanceRecord.update({
+      where: { id: record.id },
+      data: { realizedReturn, hitFlag, evaluatedAt: now },
+    });
 
-      await prisma.performanceRecord.update({
-        where: { id: record.id },
-        data: { realizedReturn, hitFlag, evaluatedAt: now },
-      });
-
-      evaluated++;
-    }),
-  );
+    evaluated++;
+  }
 
   return { evaluated, skipped, errors };
 }

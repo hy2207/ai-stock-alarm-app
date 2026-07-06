@@ -104,12 +104,11 @@ describe("computeEvaluationFromOhlcv", () => {
 
 // ── Integration-style tests for runPerformanceEvaluation ─────────────────────
 
-const { mockFindMany, mockUpdate, mockGetStoredPriceHistoryByRange, mockSyncPriceHistory } =
+const { mockFindMany, mockUpdate, mockGetStoredPriceHistoryByRange } =
   vi.hoisted(() => ({
     mockFindMany: vi.fn(),
     mockUpdate: vi.fn(),
     mockGetStoredPriceHistoryByRange: vi.fn(),
-    mockSyncPriceHistory: vi.fn().mockResolvedValue(null),
   }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -126,17 +125,12 @@ vi.mock("@/lib/market-data/storePriceHistory", () => ({
   upsertPriceHistory: vi.fn(),
 }));
 
-vi.mock("@/lib/market-data/priceSync", () => ({
-  syncPriceHistory: mockSyncPriceHistory,
-}));
-
 vi.mock("@/lib/market-data/yahooFinance", () => ({
   fetchYahooChartByPeriod: vi.fn().mockResolvedValue({ ok: false, error: { message: "no fallback" } }),
 }));
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockSyncPriceHistory.mockResolvedValue(null);
 });
 
 describe("runPerformanceEvaluation", () => {
