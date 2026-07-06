@@ -7,12 +7,16 @@ import {
   evidenceSnapshotCreateSchema,
   type EvidenceSnapshotCreateInput,
 } from "@/lib/dto/evidenceSnapshot";
+import { forecastPrice } from "@/lib/quant/forecastPrice";
 import type { RecommendationGeneration } from "./generateRecommendationCards";
 
 interface PersistRecommendationGenerationInput {
   userId: string;
   generation: RecommendationGeneration;
   evidence?: Omit<EvidenceSnapshotCreateInput, "recId">;
+  /** Daily closes (oldest → newest) for the generation's ticker.
+   *  When provided, a statistical quantForecast is stored per variant. */
+  closes?: number[];
   now?: Date;
 }
 
@@ -26,6 +30,7 @@ export async function persistRecommendationGeneration({
   userId,
   generation,
   evidence,
+  closes,
   now = new Date(),
 }: PersistRecommendationGenerationInput): Promise<PrismaRecommendationCard[]> {
   if (generation.status === "no_call") {
@@ -34,6 +39,10 @@ export async function persistRecommendationGeneration({
 
   return prisma.$transaction(
     generation.variants.map((variant) => {
+      const quantForecast = closes
+        ? forecastPrice(closes, variant.holdDays)
+        : null;
+
       const cardData = recommendationCardCreateSchema.parse({
         userId,
         ticker: variant.ticker,
@@ -51,6 +60,7 @@ export async function persistRecommendationGeneration({
         reasonLine: variant.reasonLine,
         newsRationaleKo: null,
         newsItems: variant.newsItems.length > 0 ? variant.newsItems : null,
+        quantForecast,
         status: "published",
         validUntil: validUntilFromHoldDays(now, variant.holdDays),
       });

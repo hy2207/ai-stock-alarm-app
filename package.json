@@ -117,5 +117,9 @@
     "overrides": {
       "vite": "6.3.5"
     }
+  },
+  "optionalDependencies": {
+    "@esbuild/darwin-arm64": "^0.28.1",
+    "@rollup/rollup-darwin-arm64": "^4.62.2"
   }
 }

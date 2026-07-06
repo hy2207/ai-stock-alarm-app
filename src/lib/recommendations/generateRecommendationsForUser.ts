@@ -4,6 +4,8 @@ import {
   fetchFinnhubNews,
 } from "@/lib/market-data";
 import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
+import { syncPriceHistory } from "@/lib/market-data/priceSync";
+import { getStoredPriceHistory } from "@/lib/market-data/storePriceHistory";
 import { generateRecommendationCards } from "@/lib/llm/generateRecommendationCards";
 import { persistRecommendationGeneration } from "@/lib/llm/persistRecommendationGeneration";
 import type {
@@ -439,10 +441,22 @@ export async function generateRecommendationsForUser(
       continue;
     }
 
+    // Daily closes for the statistical forecast — DB-first (150 calendar
+    // days ≈ 3 months of trading days); forecast is optional on failure.
+    let closes: number[] | undefined;
+    try {
+      await syncPriceHistory(targetTicker.ticker);
+      const stored = await getStoredPriceHistory(targetTicker.ticker, 150);
+      closes = stored.map((p) => p.close);
+    } catch {
+      closes = undefined;
+    }
+
     await replaceTodaysTickerCards(userId, targetTicker.ticker);
     await persistRecommendationGeneration({
       userId,
       generation,
+      closes,
     });
     generatedCount += 1;
   }

@@ -76,6 +76,7 @@ model RecommendationCard {
   reasonLine      String   // min 1, max 160 chars (Zod-validated)
   newsRationaleKo String?
   newsItems       Json?    // NewsItemKo[]: [{source, headlineKo, summaryKo}] — 3-5 items
+  quantForecast   Json?    // PriceForecast: statistical expected price at holdDays horizon
   status          String   // "published" | "no_call" | "validation_failed" (Zod-validated)
   createdAt       DateTime @default(now())
   validUntil      DateTime

@@ -21,10 +21,10 @@ function todayET(): string {
  * Ensure the DB has up-to-date price history for a ticker, then return it.
  *
  * Decision logic:
- *   - No data in DB          → fetch 1-month initial load from Yahoo
+ *   - No data in DB          → fetch 3-month initial load from Yahoo
  *   - Last stored date < today (gap exists) → fetch only the missing
  *     range using period1/period2 (handles multi-day absences)
- *     If gap > 30 days, falls back to fresh 1-month load.
+ *     If gap > 30 days, falls back to fresh 3-month load.
  *   - Last stored date = today → DB is current; skip Yahoo OHLCV fetch
  *
  * In all cases, the live regularMarketPrice + regularMarketTime are fetched
@@ -38,8 +38,8 @@ export async function syncPriceHistory(ticker: string): Promise<PriceSyncResult>
   let regularMarketTime: number | null = null;
 
   if (!latestDate) {
-    // ── No data: initial 1-month load ───────────────────────────────
-    const result = await fetchYahooChart(ticker, "1mo");
+    // ── No data: initial 3-month load (quant forecast vol window) ───
+    const result = await fetchYahooChart(ticker, "3mo");
     if (result.ok) {
       await upsertPriceHistory(ticker, result.data.ohlcv);
       regularMarketPrice = result.data.regularMarketPrice;
@@ -53,7 +53,7 @@ export async function syncPriceHistory(ticker: string): Promise<PriceSyncResult>
 
     const result =
       daysDiff > 30
-        ? await fetchYahooChart(ticker, "1mo")
+        ? await fetchYahooChart(ticker, "3mo")
         : await fetchYahooChartByPeriod(
             ticker,
             Math.floor(new Date(`${latestDate}T00:00:00Z`).getTime() / 1000),

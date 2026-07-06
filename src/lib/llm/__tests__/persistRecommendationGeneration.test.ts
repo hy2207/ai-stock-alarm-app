@@ -109,6 +109,47 @@ describe("persistRecommendationGeneration", () => {
     );
   });
 
+  it("GWT: Given closes When persisting Then stores a quantForecast per variant at its holdDays horizon", async () => {
+    mockCreate.mockClear();
+    mockTransaction.mockClear();
+    mockCreate.mockImplementation(({ data }) => Promise.resolve({ id: data.confidenceScore, ...data }));
+
+    // 30 days of a clean uptrend around the card's price level
+    const closes = Array.from({ length: 30 }, (_, i) => 160 + i);
+
+    await persistRecommendationGeneration({
+      userId: "clxuser000000000000000001",
+      generation,
+      closes,
+      now: new Date("2026-06-19T00:00:00.000Z"),
+    });
+
+    expect(mockCreate).toHaveBeenCalledTimes(3);
+    for (const call of mockCreate.mock.calls) {
+      const { quantForecast, holdDays } = call[0].data;
+      expect(quantForecast).not.toBeNull();
+      expect(quantForecast.horizonDays).toBe(holdDays);
+      expect(quantForecast.expectedPrice).toBeGreaterThan(189); // continues uptrend past last close
+      expect(quantForecast.method).toBe("holt+linreg");
+    }
+  });
+
+  it("GWT: Given no closes When persisting Then quantForecast is null", async () => {
+    mockCreate.mockClear();
+    mockTransaction.mockClear();
+    mockCreate.mockImplementation(({ data }) => Promise.resolve({ id: data.confidenceScore, ...data }));
+
+    await persistRecommendationGeneration({
+      userId: "clxuser000000000000000001",
+      generation,
+      now: new Date("2026-06-19T00:00:00.000Z"),
+    });
+
+    for (const call of mockCreate.mock.calls) {
+      expect(call[0].data.quantForecast).toBeNull();
+    }
+  });
+
   it("GWT: Given No Call generation When persisting Then leaves Prisma untouched", async () => {
     mockCreate.mockClear();
     mockTransaction.mockClear();

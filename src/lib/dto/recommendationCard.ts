@@ -17,6 +17,27 @@ export function parseNewsItems(raw: unknown): NewsItemKo[] {
   return result.success ? result.data : [];
 }
 
+/** Shape of the statistical forecast stored in the quantForecast Json field.
+ *  Mirrors PriceForecast in src/lib/quant/forecastPrice.ts. */
+export const quantForecastSchema = z.object({
+  expectedPrice: z.number().positive(),
+  lowBand: z.number(),
+  highBand: z.number(),
+  trendSlopePctPerDay: z.number(),
+  trendR2: z.number().min(0).max(1),
+  dailyVolatilityPct: z.number().min(0),
+  horizonDays: z.number().int().min(1),
+  method: z.string(),
+});
+export type QuantForecast = z.infer<typeof quantForecastSchema>;
+
+/** Safely parse the raw Prisma Json value into a typed forecast. */
+export function parseQuantForecast(raw: unknown): QuantForecast | null {
+  if (!raw) return null;
+  const result = quantForecastSchema.safeParse(raw);
+  return result.success ? result.data : null;
+}
+
 export const directionEnum = z.enum(["BUY", "SELL"]);
 export const confidenceModeEnum = z.enum([
   "aggressive",
@@ -87,6 +108,8 @@ export const recommendationCardCreateSchema = z
     newsRationaleKo: z.string().trim().min(1).max(240).nullable().optional(),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     newsItems: z.any().nullable().optional(),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    quantForecast: z.any().nullable().optional(),
     status: cardStatusEnum,
     validUntil: z.date(),
   })
@@ -125,6 +148,8 @@ export const recommendationCardSchema = z.object({
   newsRationaleKo: z.string().min(1).max(240).nullable().optional().default(null),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   newsItems: z.any().nullable().optional().default(null),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  quantForecast: z.any().nullable().optional().default(null),
   status: cardStatusEnum,
   createdAt: z.date(),
   validUntil: z.date(),
