@@ -1,5 +1,5 @@
 import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
-import { parseNewsItems } from "@/lib/dto/recommendationCard";
+import { parseNewsItems, parseQuantForecast } from "@/lib/dto/recommendationCard";
 import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
 import { PriceChartToggle } from "./PriceChartToggle";
@@ -46,6 +46,7 @@ function formatPrice(
 export function RecommendationCardLink({ card }: { card: RecommendationCardOutput }) {
   const reasonText = card.reasonLine;
   const newsItems = parseNewsItems(card.newsItems);
+  const quant = parseQuantForecast(card.quantForecast);
 
   return (
     <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
@@ -96,6 +97,25 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
           </dd>
         </div>
       </dl>
+
+      {quant && (
+        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-medium text-indigo-900">
+              수치 분석 예상가
+              <span className="ml-1 font-normal text-indigo-400">
+                ({quant.horizonDays}일 후)
+              </span>
+            </span>
+            <span className="text-sm font-semibold text-indigo-900">
+              ${quant.expectedPrice.toFixed(2)}
+            </span>
+          </div>
+          <p className="mt-0.5 text-right text-[10px] text-indigo-400">
+            예상 범위 ${quant.lowBand.toFixed(2)} – ${quant.highBand.toFixed(2)}
+          </p>
+        </div>
+      )}
 
       <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
         {reasonText}

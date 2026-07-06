@@ -5,7 +5,7 @@ import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { syncPriceHistory } from "@/lib/market-data/priceSync";
-import { parseNewsItems } from "@/lib/dto/recommendationCard";
+import { parseNewsItems, parseQuantForecast } from "@/lib/dto/recommendationCard";
 
 interface RecommendationDetailPageProps {
   params: {
@@ -24,6 +24,12 @@ const CONFIDENCE_LABELS = {
   balanced: "중립형",
   aggressive: "공격형",
 } as const;
+
+function trendConfidenceLabel(r2: number): string {
+  if (r2 >= 0.6) return "높음";
+  if (r2 >= 0.3) return "보통";
+  return "낮음";
+}
 
 export default async function RecommendationDetailPage({
   params,
@@ -58,6 +64,27 @@ export default async function RecommendationDetailPage({
   });
 
   const newsItems = parseNewsItems(card.newsItems);
+  const quant = parseQuantForecast(card.quantForecast);
+
+  // Compare the statistical forecast direction with the AI call
+  const referencePrice = card.currentPrice ?? card.entryPrice;
+  const quantDirectionUp =
+    quant && referencePrice != null ? quant.expectedPrice > referencePrice : null;
+  const directionsAgree =
+    quantDirectionUp == null
+      ? null
+      : card.direction === "BUY"
+        ? quantDirectionUp
+        : !quantDirectionUp;
+  const aiTarget =
+    card.targetPrice ??
+    (card.targetRangeLow != null && card.targetRangeHigh != null
+      ? (card.targetRangeLow + card.targetRangeHigh) / 2
+      : null);
+  const gapToAiTargetPct =
+    quant && aiTarget != null
+      ? ((quant.expectedPrice - aiTarget) / aiTarget) * 100
+      : null;
 
   const completed = performance.filter((record) => record.hitFlag != null);
   const wins = completed.filter((record) => record.hitFlag === true).length;
@@ -201,6 +228,89 @@ export default async function RecommendationDetailPage({
             reasonLine={card.reasonLine}
           />
         </section>
+
+        {/* Statistical forecast section */}
+        {quant && (
+          <section className="mt-4 rounded-lg border border-indigo-100 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="font-semibold">
+                수치 분석 예상가
+                <span className="ml-1.5 text-sm font-normal text-slate-400">
+                  {quant.horizonDays}일 후
+                </span>
+              </h2>
+              {directionsAgree != null && (
+                <span
+                  className={
+                    directionsAgree
+                      ? "rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700"
+                      : "rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700"
+                  }
+                >
+                  {directionsAgree ? "AI 판단과 방향 일치" : "AI 판단과 방향 상이"}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-lg bg-indigo-50/60 p-4 text-center">
+              <p className="text-2xl font-semibold text-indigo-900">
+                ${quant.expectedPrice.toFixed(2)}
+              </p>
+              <p className="mt-1 text-xs text-indigo-400">
+                예상 범위 ${quant.lowBand.toFixed(2)} – ${quant.highBand.toFixed(2)} (±1σ)
+              </p>
+            </div>
+
+            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="text-slate-500">AI 목표가 대비</dt>
+                <dd
+                  className={`font-semibold ${
+                    gapToAiTargetPct == null
+                      ? "text-slate-400"
+                      : Math.abs(gapToAiTargetPct) <= 3
+                        ? "text-emerald-700"
+                        : "text-amber-700"
+                  }`}
+                >
+                  {gapToAiTargetPct == null
+                    ? "—"
+                    : `${gapToAiTargetPct >= 0 ? "+" : ""}${gapToAiTargetPct.toFixed(1)}%`}
+                </dd>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="text-slate-500">추세 기울기</dt>
+                <dd
+                  className={`font-semibold ${
+                    quant.trendSlopePctPerDay >= 0 ? "text-emerald-700" : "text-rose-700"
+                  }`}
+                >
+                  {quant.trendSlopePctPerDay >= 0 ? "+" : ""}
+                  {quant.trendSlopePctPerDay.toFixed(2)}%/일
+                </dd>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="text-slate-500">추세 신뢰도</dt>
+                <dd className="font-semibold">
+                  {trendConfidenceLabel(quant.trendR2)}
+                  <span className="ml-1 text-xs font-normal text-slate-400">
+                    (R² {quant.trendR2.toFixed(2)})
+                  </span>
+                </dd>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="text-slate-500">일 변동성</dt>
+                <dd className="font-semibold">{quant.dailyVolatilityPct.toFixed(1)}%</dd>
+              </div>
+            </dl>
+
+            <p className="mt-3 text-xs leading-relaxed text-slate-400">
+              최근 1개월 추세(Holt 지수평활 + 선형회귀 앙상블)와 최대 3개월
+              변동성(EWMA)으로 계산한 통계 예측입니다. AI 판단과 독립적으로
+              산출되며, 투자 자문이 아닙니다.
+            </p>
+          </section>
+        )}
 
         {/* Price chart section */}
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
