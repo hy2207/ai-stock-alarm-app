@@ -5,6 +5,8 @@ import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { syncPriceHistory } from "@/lib/market-data/priceSync";
+import { getStoredPriceHistory } from "@/lib/market-data/storePriceHistory";
+import { backtestForecast } from "@/lib/quant/backtestForecast";
 import { parseNewsItems, parseQuantForecast } from "@/lib/dto/recommendationCard";
 
 interface RecommendationDetailPageProps {
@@ -62,6 +64,24 @@ export default async function RecommendationDetailPage({
       close: p.close,
     };
   });
+
+  // Walk-forward backtest over full stored history, filtered to chart dates
+  const fullHistory = await getStoredPriceHistory(card.ticker, 150).catch(() => []);
+  const backtestResult = backtestForecast(
+    fullHistory.map((p) => ({ date: p.date, close: p.close })),
+  );
+  const displayedDates = new Set(storedOhlcv.map((p) => p.date));
+  const backtestPoints = backtestResult
+    ? backtestResult.points
+        .filter((p) => displayedDates.has(p.date))
+        .map((p) => {
+          const [, m, day] = p.date.split("-");
+          return {
+            date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
+            predicted: p.predicted,
+          };
+        })
+    : null;
 
   const newsItems = parseNewsItems(card.newsItems);
   const quant = parseQuantForecast(card.quantForecast);
@@ -332,7 +352,21 @@ export default async function RecommendationDetailPage({
               </span>
             )}
           </div>
-          <PriceChart ohlcv={ohlcv} direction={card.direction} height={200} forecast={quant} />
+          <PriceChart
+            ohlcv={ohlcv}
+            direction={card.direction}
+            height={200}
+            forecast={quant}
+            backtest={backtestPoints}
+          />
+          {backtestResult && (
+            <p className="mt-2 text-xs text-slate-400">
+              전일 예측 백테스트 (최근 {backtestResult.count}일): 평균 오차{" "}
+              {backtestResult.mapePct.toFixed(1)}%
+              {backtestResult.directionHitRatePct != null &&
+                ` · 방향 적중 ${backtestResult.directionHitRatePct}%`}
+            </p>
+          )}
           {ohlcv.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>
           )}

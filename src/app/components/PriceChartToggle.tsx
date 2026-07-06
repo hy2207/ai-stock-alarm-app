@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PriceChart, type PricePoint, type ForecastOverlay } from "./PriceChart";
+import { PriceChart, type PricePoint, type ForecastOverlay, type BacktestOverlayPoint } from "./PriceChart";
 
 interface PriceChartToggleProps {
   ticker: string;
@@ -9,10 +9,23 @@ interface PriceChartToggleProps {
   forecast?: ForecastOverlay | null;
 }
 
+interface BacktestSummary {
+  points: BacktestOverlayPoint[];
+  mapePct: number;
+  directionHitRatePct: number | null;
+  count: number;
+}
+
 type State =
   | { kind: "closed" }
   | { kind: "loading" }
-  | { kind: "open"; ohlcv: PricePoint[]; marketPrice: number; marketTime: number | null }
+  | {
+      kind: "open";
+      ohlcv: PricePoint[];
+      marketPrice: number;
+      marketTime: number | null;
+      backtest: BacktestSummary | null;
+    }
   | { kind: "error"; message: string };
 
 interface PriceApiResponse {
@@ -20,6 +33,7 @@ interface PriceApiResponse {
   regularMarketPrice: number;
   regularMarketTime?: number | null;
   ohlcv: PricePoint[];
+  backtest?: BacktestSummary | null;
   error?: string;
 }
 
@@ -93,6 +107,7 @@ export function PriceChartToggle({ ticker, direction, forecast }: PriceChartTogg
         ohlcv: data.ohlcv,
         marketPrice: data.regularMarketPrice,
         marketTime: data.regularMarketTime ?? null,
+        backtest: data.backtest ?? null,
       });
     } catch {
       setState({ kind: "error", message: "네트워크 오류가 발생했습니다." });
@@ -151,7 +166,21 @@ export function PriceChartToggle({ ticker, direction, forecast }: PriceChartTogg
               )}
             </span>
           </div>
-          <PriceChart ohlcv={state.ohlcv} direction={direction} height={180} forecast={forecast} />
+          <PriceChart
+            ohlcv={state.ohlcv}
+            direction={direction}
+            height={180}
+            forecast={forecast}
+            backtest={state.backtest?.points}
+          />
+          {state.backtest && (
+            <p className="mt-2 text-[10px] text-slate-400">
+              전일 예측 백테스트 (최근 {state.backtest.count}일): 평균 오차{" "}
+              {state.backtest.mapePct.toFixed(1)}%
+              {state.backtest.directionHitRatePct != null &&
+                ` · 방향 적중 ${state.backtest.directionHitRatePct}%`}
+            </p>
+          )}
         </div>
       )}
     </div>

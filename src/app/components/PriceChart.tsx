@@ -36,6 +36,14 @@ interface ChartDatum {
   close?: number;
   forecast?: number;
   band?: [number, number];
+  /** 1-day-ahead backtest prediction for this (past) date. */
+  predicted?: number;
+}
+
+/** Walk-forward backtest prediction for a displayed date. */
+export interface BacktestOverlayPoint {
+  date: string;
+  predicted: number;
 }
 
 interface PriceChartProps {
@@ -43,9 +51,11 @@ interface PriceChartProps {
   direction: "BUY" | "SELL";
   height?: number;
   forecast?: ForecastOverlay | null;
+  backtest?: BacktestOverlayPoint[] | null;
 }
 
 const FORECAST_COLOR = "#6366f1"; // indigo-500
+const BACKTEST_COLOR = "#f59e0b"; // amber-500
 
 function fmtPrice(n: number) {
   return `$${n.toFixed(2)}`;
@@ -73,12 +83,19 @@ function nextTradingDates(lastDate: string, count: number): string[] {
   return out;
 }
 
-/** Merge actual candles with interpolated forecast points. */
+/** Merge actual candles with backtest predictions and forecast points. */
 function buildChartData(
   ohlcv: PricePoint[],
   forecast: ForecastOverlay | null | undefined,
+  backtest: BacktestOverlayPoint[] | null | undefined,
 ): ChartDatum[] {
-  const data: ChartDatum[] = ohlcv.map((p) => ({ ...p }));
+  const predictedByDate = new Map(
+    (backtest ?? []).map((b) => [b.date, b.predicted]),
+  );
+  const data: ChartDatum[] = ohlcv.map((p) => ({
+    ...p,
+    predicted: predictedByDate.get(p.date),
+  }));
 
   if (!forecast || ohlcv.length === 0) return data;
 
@@ -115,6 +132,7 @@ function computeDomain(data: ChartDatum[]): [number, number] {
     if (p.low != null) values.push(p.low);
     if (p.high != null) values.push(p.high);
     if (p.forecast != null) values.push(p.forecast);
+    if (p.predicted != null) values.push(p.predicted);
     if (p.band) values.push(p.band[0], p.band[1]);
   }
   if (values.length === 0) return [0, 1];
@@ -148,6 +166,14 @@ function ChartTooltipContent({
             고가 {fmtPrice(d.high)} · 저가 {fmtPrice(d.low)}
           </p>
         )}
+        {d.predicted != null && (
+          <p className="mt-0.5 text-amber-600">
+            전일 예측 {fmtPrice(d.predicted)}
+            <span className="ml-1 text-slate-400">
+              (오차 {(Math.abs(d.predicted - d.close) / d.close * 100).toFixed(1)}%)
+            </span>
+          </p>
+        )}
       </div>
     );
   }
@@ -176,6 +202,7 @@ export function PriceChart({
   direction,
   height = 180,
   forecast,
+  backtest,
 }: PriceChartProps) {
   if (ohlcv.length === 0) {
     return (
@@ -192,14 +219,15 @@ export function PriceChart({
   const strokeColor = isBuy ? "#10b981" : "#f43f5e";
   const gradientId = `price-grad-${direction}`;
 
-  const data = buildChartData(ohlcv, forecast);
+  const data = buildChartData(ohlcv, forecast, backtest);
   const domain = computeDomain(data);
   const tickInterval = Math.max(1, Math.floor(data.length / 6));
   const hasForecast = forecast != null && data.length > ohlcv.length;
+  const hasBacktest = data.some((p) => p.predicted != null);
 
   return (
     <div>
-      {hasForecast && (
+      {(hasForecast || hasBacktest) && (
         <div className="mb-1 flex items-center justify-end gap-3 text-[10px] text-slate-400">
           <span className="flex items-center gap-1">
             <span
@@ -208,13 +236,24 @@ export function PriceChart({
             />
             실제 종가
           </span>
-          <span className="flex items-center gap-1">
-            <span
-              className="inline-block h-0 w-4 border-t-2 border-dashed"
-              style={{ borderColor: FORECAST_COLOR }}
-            />
-            수치 예상
-          </span>
+          {hasBacktest && (
+            <span className="flex items-center gap-1">
+              <span
+                className="inline-block h-0 w-4 border-t-2 border-dotted"
+                style={{ borderColor: BACKTEST_COLOR }}
+              />
+              전일 예측
+            </span>
+          )}
+          {hasForecast && (
+            <span className="flex items-center gap-1">
+              <span
+                className="inline-block h-0 w-4 border-t-2 border-dashed"
+                style={{ borderColor: FORECAST_COLOR }}
+              />
+              수치 예상
+            </span>
+          )}
         </div>
       )}
 
@@ -280,6 +319,21 @@ export function PriceChart({
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0, fill: strokeColor }}
           />
+
+          {/* Walk-forward backtest predictions over past dates */}
+          {hasBacktest && (
+            <Line
+              type="linear"
+              dataKey="predicted"
+              stroke={BACKTEST_COLOR}
+              strokeWidth={1.2}
+              strokeDasharray="2 3"
+              dot={false}
+              activeDot={{ r: 2.5, strokeWidth: 0, fill: BACKTEST_COLOR }}
+              isAnimationActive={false}
+              connectNulls
+            />
+          )}
 
           {/* Forecast line */}
           {hasForecast && (
