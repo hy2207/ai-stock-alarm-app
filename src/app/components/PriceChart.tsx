@@ -1,8 +1,9 @@
 "use client";
 
 import {
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -19,11 +20,32 @@ export interface PricePoint {
   close: number;
 }
 
+/** Statistical forecast overlay drawn past the last actual close. */
+export interface ForecastOverlay {
+  expectedPrice: number;
+  lowBand: number;
+  highBand: number;
+  horizonDays: number;
+}
+
+interface ChartDatum {
+  date: string;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  forecast?: number;
+  band?: [number, number];
+}
+
 interface PriceChartProps {
   ohlcv: PricePoint[];
   direction: "BUY" | "SELL";
   height?: number;
+  forecast?: ForecastOverlay | null;
 }
+
+const FORECAST_COLOR = "#6366f1"; // indigo-500
 
 function fmtPrice(n: number) {
   return `$${n.toFixed(2)}`;
@@ -34,12 +56,70 @@ function fmtYAxis(n: number) {
   return `$${n.toFixed(0)}`;
 }
 
-function computeDomain(ohlcv: PricePoint[]): [number, number] {
-  if (ohlcv.length === 0) return [0, 1];
-  const lows = ohlcv.map((p) => p.low);
-  const highs = ohlcv.map((p) => p.high);
-  const min = Math.min(...lows);
-  const max = Math.max(...highs);
+/** Next `count` trading-day labels ("M/D", weekends skipped) after lastDate. */
+function nextTradingDates(lastDate: string, count: number): string[] {
+  const m = lastDate.match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!m) {
+    return Array.from({ length: count }, (_, i) => `+${i + 1}일`);
+  }
+  let d = new Date(new Date().getFullYear(), parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+  const out: string[] = [];
+  while (out.length < count) {
+    d = new Date(d.getTime() + 86_400_000);
+    const day = d.getDay();
+    if (day === 0 || day === 6) continue;
+    out.push(`${d.getMonth() + 1}/${d.getDate()}`);
+  }
+  return out;
+}
+
+/** Merge actual candles with interpolated forecast points. */
+function buildChartData(
+  ohlcv: PricePoint[],
+  forecast: ForecastOverlay | null | undefined,
+): ChartDatum[] {
+  const data: ChartDatum[] = ohlcv.map((p) => ({ ...p }));
+
+  if (!forecast || ohlcv.length === 0) return data;
+
+  const last = ohlcv[ohlcv.length - 1];
+  const lastClose = last.close;
+  const n = forecast.horizonDays;
+
+  // Anchor the forecast series at the last actual close so lines connect
+  data[data.length - 1] = {
+    ...data[data.length - 1],
+    forecast: lastClose,
+    band: [lastClose, lastClose],
+  };
+
+  const futureDates = nextTradingDates(last.date, n);
+  for (let i = 1; i <= n; i++) {
+    const t = i / n;
+    data.push({
+      date: futureDates[i - 1],
+      forecast: lastClose + (forecast.expectedPrice - lastClose) * t,
+      band: [
+        lastClose + (forecast.lowBand - lastClose) * t,
+        lastClose + (forecast.highBand - lastClose) * t,
+      ],
+    });
+  }
+
+  return data;
+}
+
+function computeDomain(data: ChartDatum[]): [number, number] {
+  const values: number[] = [];
+  for (const p of data) {
+    if (p.low != null) values.push(p.low);
+    if (p.high != null) values.push(p.high);
+    if (p.forecast != null) values.push(p.forecast);
+    if (p.band) values.push(p.band[0], p.band[1]);
+  }
+  if (values.length === 0) return [0, 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const pad = (max - min) * 0.08 || max * 0.04;
   return [
     Math.floor((min - pad) * 100) / 100,
@@ -53,25 +133,49 @@ function ChartTooltipContent({
   label,
 }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
-  const d = payload[0]?.payload as PricePoint | undefined;
+  const d = payload[0]?.payload as ChartDatum | undefined;
   if (!d) return null;
-  return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-md">
-      <p className="mb-1 font-semibold text-slate-700">{label}</p>
-      <p>
-        종가 <span className="font-medium">{fmtPrice(d.close)}</span>
-      </p>
-      <p className="text-slate-400">
-        고가 {fmtPrice(d.high)} · 저가 {fmtPrice(d.low)}
-      </p>
-    </div>
-  );
+
+  if (d.close != null) {
+    return (
+      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="mb-1 font-semibold text-slate-700">{label}</p>
+        <p>
+          종가 <span className="font-medium">{fmtPrice(d.close)}</span>
+        </p>
+        {d.high != null && d.low != null && (
+          <p className="text-slate-400">
+            고가 {fmtPrice(d.high)} · 저가 {fmtPrice(d.low)}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (d.forecast != null) {
+    return (
+      <div className="rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="mb-1 font-semibold text-indigo-700">{label} (예상)</p>
+        <p>
+          예상가 <span className="font-medium">{fmtPrice(d.forecast)}</span>
+        </p>
+        {d.band && (
+          <p className="text-slate-400">
+            범위 {fmtPrice(d.band[0])} – {fmtPrice(d.band[1])}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export function PriceChart({
   ohlcv,
   direction,
   height = 180,
+  forecast,
 }: PriceChartProps) {
   if (ohlcv.length === 0) {
     return (
@@ -87,59 +191,111 @@ export function PriceChart({
   const isBuy = direction === "BUY";
   const strokeColor = isBuy ? "#10b981" : "#f43f5e";
   const gradientId = `price-grad-${direction}`;
-  const domain = computeDomain(ohlcv);
 
-  const tickInterval = Math.max(1, Math.floor(ohlcv.length / 6));
+  const data = buildChartData(ohlcv, forecast);
+  const domain = computeDomain(data);
+  const tickInterval = Math.max(1, Math.floor(data.length / 6));
+  const hasForecast = forecast != null && data.length > ohlcv.length;
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart
-        data={ohlcv}
-        margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
-      >
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={strokeColor} stopOpacity={0.12} />
-            <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
-          </linearGradient>
-        </defs>
+    <div>
+      {hasForecast && (
+        <div className="mb-1 flex items-center justify-end gap-3 text-[10px] text-slate-400">
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block h-0.5 w-4 rounded"
+              style={{ backgroundColor: strokeColor }}
+            />
+            실제 종가
+          </span>
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block h-0 w-4 border-t-2 border-dashed"
+              style={{ borderColor: FORECAST_COLOR }}
+            />
+            수치 예상
+          </span>
+        </div>
+      )}
 
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="#e2e8f0"
-          vertical={false}
-        />
+      <ResponsiveContainer width="100%" height={height}>
+        <ComposedChart
+          data={data}
+          margin={{ top: 4, right: 8, left: 4, bottom: 0 }}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={strokeColor} stopOpacity={0.12} />
+              <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+            </linearGradient>
+          </defs>
 
-        <XAxis
-          dataKey="date"
-          interval={tickInterval}
-          tick={{ fontSize: 9, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={false}
-        />
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke="#e2e8f0"
+            vertical={false}
+          />
 
-        <YAxis
-          domain={domain}
-          tickFormatter={fmtYAxis}
-          tick={{ fontSize: 9, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={false}
-          width={44}
-          tickCount={5}
-        />
+          <XAxis
+            dataKey="date"
+            interval={tickInterval}
+            tick={{ fontSize: 9, fill: "#94a3b8" }}
+            tickLine={false}
+            axisLine={false}
+          />
 
-        <Tooltip content={<ChartTooltipContent />} />
+          <YAxis
+            domain={domain}
+            tickFormatter={fmtYAxis}
+            tick={{ fontSize: 9, fill: "#94a3b8" }}
+            tickLine={false}
+            axisLine={false}
+            width={44}
+            tickCount={5}
+          />
 
-        <Area
-          type="linear"
-          dataKey="close"
-          stroke={strokeColor}
-          strokeWidth={1.5}
-          fill={`url(#${gradientId})`}
-          dot={false}
-          activeDot={{ r: 3, strokeWidth: 0, fill: strokeColor }}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+          <Tooltip content={<ChartTooltipContent />} />
+
+          {/* ±1σ forecast band */}
+          {hasForecast && (
+            <Area
+              type="linear"
+              dataKey="band"
+              stroke="none"
+              fill={FORECAST_COLOR}
+              fillOpacity={0.08}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+            />
+          )}
+
+          {/* Actual closes */}
+          <Area
+            type="linear"
+            dataKey="close"
+            stroke={strokeColor}
+            strokeWidth={1.5}
+            fill={`url(#${gradientId})`}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0, fill: strokeColor }}
+          />
+
+          {/* Forecast line */}
+          {hasForecast && (
+            <Line
+              type="linear"
+              dataKey="forecast"
+              stroke={FORECAST_COLOR}
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 0, fill: FORECAST_COLOR }}
+              isAnimationActive={false}
+            />
+          )}
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

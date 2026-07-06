@@ -159,7 +159,7 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         </div>
       ) : null}
 
-      <PriceChartToggle ticker={card.ticker} direction={card.direction} />
+      <PriceChartToggle ticker={card.ticker} direction={card.direction} forecast={quant} />
 
       <RecommendationActions
         recId={card.id}

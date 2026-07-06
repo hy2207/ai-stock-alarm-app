@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PriceChart, type PricePoint } from "./PriceChart";
+import { PriceChart, type PricePoint, type ForecastOverlay } from "./PriceChart";
 
 interface PriceChartToggleProps {
   ticker: string;
   direction: "BUY" | "SELL";
+  forecast?: ForecastOverlay | null;
 }
 
 type State =
@@ -66,7 +67,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   );
 }
 
-export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
+export function PriceChartToggle({ ticker, direction, forecast }: PriceChartToggleProps) {
   const [state, setState] = useState<State>({ kind: "closed" });
 
   async function handleOpen() {
@@ -150,7 +151,7 @@ export function PriceChartToggle({ ticker, direction }: PriceChartToggleProps) {
               )}
             </span>
           </div>
-          <PriceChart ohlcv={state.ohlcv} direction={direction} height={180} />
+          <PriceChart ohlcv={state.ohlcv} direction={direction} height={180} forecast={forecast} />
         </div>
       )}
     </div>

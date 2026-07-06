@@ -332,7 +332,7 @@ export default async function RecommendationDetailPage({
               </span>
             )}
           </div>
-          <PriceChart ohlcv={ohlcv} direction={card.direction} height={200} />
+          <PriceChart ohlcv={ohlcv} direction={card.direction} height={200} forecast={quant} />
           {ohlcv.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>
           )}
