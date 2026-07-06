@@ -3,6 +3,7 @@ import { Disclaimer } from "@/app/components/Disclaimer";
 import { PostHogEvent } from "@/app/components/PostHogEvent";
 import { RecommendationActions } from "@/app/components/RecommendationActions";
 import { PriceChart } from "@/app/components/PriceChart";
+import { ForecastTrustBadge } from "@/app/components/ForecastTrustBadge";
 import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { syncPriceHistory } from "@/lib/market-data/priceSync";
 import { getStoredPriceHistory } from "@/lib/market-data/storePriceHistory";
@@ -78,7 +79,9 @@ export default async function RecommendationDetailPage({
           const [, m, day] = p.date.split("-");
           return {
             date: `${parseInt(m, 10)}/${parseInt(day, 10)}`,
-            predicted: p.predicted,
+            bandLow: p.bandLow,
+            bandHigh: p.bandHigh,
+            inBand: p.inBand,
           };
         })
     : null;
@@ -360,12 +363,10 @@ export default async function RecommendationDetailPage({
             backtest={backtestPoints}
           />
           {backtestResult && (
-            <p className="mt-2 text-xs text-slate-400">
-              전일 예측 백테스트 (최근 {backtestResult.count}일): 평균 오차{" "}
-              {backtestResult.mapePct.toFixed(1)}%
-              {backtestResult.directionHitRatePct != null &&
-                ` · 방향 적중 ${backtestResult.directionHitRatePct}%`}
-            </p>
+            <ForecastTrustBadge
+              count={backtestResult.count}
+              hits={backtestResult.bandHits}
+            />
           )}
           {ohlcv.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>

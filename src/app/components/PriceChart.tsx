@@ -28,22 +28,28 @@ export interface ForecastOverlay {
   horizonDays: number;
 }
 
+/** Per-date backtest band for past dates shown on the chart. */
+export interface BacktestOverlayPoint {
+  date: string;
+  bandLow: number;
+  bandHigh: number;
+  inBand: boolean;
+}
+
 interface ChartDatum {
   date: string;
   open?: number;
   high?: number;
   low?: number;
   close?: number;
+  /** Future forecast line value. */
   forecast?: number;
+  /** Future ±1σ range. */
   band?: [number, number];
-  /** 1-day-ahead backtest prediction for this (past) date. */
-  predicted?: number;
-}
-
-/** Walk-forward backtest prediction for a displayed date. */
-export interface BacktestOverlayPoint {
-  date: string;
-  predicted: number;
+  /** Past predicted ±1σ range for that date. */
+  predBand?: [number, number];
+  /** Close value repeated only on out-of-band days (drives the ✕ marker). */
+  missClose?: number;
 }
 
 interface PriceChartProps {
@@ -55,7 +61,7 @@ interface PriceChartProps {
 }
 
 const FORECAST_COLOR = "#6366f1"; // indigo-500
-const BACKTEST_COLOR = "#f59e0b"; // amber-500
+const MISS_COLOR = "#f59e0b"; // amber-500
 
 function fmtPrice(n: number) {
   return `$${n.toFixed(2)}`;
@@ -83,19 +89,22 @@ function nextTradingDates(lastDate: string, count: number): string[] {
   return out;
 }
 
-/** Merge actual candles with backtest predictions and forecast points. */
+/** Merge actual candles with past prediction bands and the future forecast. */
 function buildChartData(
   ohlcv: PricePoint[],
   forecast: ForecastOverlay | null | undefined,
   backtest: BacktestOverlayPoint[] | null | undefined,
 ): ChartDatum[] {
-  const predictedByDate = new Map(
-    (backtest ?? []).map((b) => [b.date, b.predicted]),
-  );
-  const data: ChartDatum[] = ohlcv.map((p) => ({
-    ...p,
-    predicted: predictedByDate.get(p.date),
-  }));
+  const backtestByDate = new Map((backtest ?? []).map((b) => [b.date, b]));
+
+  const data: ChartDatum[] = ohlcv.map((p) => {
+    const bt = backtestByDate.get(p.date);
+    return {
+      ...p,
+      predBand: bt ? ([bt.bandLow, bt.bandHigh] as [number, number]) : undefined,
+      missClose: bt && !bt.inBand ? p.close : undefined,
+    };
+  });
 
   if (!forecast || ohlcv.length === 0) return data;
 
@@ -132,8 +141,8 @@ function computeDomain(data: ChartDatum[]): [number, number] {
     if (p.low != null) values.push(p.low);
     if (p.high != null) values.push(p.high);
     if (p.forecast != null) values.push(p.forecast);
-    if (p.predicted != null) values.push(p.predicted);
     if (p.band) values.push(p.band[0], p.band[1]);
+    if (p.predBand) values.push(p.predBand[0], p.predBand[1]);
   }
   if (values.length === 0) return [0, 1];
   const min = Math.min(...values);
@@ -143,6 +152,18 @@ function computeDomain(data: ChartDatum[]): [number, number] {
     Math.floor((min - pad) * 100) / 100,
     Math.ceil((max + pad) * 100) / 100,
   ];
+}
+
+/** ✕ marker for days where the actual close left the predicted range. */
+function MissMarker(props: { cx?: number; cy?: number }) {
+  const { cx, cy } = props;
+  if (cx == null || cy == null) return null;
+  return (
+    <g stroke={MISS_COLOR} strokeWidth={1.6} strokeLinecap="round">
+      <line x1={cx - 3.2} y1={cy - 3.2} x2={cx + 3.2} y2={cy + 3.2} />
+      <line x1={cx - 3.2} y1={cy + 3.2} x2={cx + 3.2} y2={cy - 3.2} />
+    </g>
+  );
 }
 
 function ChartTooltipContent({
@@ -166,12 +187,10 @@ function ChartTooltipContent({
             고가 {fmtPrice(d.high)} · 저가 {fmtPrice(d.low)}
           </p>
         )}
-        {d.predicted != null && (
-          <p className="mt-0.5 text-amber-600">
-            전일 예측 {fmtPrice(d.predicted)}
-            <span className="ml-1 text-slate-400">
-              (오차 {(Math.abs(d.predicted - d.close) / d.close * 100).toFixed(1)}%)
-            </span>
+        {d.predBand && (
+          <p className={`mt-0.5 ${d.missClose != null ? "text-amber-600" : "text-indigo-500"}`}>
+            예측 범위 {fmtPrice(d.predBand[0])} – {fmtPrice(d.predBand[1])}{" "}
+            {d.missClose != null ? "✕ 벗어남" : "✓ 적중"}
           </p>
         )}
       </div>
@@ -223,35 +242,31 @@ export function PriceChart({
   const domain = computeDomain(data);
   const tickInterval = Math.max(1, Math.floor(data.length / 6));
   const hasForecast = forecast != null && data.length > ohlcv.length;
-  const hasBacktest = data.some((p) => p.predicted != null);
+  const hasBacktest = data.some((p) => p.predBand != null);
+  const hasMisses = data.some((p) => p.missClose != null);
 
   return (
     <div>
       {(hasForecast || hasBacktest) && (
-        <div className="mb-1 flex items-center justify-end gap-3 text-[10px] text-slate-400">
+        <div className="mb-1 flex flex-wrap items-center justify-end gap-x-3 gap-y-0.5 text-[10px] text-slate-400">
           <span className="flex items-center gap-1">
             <span
               className="inline-block h-0.5 w-4 rounded"
               style={{ backgroundColor: strokeColor }}
             />
-            실제 종가
+            실제 가격
           </span>
-          {hasBacktest && (
+          <span className="flex items-center gap-1">
+            <span
+              className="inline-block h-2.5 w-4 rounded-sm"
+              style={{ backgroundColor: FORECAST_COLOR, opacity: 0.15 }}
+            />
+            예측 범위
+          </span>
+          {hasMisses && (
             <span className="flex items-center gap-1">
-              <span
-                className="inline-block h-1.5 w-1.5 rounded-full"
-                style={{ backgroundColor: BACKTEST_COLOR }}
-              />
-              전일 예측
-            </span>
-          )}
-          {hasForecast && (
-            <span className="flex items-center gap-1">
-              <span
-                className="inline-block h-0 w-4 border-t-2 border-dashed"
-                style={{ borderColor: FORECAST_COLOR }}
-              />
-              수치 예상
+              <span style={{ color: MISS_COLOR }}>✕</span>
+              범위 벗어남
             </span>
           )}
         </div>
@@ -295,14 +310,30 @@ export function PriceChart({
 
           <Tooltip content={<ChartTooltipContent />} />
 
-          {/* ±1σ forecast band */}
+          {/* Past per-day predicted ranges — the actual line staying inside
+              this shading means the forecast has been right */}
+          {hasBacktest && (
+            <Area
+              type="linear"
+              dataKey="predBand"
+              stroke="none"
+              fill={FORECAST_COLOR}
+              fillOpacity={0.09}
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              connectNulls
+            />
+          )}
+
+          {/* Future ±1σ forecast band */}
           {hasForecast && (
             <Area
               type="linear"
               dataKey="band"
               stroke="none"
               fill={FORECAST_COLOR}
-              fillOpacity={0.06}
+              fillOpacity={0.09}
               dot={false}
               activeDot={false}
               isAnimationActive={false}
@@ -314,26 +345,25 @@ export function PriceChart({
             type="linear"
             dataKey="close"
             stroke={strokeColor}
-            strokeWidth={1.5}
+            strokeWidth={1.8}
             fill={`url(#${gradientId})`}
             dot={false}
             activeDot={{ r: 3, strokeWidth: 0, fill: strokeColor }}
           />
 
-          {/* Walk-forward backtest predictions — dots on each past date;
-              vertical distance to the actual line shows that day's error */}
-          {hasBacktest && (
+          {/* ✕ markers on days the actual close left the predicted range */}
+          {hasMisses && (
             <Line
               type="linear"
-              dataKey="predicted"
+              dataKey="missClose"
               stroke="none"
-              dot={{ r: 2.5, strokeWidth: 0, fill: BACKTEST_COLOR, fillOpacity: 0.85 }}
-              activeDot={{ r: 4, strokeWidth: 0, fill: BACKTEST_COLOR }}
+              dot={<MissMarker />}
+              activeDot={false}
               isAnimationActive={false}
             />
           )}
 
-          {/* Forecast line */}
+          {/* Future forecast line */}
           {hasForecast && (
             <Line
               type="linear"

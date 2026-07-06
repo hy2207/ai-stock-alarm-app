@@ -4,28 +4,39 @@ import { forecastPrice } from "./forecastPrice";
  * Rolling walk-forward backtest of the statistical forecast.
  *
  * For each historical date t, the model is fitted only on closes up to t−1
- * and asked to predict the close at t (1 trading day ahead). Comparing that
- * prediction with the actual close shows how accurate the forecast has been
- * on every date visible in the chart.
+ * and asked to predict date t (1 trading day ahead). The user-facing trust
+ * metric is band coverage: how often the actual close landed inside the
+ * predicted ±1σ range. Point-error metrics (MAPE, direction) are kept for
+ * internal use but are not shown as primary UI — daily noise makes point
+ * error look bad even when the model is behaving correctly.
  */
 
 export interface BacktestPoint {
   /** Trading date being predicted ("YYYY-MM-DD"). */
   date: string;
-  /** 1-day-ahead prediction made with data up to the previous day. */
+  /** 1-day-ahead point prediction made with data up to the previous day. */
   predicted: number;
+  /** Predicted ±1σ range for the day. */
+  bandLow: number;
+  bandHigh: number;
   actual: number;
-  /** |predicted − actual| / actual × 100 */
+  /** Did the actual close land inside the predicted range? */
+  inBand: boolean;
+  /** |predicted − actual| / actual × 100 (internal metric). */
   errorPct: number;
 }
 
 export interface BacktestResult {
   points: BacktestPoint[];
-  /** Mean absolute percentage error across all points. */
-  mapePct: number;
-  /** % of days where the predicted up/down direction matched the actual move. */
-  directionHitRatePct: number | null;
   count: number;
+  /** Days where the actual close fell inside the predicted range. */
+  bandHits: number;
+  /** bandHits / count × 100, rounded. */
+  bandHitRatePct: number;
+  /** Mean absolute percentage error (internal metric). */
+  mapePct: number;
+  /** % of days the predicted direction matched (internal metric). */
+  directionHitRatePct: number | null;
 }
 
 function round2(n: number): number {
@@ -50,11 +61,15 @@ export function backtestForecast(
     const predicted = fitted.expectedPrice;
     const actual = closes[i];
     const prevClose = closes[i - 1];
+    const inBand = actual >= fitted.lowBand && actual <= fitted.highBand;
 
     points.push({
       date: history[i].date,
       predicted: round2(predicted),
+      bandLow: round2(fitted.lowBand),
+      bandHigh: round2(fitted.highBand),
       actual: round2(actual),
+      inBand,
       errorPct: round2((Math.abs(predicted - actual) / actual) * 100),
     });
 
@@ -68,15 +83,18 @@ export function backtestForecast(
 
   if (points.length === 0) return null;
 
+  const bandHits = points.filter((p) => p.inBand).length;
   const mapePct = round2(
     points.reduce((sum, p) => sum + p.errorPct, 0) / points.length,
   );
 
   return {
     points,
+    count: points.length,
+    bandHits,
+    bandHitRatePct: Math.round((bandHits / points.length) * 100),
     mapePct,
     directionHitRatePct:
       directionTotal > 0 ? Math.round((directionHits / directionTotal) * 100) : null,
-    count: points.length,
   };
 }

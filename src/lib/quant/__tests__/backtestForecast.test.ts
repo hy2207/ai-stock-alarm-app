@@ -58,4 +58,40 @@ describe("backtestForecast", () => {
       );
     }
   });
+
+  it("reports band coverage: gently noisy trend stays inside the ±1σ range", () => {
+    // Mild alternating noise around a trend — realistic and well-covered
+    const closes = Array.from(
+      { length: 40 },
+      (_, i) => 100 + i * 0.5 + (i % 2 === 0 ? 0.8 : -0.8),
+    );
+    const result = backtestForecast(series(closes))!;
+
+    expect(result.bandHits).toBeGreaterThan(0);
+    expect(result.bandHitRatePct).toBeGreaterThanOrEqual(70);
+    expect(result.bandHits).toBe(result.points.filter((p) => p.inBand).length);
+  });
+
+  it("flags out-of-band days when a shock exceeds the predicted range", () => {
+    // Calm series then a single large jump on the final day
+    const closes = [
+      ...Array.from({ length: 30 }, (_, i) => 100 + i * 0.1 + (i % 2 === 0 ? 0.2 : -0.2)),
+      140, // ~+37% shock — far outside any ±1σ band
+    ];
+    const result = backtestForecast(series(closes))!;
+
+    const last = result.points[result.points.length - 1];
+    expect(last.inBand).toBe(false);
+    expect(result.bandHitRatePct).toBeLessThan(100);
+  });
+
+  it("band bounds always bracket the point prediction", () => {
+    const closes = Array.from({ length: 30 }, (_, i) => 100 + i + (i % 3 === 0 ? 1.5 : -1));
+    const result = backtestForecast(series(closes))!;
+
+    for (const p of result.points) {
+      expect(p.bandLow).toBeLessThanOrEqual(p.predicted);
+      expect(p.bandHigh).toBeGreaterThanOrEqual(p.predicted);
+    }
+  });
 });

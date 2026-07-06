@@ -53,10 +53,14 @@ export async function GET(
       ? {
           points: backtestResult.points
             .filter((p) => displayedDates.has(p.date))
-            .map((p) => ({ date: fmtDateKo(p.date), predicted: p.predicted })),
-          mapePct: backtestResult.mapePct,
-          directionHitRatePct: backtestResult.directionHitRatePct,
+            .map((p) => ({
+              date: fmtDateKo(p.date),
+              bandLow: p.bandLow,
+              bandHigh: p.bandHigh,
+              inBand: p.inBand,
+            })),
           count: backtestResult.count,
+          bandHits: backtestResult.bandHits,
         }
       : null,
   });

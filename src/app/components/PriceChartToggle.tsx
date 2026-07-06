@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { PriceChart, type PricePoint, type ForecastOverlay, type BacktestOverlayPoint } from "./PriceChart";
+import { ForecastTrustBadge } from "./ForecastTrustBadge";
 
 interface PriceChartToggleProps {
   ticker: string;
@@ -11,9 +12,8 @@ interface PriceChartToggleProps {
 
 interface BacktestSummary {
   points: BacktestOverlayPoint[];
-  mapePct: number;
-  directionHitRatePct: number | null;
   count: number;
+  bandHits: number;
 }
 
 type State =
@@ -174,12 +174,10 @@ export function PriceChartToggle({ ticker, direction, forecast }: PriceChartTogg
             backtest={state.backtest?.points}
           />
           {state.backtest && (
-            <p className="mt-2 text-[10px] text-slate-400">
-              전일 예측 백테스트 (최근 {state.backtest.count}일): 평균 오차{" "}
-              {state.backtest.mapePct.toFixed(1)}%
-              {state.backtest.directionHitRatePct != null &&
-                ` · 방향 적중 ${state.backtest.directionHitRatePct}%`}
-            </p>
+            <ForecastTrustBadge
+              count={state.backtest.count}
+              hits={state.backtest.bandHits}
+            />
           )}
         </div>
       )}
