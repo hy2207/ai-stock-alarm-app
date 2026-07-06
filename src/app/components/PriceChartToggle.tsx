@@ -169,7 +169,7 @@ export function PriceChartToggle({ ticker, direction, forecast }: PriceChartTogg
           <PriceChart
             ohlcv={state.ohlcv}
             direction={direction}
-            height={180}
+            height={220}
             forecast={forecast}
             backtest={state.backtest?.points}
           />

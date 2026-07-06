@@ -355,7 +355,7 @@ export default async function RecommendationDetailPage({
           <PriceChart
             ohlcv={ohlcv}
             direction={card.direction}
-            height={200}
+            height={260}
             forecast={quant}
             backtest={backtestPoints}
           />

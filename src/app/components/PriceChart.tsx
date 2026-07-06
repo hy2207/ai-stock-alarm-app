@@ -239,8 +239,8 @@ export function PriceChart({
           {hasBacktest && (
             <span className="flex items-center gap-1">
               <span
-                className="inline-block h-0 w-4 border-t-2 border-dotted"
-                style={{ borderColor: BACKTEST_COLOR }}
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: BACKTEST_COLOR }}
               />
               전일 예측
             </span>
@@ -302,7 +302,7 @@ export function PriceChart({
               dataKey="band"
               stroke="none"
               fill={FORECAST_COLOR}
-              fillOpacity={0.08}
+              fillOpacity={0.06}
               dot={false}
               activeDot={false}
               isAnimationActive={false}
@@ -320,18 +320,16 @@ export function PriceChart({
             activeDot={{ r: 3, strokeWidth: 0, fill: strokeColor }}
           />
 
-          {/* Walk-forward backtest predictions over past dates */}
+          {/* Walk-forward backtest predictions — dots on each past date;
+              vertical distance to the actual line shows that day's error */}
           {hasBacktest && (
             <Line
               type="linear"
               dataKey="predicted"
-              stroke={BACKTEST_COLOR}
-              strokeWidth={1.2}
-              strokeDasharray="2 3"
-              dot={false}
-              activeDot={{ r: 2.5, strokeWidth: 0, fill: BACKTEST_COLOR }}
+              stroke="none"
+              dot={{ r: 2.5, strokeWidth: 0, fill: BACKTEST_COLOR, fillOpacity: 0.85 }}
+              activeDot={{ r: 4, strokeWidth: 0, fill: BACKTEST_COLOR }}
               isAnimationActive={false}
-              connectNulls
             />
           )}
 
