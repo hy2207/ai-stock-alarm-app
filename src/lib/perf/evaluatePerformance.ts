@@ -1,5 +1,11 @@
 import { prisma } from "@/lib/prisma";
-import { fetchYahooChart } from "@/lib/market-data/yahooFinance";
+import { syncPriceHistory } from "@/lib/market-data/priceSync";
+import {
+  getStoredPriceHistoryByRange,
+  upsertPriceHistory,
+  type StoredPricePoint,
+} from "@/lib/market-data/storePriceHistory";
+import { fetchYahooChartByPeriod } from "@/lib/market-data/yahooFinance";
 import type { EvaluatePerformanceResponse } from "@/lib/dto/evaluatePerformanceResponse";
 
 interface PendingRecord {
@@ -14,30 +20,101 @@ interface PendingRecord {
   };
 }
 
-/** Pure: given prices and direction, compute realizedReturn and hitFlag. */
-export function computeEvaluation(
+/**
+ * Pure: evaluate a completed hold window using daily OHLCV candles.
+ *
+ * Success criteria (no brokerage needed — purely market-data based):
+ *   BUY  → any candle where high  >= targetPrice → hit, return = (target-entry)/entry
+ *   SELL → any candle where low   <= targetPrice → hit, return = (entry-target)/entry
+ *   No target → hitFlag follows sign of realizedReturn at expiry.
+ *   On miss → realizedReturn uses the last close in the hold window.
+ */
+export function computeEvaluationFromOhlcv(
   direction: string,
   entryPrice: number,
-  currentPrice: number,
   targetPrice: number | null,
+  candles: StoredPricePoint[],
 ): { realizedReturn: number; hitFlag: boolean } {
   const isBuy = direction === "BUY";
 
-  const realizedReturn = isBuy
-    ? ((currentPrice - entryPrice) / entryPrice) * 100
-    : ((entryPrice - currentPrice) / entryPrice) * 100;
-
-  let hitFlag: boolean;
+  // Check if target was touched during the hold window
+  let targetTouched = false;
   if (targetPrice != null) {
-    hitFlag = isBuy ? currentPrice >= targetPrice : currentPrice <= targetPrice;
-  } else {
-    hitFlag = realizedReturn > 0;
+    for (const c of candles) {
+      if (isBuy ? c.high >= targetPrice : c.low <= targetPrice) {
+        targetTouched = true;
+        break;
+      }
+    }
   }
 
-  return { realizedReturn, hitFlag };
+  let realizedReturn: number;
+  let hitFlag: boolean;
+
+  if (targetTouched && targetPrice != null) {
+    // Return is locked in at target price (best-case fill assumption)
+    hitFlag = true;
+    realizedReturn = isBuy
+      ? ((targetPrice - entryPrice) / entryPrice) * 100
+      : ((entryPrice - targetPrice) / entryPrice) * 100;
+  } else {
+    // Use closing price on the last day of the hold window
+    const lastClose = candles.length > 0 ? candles[candles.length - 1].close : entryPrice;
+    realizedReturn = isBuy
+      ? ((lastClose - entryPrice) / entryPrice) * 100
+      : ((entryPrice - lastClose) / entryPrice) * 100;
+    // Without a target price, treat positive return as a hit
+    hitFlag = targetPrice === null ? realizedReturn > 0 : false;
+  }
+
+  return {
+    realizedReturn: Math.round(realizedReturn * 100) / 100,
+    hitFlag,
+  };
 }
 
-/** Returns records whose hold window has expired and are not yet evaluated. */
+/** Convert a Date to an ET "YYYY-MM-DD" string. */
+function toETDate(d: Date): string {
+  return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+}
+
+/** Derive the inclusive [startDate, endDate] strings for a card's hold window. */
+function holdWindowDates(
+  createdAt: Date,
+  holdDays: number,
+): { startDate: string; endDate: string } {
+  const startDate = toETDate(createdAt);
+  const end = new Date(createdAt);
+  end.setDate(end.getDate() + holdDays);
+  return { startDate, endDate: toETDate(end) };
+}
+
+/**
+ * Return OHLCV candles for the hold window from DB.
+ * Falls back to a targeted Yahoo Finance fetch if the DB has no data for that range.
+ */
+async function ensureOhlcvForWindow(
+  ticker: string,
+  startDate: string,
+  endDate: string,
+): Promise<StoredPricePoint[]> {
+  let candles = await getStoredPriceHistoryByRange(ticker, startDate, endDate);
+  if (candles.length > 0) return candles;
+
+  // DB miss — fetch the specific window from Yahoo Finance and cache it
+  const startTs = Math.floor(new Date(`${startDate}T13:30:00Z`).getTime() / 1000);
+  const endTs = Math.floor(new Date(`${endDate}T22:00:00Z`).getTime() / 1000);
+  const result = await fetchYahooChartByPeriod(ticker, startTs, endTs);
+
+  if (result.ok && result.data.ohlcv.length > 0) {
+    await upsertPriceHistory(ticker, result.data.ohlcv);
+    candles = await getStoredPriceHistoryByRange(ticker, startDate, endDate);
+  }
+
+  return candles;
+}
+
+/** Returns PerformanceRecords whose hold window has expired and hitFlag is still null. */
 async function loadPendingRecords(now: Date): Promise<PendingRecord[]> {
   const rows = await prisma.performanceRecord.findMany({
     where: { hitFlag: null },
@@ -64,54 +141,56 @@ export async function runPerformanceEvaluation(
   now = new Date(),
 ): Promise<EvaluatePerformanceResponse> {
   const pending = await loadPendingRecords(now);
+  if (pending.length === 0) return { evaluated: 0, skipped: 0, errors: [] };
 
-  if (pending.length === 0) {
-    return { evaluated: 0, skipped: 0, errors: [] };
-  }
-
-  // Fetch market price once per ticker
-  const tickers = [...new Set(pending.map((r) => r.ticker))];
-  const priceMap = new Map<string, number>();
-  const errors: string[] = [];
-
-  await Promise.all(
-    tickers.map(async (ticker) => {
-      const result = await fetchYahooChart(ticker);
-      if (result.ok) {
-        priceMap.set(ticker, result.data.regularMarketPrice);
-      } else {
-        errors.push(`${ticker}: ${result.error.message}`);
-      }
-    }),
-  );
+  // Ensure DB price history is current for all affected tickers
+  const uniqueTickers = [...new Set(pending.map((r) => r.ticker))];
+  await Promise.allSettled(uniqueTickers.map((t) => syncPriceHistory(t)));
 
   let evaluated = 0;
   let skipped = 0;
+  const errors: string[] = [];
 
   await Promise.all(
     pending.map(async (record) => {
-      const currentPrice = priceMap.get(record.ticker);
       const entryPrice = record.recommendationCard.entryPrice;
-
-      if (currentPrice == null || entryPrice == null) {
+      if (entryPrice == null) {
         skipped++;
         return;
       }
 
-      const { realizedReturn, hitFlag } = computeEvaluation(
+      const { startDate, endDate } = holdWindowDates(
+        record.createdAt,
+        record.evaluationWindowDays,
+      );
+
+      let candles: StoredPricePoint[];
+      try {
+        candles = await ensureOhlcvForWindow(record.ticker, startDate, endDate);
+      } catch (err) {
+        errors.push(
+          `${record.ticker}: fetch failed — ${err instanceof Error ? err.message : String(err)}`,
+        );
+        skipped++;
+        return;
+      }
+
+      if (candles.length === 0) {
+        errors.push(`${record.ticker}: no price data for ${startDate}–${endDate}`);
+        skipped++;
+        return;
+      }
+
+      const { realizedReturn, hitFlag } = computeEvaluationFromOhlcv(
         record.predictedDirection,
         entryPrice,
-        currentPrice,
         record.recommendationCard.targetPrice,
+        candles,
       );
 
       await prisma.performanceRecord.update({
         where: { id: record.id },
-        data: {
-          realizedReturn: Math.round(realizedReturn * 100) / 100,
-          hitFlag,
-          evaluatedAt: now,
-        },
+        data: { realizedReturn, hitFlag, evaluatedAt: now },
       });
 
       evaluated++;

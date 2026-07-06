@@ -80,6 +80,29 @@ export async function getStoredPriceHistory(
 }
 
 /**
+ * Fetch stored OHLCV for a ticker within an inclusive date range.
+ * Used by the performance evaluator to retrieve hold-window candles.
+ */
+export async function getStoredPriceHistoryByRange(
+  ticker: string,
+  startDate: string,
+  endDate: string,
+): Promise<StoredPricePoint[]> {
+  const rows = await prisma.tickerPriceHistory.findMany({
+    where: { ticker, date: { gte: startDate, lte: endDate } },
+    orderBy: { date: "asc" },
+  });
+  return rows.map((r) => ({
+    date: r.date,
+    open: r.open,
+    high: r.high,
+    low: r.low,
+    close: r.close,
+    volume: r.volume,
+  }));
+}
+
+/**
  * Returns the most recent stored date string ("YYYY-MM-DD") for a ticker,
  * or null if no records exist.
  */
