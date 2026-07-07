@@ -24,7 +24,9 @@ export function ForecastTrustBadge({ count, hits }: ForecastTrustBadgeProps) {
         <span className="text-sm">⏳</span>
         <p className="text-xs text-slate-500">
           예측 신뢰도 데이터를 모으고 있어요{" "}
-          <span className="text-slate-400">({count}일차 · 10일부터 표시)</span>
+          <span className="text-slate-400">
+            (지금까지 {count}일치 · {MIN_SAMPLE_DAYS}일치가 모이면 적중률이 표시돼요)
+          </span>
         </p>
       </div>
     );
