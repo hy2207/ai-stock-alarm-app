@@ -438,6 +438,11 @@ export async function generateRecommendationsForUser(
 
     if (generation.status === "no_call") {
       validationErrors.push(`${targetTicker.ticker}: ${generation.reason}`);
+      // Quota is per-minute and shared across tickers — calling the next
+      // ticker would fail the same way while burning more of the window
+      if (generation.failureReason === "rate_limit") {
+        break;
+      }
       continue;
     }
 

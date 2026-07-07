@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type State = "loading" | "failed";
+type State = "loading" | "failed" | "rate_limited";
+
+const RATE_LIMIT_RETRY_MS = 65_000;
 
 interface GenerationSummary {
   generatedCount?: number;
@@ -24,6 +26,7 @@ export function TodayCardAutoLoader() {
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function run() {
       try {
@@ -57,6 +60,17 @@ export function TodayCardAutoLoader() {
           data.validationErrors?.[0] ??
           data.externalApiErrors?.[0] ??
           "오늘 시장 신호가 명확하지 않아 추천을 생성하지 않았습니다.";
+
+        // Free-tier Gemini quota resets per minute — retry automatically
+        if (/quota|rate limit/i.test(reason)) {
+          setErrorMessage(
+            "AI 사용량 한도에 잠시 도달했어요. 약 1분 후 자동으로 다시 시도합니다.",
+          );
+          setState("rate_limited");
+          retryTimer = setTimeout(() => setAttempt((n) => n + 1), RATE_LIMIT_RETRY_MS);
+          return;
+        }
+
         setErrorMessage(reason);
         setState("failed");
       } catch (err) {
@@ -77,9 +91,24 @@ export function TodayCardAutoLoader() {
     return () => {
       controller.abort();
       clearTimeout(timer);
+      if (retryTimer) clearTimeout(retryTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
+
+  if (state === "rate_limited") {
+    return (
+      <div className="mt-6 flex flex-col items-center gap-3 text-center">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-amber-500" />
+          {errorMessage}
+        </div>
+        <p className="text-xs text-slate-400">
+          무료 AI 사용량이 분당으로 제한되어 있어요. 기다리시면 자동으로 처리됩니다.
+        </p>
+      </div>
+    );
+  }
 
   if (state === "loading") {
     return (

@@ -381,7 +381,10 @@ export const recommendationGenerationSchema = z.discriminatedUnion("status", [
 
 export type RecommendationGeneration = z.infer<
   typeof recommendationGenerationSchema
->;
+> & {
+  /** Set when no_call was caused by an LLM call failure (not a model decision). */
+  failureReason?: LlmFailureReason;
+};
 
 export interface GenerateRecommendationCardsInput {
   promptInput: RecommendationPromptInput;
@@ -418,6 +421,9 @@ Use one of these shapes:
 {"status":"no_call","reason":"160 chars max"}`,
         abortSignal,
         temperature: 0.2,
+        // Fail fast: the AI SDK's default 2 retries burn free-tier RPM quota
+        // (5/min) on 429s and stretch the request past client timeouts
+        maxRetries: 0,
         maxOutputTokens: 4_000,
         providerOptions: GEMINI_PROVIDER_OPTIONS,
         timeout: { totalMs: LLM_GENERATION_TIMEOUT_MS },
@@ -482,6 +488,7 @@ Use one of these shapes:
     return {
       status: "no_call",
       reason: getNoCallReasonForLlmFailure(failure.reason),
+      failureReason: failure.reason,
     };
   }
 }
