@@ -27,8 +27,6 @@ interface PublishedCardCompleteness {
   direction: string;
   currentPrice: number | null;
   targetPrice: number | null;
-  targetRangeLow: number | null;
-  targetRangeHigh: number | null;
   exitPrice: number | null;
 }
 
@@ -70,7 +68,6 @@ async function loadWatchlist(userId: string): Promise<WatchlistPromptItem[]> {
       ? [
           {
             ticker: item.ticker,
-            sector: item.sector,
             priority: item.priority,
           },
         ]
@@ -108,21 +105,13 @@ async function loadPublishedCardsToday(
       direction: true,
       currentPrice: true,
       targetPrice: true,
-      targetRangeLow: true,
-      targetRangeHigh: true,
       exitPrice: true,
     },
   });
 }
 
 function readTargetPrice(card: PublishedCardCompleteness) {
-  if (card.targetPrice != null) {
-    return card.targetPrice;
-  }
-  if (card.targetRangeLow != null && card.targetRangeHigh != null) {
-    return (card.targetRangeLow + card.targetRangeHigh) / 2;
-  }
-  return null;
+  return card.targetPrice ?? null;
 }
 
 function hasValidDirectionalTarget(card: PublishedCardCompleteness) {
@@ -262,8 +251,6 @@ async function hasCompletePublishedVariantsForTickerToday(
       direction: true,
       currentPrice: true,
       targetPrice: true,
-      targetRangeLow: true,
-      targetRangeHigh: true,
       exitPrice: true,
     },
   });

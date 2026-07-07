@@ -7,9 +7,6 @@ afterAll(async () => {
   await prisma.performanceRecord.deleteMany({
     where: { recommendationCard: { userId: testUserId } },
   });
-  await prisma.evidenceSnapshot.deleteMany({
-    where: { recommendationCard: { userId: testUserId } },
-  });
   await prisma.recommendationCard.deleteMany({ where: { userId: testUserId } });
   await prisma.watchlist.deleteMany({ where: { userId: testUserId } });
   await prisma.riskProfile.deleteMany({ where: { userId: testUserId } });
@@ -87,19 +84,9 @@ describe("Prisma Client", () => {
         reasonLine: "Technical breakout with strong volume",
         status: "published",
         validUntil: new Date("2026-06-01"),
-        evidenceSnapshots: {
-          create: {
-            newsSignalScore: 0.8,
-            volumeSignalScore: 0.6,
-            patternTag: "breakout",
-          },
-        },
       },
-      include: { evidenceSnapshots: true },
     });
 
     expect(card).toBeDefined();
-    expect(card.evidenceSnapshots).toHaveLength(1);
-    expect(card.evidenceSnapshots[0].newsSignalScore).toBe(0.8);
   });
 });

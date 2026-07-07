@@ -94,14 +94,15 @@
 ## 데이터 모델 (Prisma)
 
 ```
-User ──< Watchlist             (관심 종목/섹터, 최대 3개)
+User ──< Watchlist             (관심 종목, 최대 3개)
 User ── RiskProfile            (안정형/중립형/공격형)
 User ──< RecommendationCard    (AI 추천 카드)
          ├── newsItems Json?       (뉴스 기사 3~5개: source·headlineKo·summaryKo·url·publishedAt)
-         ├──< EvidenceSnapshot     (뉴스·볼륨·커뮤니티 신호)
+         ├── quantForecast Json?   (통계 예측: 예상가·범위·추세·변동성)
          └──< PerformanceRecord    (실현 수익률, 적중 여부)
 TickerPriceHistory             (종목별 일별 OHLCV — gap-fill 캐시)
 TickerUniverse                 (검색 가능 티커 목록 — 시총 50위 시드 포함)
+ForecastTrustRecord            (M7 일일 예측 스냅샷 — 프로그램 신뢰도 검증)
 ```
 
 ### TickerPriceHistory

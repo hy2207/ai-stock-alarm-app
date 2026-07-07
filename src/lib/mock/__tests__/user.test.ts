@@ -52,7 +52,6 @@ describe("mockWatchlist fixtures", () => {
 
   it("includes ticker, sector, and ticker items", () => {
     expect(mockWatchlist[0].ticker).toBe("AAPL");
-    expect(mockWatchlist[1].sector).toBe("Technology");
     expect(mockWatchlist[2].ticker).toBe("TSLA");
   });
 

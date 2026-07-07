@@ -1,16 +1,9 @@
 import { z } from "zod";
 
-/** A single watchlist item in the saveWatchlist input.
- *  At least one of ticker or sector must be provided. */
-export const watchlistItemSchema = z
-  .object({
-    ticker: z.string().min(1).max(10).optional(),
-    sector: z.string().min(1).max(50).optional(),
-  })
-  .refine(
-    (item) => item.ticker != null || item.sector != null,
-    { message: "Each item must have at least ticker or sector" },
-  );
+/** A single watchlist item in the saveWatchlist input (ticker-based). */
+export const watchlistItemSchema = z.object({
+  ticker: z.string().min(1).max(10),
+});
 
 export type WatchlistItem = z.infer<typeof watchlistItemSchema>;
 

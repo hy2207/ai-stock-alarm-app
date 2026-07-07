@@ -2,7 +2,6 @@ export type RiskMode = "aggressive" | "balanced" | "conservative";
 
 export interface WatchlistPromptItem {
   ticker: string;
-  sector: string | null;
   priority: number;
 }
 
@@ -167,7 +166,7 @@ function buildUserPrompt(input: RecommendationPromptInput) {
   const watchlist = input.watchlist
     .map(
       (item) =>
-        `- ${item.ticker} | Sector: ${item.sector ?? "N/A"} | Priority: ${item.priority}`,
+        `- ${item.ticker} | Priority: ${item.priority}`,
     )
     .join("\n");
 

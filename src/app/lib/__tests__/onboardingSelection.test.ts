@@ -42,9 +42,9 @@ describe("onboarding selection", () => {
     });
   });
 
-  it("builds saveWatchlist input with ticker and sector payloads", () => {
+  it("builds saveWatchlist input with ticker payloads", () => {
     expect(buildWatchlistInput(["AAPL", "TECH"], items)).toEqual({
-      items: [{ ticker: "AAPL" }, { sector: "TECH" }],
+      items: [{ ticker: "AAPL" }, { ticker: "TECH" }],
     });
   });
 

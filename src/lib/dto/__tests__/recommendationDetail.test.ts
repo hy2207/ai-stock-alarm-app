@@ -20,21 +20,10 @@ const validCard = {
   validUntil: new Date("2026-06-04"),
 };
 
-const validEvidence = {
-  id: "clxevd00000000000000001",
-  recId: "clxcard00000000000000001",
-  newsSignalScore: 75.0,
-  volumeSignalScore: 60.0,
-  communitySignalScore: 80.0,
-  patternTag: "breakout",
-  createdAt: new Date("2026-05-28"),
-};
-
 describe("recommendationDetailSchema", () => {
-  it("parses a valid detail response with evidence and performance", () => {
+  it("parses a valid detail response with performance", () => {
     const result = recommendationDetailSchema.parse({
       card: validCard,
-      evidence: validEvidence,
       performance: [
         {
           id: "clxperf0000000000000001",
@@ -50,25 +39,14 @@ describe("recommendationDetailSchema", () => {
       ],
     });
     expect(result.card.ticker).toBe("AAPL");
-    expect(result.evidence?.newsSignalScore).toBe(75);
     expect(result.performance).toHaveLength(1);
     expect(result.performance[0].hitFlag).toBe(true);
   });
 
-  it("parses detail response with null evidence", () => {
-    const result = recommendationDetailSchema.parse({
-      card: validCard,
-      evidence: null,
-      performance: [],
-    });
-    expect(result.evidence).toBeNull();
-    expect(result.performance).toHaveLength(0);
-  });
 
   it("parses detail response with multiple performance records", () => {
     const result = recommendationDetailSchema.parse({
       card: validCard,
-      evidence: null,
       performance: [
         {
           id: "clxperf0000000000000001",
@@ -100,7 +78,6 @@ describe("recommendationDetailSchema", () => {
 
   it("rejects missing card field", () => {
     const { success } = recommendationDetailSchema.safeParse({
-      evidence: null,
       performance: [],
     });
     expect(success).toBe(false);
@@ -109,18 +86,9 @@ describe("recommendationDetailSchema", () => {
   it("rejects invalid card data", () => {
     const { success } = recommendationDetailSchema.safeParse({
       card: { ...validCard, direction: "HOLD" },
-      evidence: null,
       performance: [],
     });
     expect(success).toBe(false);
   });
 
-  it("rejects invalid evidence data", () => {
-    const { success } = recommendationDetailSchema.safeParse({
-      card: validCard,
-      evidence: { id: "clxevd1", recId: "clxcard1" },
-      performance: [],
-    });
-    expect(success).toBe(false);
-  });
 });

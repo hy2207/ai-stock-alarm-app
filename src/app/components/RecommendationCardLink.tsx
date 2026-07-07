@@ -40,12 +40,7 @@ function formatPrice(
   }
 
   const price = kind === "entry" ? card.entryPrice : card.targetPrice;
-  const low = kind === "entry" ? card.entryRangeLow : card.targetRangeLow;
-  const high = kind === "entry" ? card.entryRangeHigh : card.targetRangeHigh;
-
-  if (price != null) return `$${price.toFixed(2)}`;
-  if (low != null && high != null) return `$${low.toFixed(2)}-$${high.toFixed(2)}`;
-  return "가격 확인 필요";
+  return price != null ? `$${price.toFixed(2)}` : "가격 확인 필요";
 }
 
 export function RecommendationCardLink({ card }: { card: RecommendationCardOutput }) {
@@ -162,13 +157,6 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
               </li>
             ))}
           </ul>
-        </div>
-      ) : card.newsRationaleKo ? (
-        <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 p-3">
-          <h3 className="text-xs font-semibold text-blue-800">뉴스 기반 판단 근거</h3>
-          <p className="mt-1 text-sm leading-relaxed text-blue-950">
-            {card.newsRationaleKo}
-          </p>
         </div>
       ) : null}
 

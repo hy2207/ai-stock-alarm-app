@@ -30,10 +30,6 @@ describe("mockBalancedCard", () => {
   });
 
   it("has entry range and target range", () => {
-    expect(mockBalancedCard.entryRangeLow).toBe(182.0);
-    expect(mockBalancedCard.entryRangeHigh).toBe(186.0);
-    expect(mockBalancedCard.targetRangeLow).toBe(195.0);
-    expect(mockBalancedCard.targetRangeHigh).toBe(200.0);
     expect(mockBalancedCard.exitPrice).toBe(175.0);
   });
 });

@@ -33,11 +33,7 @@ function publishedCard(overrides: Record<string, unknown> = {}) {
     direction: "BUY" as const,
     entryPrice: 880.5,
     currentPrice: 900.0,
-    entryRangeLow: null,
-    entryRangeHigh: null,
     targetPrice: 960.0,
-    targetRangeLow: null,
-    targetRangeHigh: null,
     exitPrice: 970.0,
     holdDays: 5,
     confidenceScore: "aggressive" as const,
@@ -281,8 +277,6 @@ describe("getTodayRecommendations", () => {
         publishedCard({
           ...card,
           entryPrice: null,
-          entryRangeLow: 850.0,
-          entryRangeHigh: 900.0,
         }),
       ),
     ]);
@@ -294,8 +288,6 @@ describe("getTodayRecommendations", () => {
     if (result.status === "ok") {
       const card = result.cards[0];
       expect(card.entryPrice).toBeNull();
-      expect(card.entryRangeLow).toBe(850.0);
-      expect(card.entryRangeHigh).toBe(900.0);
     }
   });
 

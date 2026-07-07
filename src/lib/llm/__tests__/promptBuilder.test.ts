@@ -4,8 +4,8 @@ import { buildRecommendationPrompt, type RecommendationPromptInput } from "../pr
 const baseInput: RecommendationPromptInput = {
   riskMode: "balanced",
   watchlist: [
-    { ticker: "AAPL", sector: "Technology", priority: 1 },
-    { ticker: "TSLA", sector: "Automotive", priority: 2 },
+    { ticker: "AAPL", priority: 1 },
+    { ticker: "TSLA", priority: 2 },
   ],
   marketData: {
     AAPL: {
@@ -87,7 +87,6 @@ describe("buildRecommendationPrompt", () => {
 
     expect(user).toContain("SELECTED RISK MODE: balanced");
     expect(user).toContain("AAPL");
-    expect(user).toContain("Technology");
     expect(user).toContain("TSLA");
     expect(user).toContain("Open: 193.00");
     expect(user).toContain("Close: 197.00");

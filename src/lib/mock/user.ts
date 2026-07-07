@@ -25,7 +25,7 @@ export const mockWatchlist: WatchlistCreateInput[] = [
   },
   {
     userId: MOCK_USER_ID,
-    sector: "Technology",
+    ticker: "MSFT",
     priority: 2,
   },
   {

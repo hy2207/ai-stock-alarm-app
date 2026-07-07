@@ -23,7 +23,7 @@ export async function deleteAccount(): Promise<{ success: boolean }> {
 
     // Delete user — cascades to:
     //   riskProfile, watchlist, recommendationCards (and their
-    //   evidenceSnapshots, performanceRecords), accounts, sessions
+    //   performanceRecords), accounts
     await prisma.user.delete({ where: { id: userId } });
 
     return { success: true };

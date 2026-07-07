@@ -30,16 +30,11 @@ describe("recommendationCardCreateSchema", () => {
     expect(result.holdDays).toBe(5);
   });
 
-  it("parses a valid card with range entry and range target", () => {
-    const result = recommendationCardCreateSchema.parse({
+  it("rejects a card missing point prices", () => {
+    const { success } = recommendationCardCreateSchema.safeParse({
       ...validBase,
-      entryRangeLow: 180.0,
-      entryRangeHigh: 190.0,
-      targetRangeLow: 200.0,
-      targetRangeHigh: 220.0,
     });
-    expect(result.entryRangeLow).toBe(180.0);
-    expect(result.targetRangeHigh).toBe(220.0);
+    expect(success).toBe(false);
   });
 
   it("parses a card with exitPrice", () => {
@@ -195,71 +190,11 @@ describe("recommendationCardCreateSchema", () => {
     expect(success).toBe(true);
   });
 
-  it("rejects entryRangeLow without entryRangeHigh", () => {
-    const { success, error } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryRangeLow: 180.0,
-      targetPrice: 210.0,
-    });
-    expect(success).toBe(false);
-    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
-  });
-
-  it("rejects entryRangeHigh without entryRangeLow", () => {
-    const { success, error } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryRangeHigh: 190.0,
-      targetPrice: 210.0,
-    });
-    expect(success).toBe(false);
-    expect(error?.issues.some((i) => i.path.includes("entryPrice"))).toBe(true);
-  });
-
-  it("rejects targetRangeLow without targetRangeHigh", () => {
-    const { success, error } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryPrice: 185.5,
-      targetRangeLow: 200.0,
-    });
-    expect(success).toBe(false);
-    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
-  });
-
-  it("rejects targetRangeHigh without targetRangeLow", () => {
-    const { success, error } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryPrice: 185.5,
-      targetRangeHigh: 220.0,
-    });
-    expect(success).toBe(false);
-    expect(error?.issues.some((i) => i.path.includes("targetPrice"))).toBe(true);
-  });
-
   it("accepts entryPrice alone without any range fields", () => {
     const { success } = recommendationCardCreateSchema.safeParse({
       ...validBase,
       entryPrice: 185.5,
       targetPrice: 210.0,
-    });
-    expect(success).toBe(true);
-  });
-
-  it("accepts entryRangeLow + entryRangeHigh together", () => {
-    const { success } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryRangeLow: 180.0,
-      entryRangeHigh: 190.0,
-      targetPrice: 210.0,
-    });
-    expect(success).toBe(true);
-  });
-
-  it("accepts targetRangeLow + targetRangeHigh together", () => {
-    const { success } = recommendationCardCreateSchema.safeParse({
-      ...validBase,
-      entryPrice: 185.5,
-      targetRangeLow: 200.0,
-      targetRangeHigh: 220.0,
     });
     expect(success).toBe(true);
   });
@@ -291,11 +226,7 @@ describe("recommendationCardOutputSchema", () => {
       ticker: "NVDA",
       direction: "BUY",
       entryPrice: 890.5,
-      entryRangeLow: null,
-      entryRangeHigh: null,
       targetPrice: 980.0,
-      targetRangeLow: null,
-      targetRangeHigh: null,
       exitPrice: 840.0,
       holdDays: 5,
       confidenceScore: "aggressive",
@@ -344,11 +275,7 @@ describe("recommendationCardSchema (full output)", () => {
       ticker: "TSLA",
       direction: "SELL",
       entryPrice: null,
-      entryRangeLow: 240.0,
-      entryRangeHigh: 250.0,
       targetPrice: null,
-      targetRangeLow: 200.0,
-      targetRangeHigh: 220.0,
       exitPrice: 270.0,
       holdDays: 7,
       confidenceScore: "aggressive",

@@ -43,24 +43,14 @@ function hasAnyPrice(...values: Array<number | null | undefined>) {
 
 function readTargetPrice(data: {
   targetPrice?: number | null;
-  targetRangeLow?: number | null;
-  targetRangeHigh?: number | null;
 }) {
-  if (data.targetPrice != null) {
-    return data.targetPrice;
-  }
-  if (data.targetRangeLow != null && data.targetRangeHigh != null) {
-    return (data.targetRangeLow + data.targetRangeHigh) / 2;
-  }
-  return null;
+  return data.targetPrice ?? null;
 }
 
 function hasDirectionalTarget(data: {
   direction: "BUY" | "SELL";
   currentPrice: number;
   targetPrice?: number | null;
-  targetRangeLow?: number | null;
-  targetRangeHigh?: number | null;
 }) {
   const target = readTargetPrice(data);
   if (target == null) {
@@ -82,8 +72,6 @@ function sharesOneConsensusTarget(
     direction: string;
     currentPrice: number;
     targetPrice?: number | null;
-    targetRangeLow?: number | null;
-    targetRangeHigh?: number | null;
   }>,
 ) {
   const [first] = variants;
@@ -113,8 +101,6 @@ function hasRiskOrderedStops(
     direction: "BUY" | "SELL";
     confidenceMode: "aggressive" | "balanced" | "conservative";
     targetPrice?: number | null;
-    targetRangeLow?: number | null;
-    targetRangeHigh?: number | null;
     exitPrice: number;
   }>,
 ) {
@@ -295,11 +281,7 @@ export const recommendationGenerationVariantSchema = z
     direction: directionEnum,
     currentPrice: z.number().positive(),
     entryPrice: z.number().positive().nullable().optional(),
-    entryRangeLow: z.number().positive().nullable().optional(),
-    entryRangeHigh: z.number().positive().nullable().optional(),
     targetPrice: z.number().positive().nullable().optional(),
-    targetRangeLow: z.number().positive().nullable().optional(),
-    targetRangeHigh: z.number().positive().nullable().optional(),
     exitPrice: z.number().positive(),
     holdDays: z.number().int().min(1).max(10),
     confidenceMode: confidenceModeEnum,
@@ -318,24 +300,14 @@ export const recommendationGenerationVariantSchema = z
       .max(5)
       .default([]),
   })
-  .refine(
-    (data) =>
-      hasAnyPrice(data.entryPrice, data.entryRangeLow, data.entryRangeHigh),
-    {
-      message:
-        "At least one of entryPrice, entryRangeLow, or entryRangeHigh must be provided",
-      path: ["entryPrice"],
-    },
-  )
-  .refine(
-    (data) =>
-      hasAnyPrice(data.targetPrice, data.targetRangeLow, data.targetRangeHigh),
-    {
-      message:
-        "At least one of targetPrice, targetRangeLow, or targetRangeHigh must be provided",
-      path: ["targetPrice"],
-    },
-  )
+  .refine((data) => data.entryPrice != null, {
+    message: "entryPrice must be provided",
+    path: ["entryPrice"],
+  })
+  .refine((data) => data.targetPrice != null, {
+    message: "targetPrice must be provided",
+    path: ["targetPrice"],
+  })
   .refine(hasDirectionalTarget, {
     message:
       "BUY requires target above currentPrice; SELL requires target below currentPrice",

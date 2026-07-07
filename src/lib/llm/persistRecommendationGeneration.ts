@@ -3,17 +3,12 @@ import type { RecommendationCard as PrismaRecommendationCard } from "@prisma/cli
 import {
   recommendationCardCreateSchema,
 } from "@/lib/dto/recommendationCard";
-import {
-  evidenceSnapshotCreateSchema,
-  type EvidenceSnapshotCreateInput,
-} from "@/lib/dto/evidenceSnapshot";
 import { forecastPrice } from "@/lib/quant/forecastPrice";
 import type { RecommendationGeneration } from "./generateRecommendationCards";
 
 interface PersistRecommendationGenerationInput {
   userId: string;
   generation: RecommendationGeneration;
-  evidence?: Omit<EvidenceSnapshotCreateInput, "recId">;
   /** Daily closes (oldest → newest) for the generation's ticker.
    *  When provided, a statistical quantForecast is stored per variant. */
   closes?: number[];
@@ -29,7 +24,6 @@ function validUntilFromHoldDays(now: Date, holdDays: number): Date {
 export async function persistRecommendationGeneration({
   userId,
   generation,
-  evidence,
   closes,
   now = new Date(),
 }: PersistRecommendationGenerationInput): Promise<PrismaRecommendationCard[]> {
@@ -49,36 +43,20 @@ export async function persistRecommendationGeneration({
         direction: variant.direction,
         currentPrice: variant.currentPrice,
         entryPrice: variant.entryPrice ?? null,
-        entryRangeLow: variant.entryRangeLow ?? null,
-        entryRangeHigh: variant.entryRangeHigh ?? null,
         targetPrice: variant.targetPrice ?? null,
-        targetRangeLow: variant.targetRangeLow ?? null,
-        targetRangeHigh: variant.targetRangeHigh ?? null,
         exitPrice: variant.exitPrice ?? null,
         holdDays: variant.holdDays,
         confidenceScore: variant.confidenceMode,
         reasonLine: variant.reasonLine,
-        newsRationaleKo: null,
         newsItems: variant.newsItems.length > 0 ? variant.newsItems : null,
         quantForecast,
         status: "published",
         validUntil: validUntilFromHoldDays(now, variant.holdDays),
       });
 
-      const evidenceData = evidence
-        ? evidenceSnapshotCreateSchema
-            .omit({ recId: true })
-            .parse(evidence)
-        : undefined;
-
       return prisma.recommendationCard.create({
         data: {
           ...cardData,
-          evidenceSnapshots: evidenceData
-            ? {
-                create: evidenceData,
-              }
-            : undefined,
           performanceRecords: {
             create: {
               ticker: cardData.ticker,

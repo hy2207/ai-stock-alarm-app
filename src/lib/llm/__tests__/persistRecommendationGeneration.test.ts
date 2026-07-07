@@ -63,18 +63,12 @@ const generation = {
 } satisfies RecommendationGeneration;
 
 describe("persistRecommendationGeneration", () => {
-  it("GWT: Given three variants When persisting Then creates published cards with evidence snapshots", async () => {
+  it("GWT: Given three variants When persisting Then creates published cards", async () => {
     mockCreate.mockImplementation(({ data }) => Promise.resolve({ id: data.confidenceScore, ...data }));
 
     const result = await persistRecommendationGeneration({
       userId: "clxuser000000000000000001",
       generation,
-      evidence: {
-        newsSignalScore: 72,
-        volumeSignalScore: 64,
-        communitySignalScore: 50,
-        patternTag: "swing",
-      },
       now: new Date("2026-06-19T00:00:00.000Z"),
     });
 
@@ -89,14 +83,6 @@ describe("persistRecommendationGeneration", () => {
           currentPrice: 190,
           newsItems: [{ source: "Reuters", headlineKo: "수요 강세 지속", summaryKo: "수요 강세 뉴스가 공격형 단기 매수 판단을 뒷받침합니다." }],
           validUntil: new Date("2026-06-22T00:00:00.000Z"),
-          evidenceSnapshots: {
-            create: {
-              newsSignalScore: 72,
-              volumeSignalScore: 64,
-              communitySignalScore: 50,
-              patternTag: "swing",
-            },
-          },
           performanceRecords: {
             create: {
               ticker: "AAPL",

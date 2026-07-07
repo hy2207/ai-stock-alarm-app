@@ -3,7 +3,6 @@ import { getCurrentUserId } from "@/lib/auth/getServerSession";
 
 export interface UserWatchlistItem {
   ticker: string;
-  sector: string | null;
   priority: number;
 }
 
@@ -26,7 +25,6 @@ export async function getUserWatchlist(
     orderBy: { priority: "asc" },
     select: {
       ticker: true,
-      sector: true,
       priority: true,
     },
   });
@@ -36,7 +34,6 @@ export async function getUserWatchlist(
       ? [
           {
             ticker: item.ticker,
-            sector: item.sector,
             priority: item.priority,
           },
         ]

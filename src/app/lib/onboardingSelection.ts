@@ -95,9 +95,7 @@ export function buildWatchlistInput(
         throw new Error(`Unknown watchlist item: ${value}`);
       }
 
-      return item.kind === "ticker"
-        ? { ticker: item.ticker }
-        : { sector: item.ticker };
+      return { ticker: item.ticker };
     }),
   };
 }

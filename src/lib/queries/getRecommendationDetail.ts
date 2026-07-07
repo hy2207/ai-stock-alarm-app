@@ -4,7 +4,7 @@ import { recommendationDetailSchema } from "@/lib/dto/recommendationDetail";
 import type { RecommendationDetail } from "@/lib/dto/recommendationDetail";
 
 /**
- * Fetch a single recommendation with evidence and performance history.
+ * Fetch a single recommendation with its performance history.
  *
  * Returns undefined when the card is not found or does not belong to
  * the authenticated user (prevents user-id enumeration).
@@ -24,10 +24,6 @@ export async function getRecommendationDetail(
       userId,
     },
     include: {
-      evidenceSnapshots: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-      },
       performanceRecords: {
         orderBy: { createdAt: "desc" },
       },
@@ -40,7 +36,6 @@ export async function getRecommendationDetail(
 
   return recommendationDetailSchema.parse({
     card: card,
-    evidence: card.evidenceSnapshots[0] ?? null,
     performance: card.performanceRecords,
   });
 }

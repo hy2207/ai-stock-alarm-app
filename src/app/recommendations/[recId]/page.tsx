@@ -46,7 +46,7 @@ export default async function RecommendationDetailPage({
     notFound();
   }
 
-  const { card, evidence, performance } = detail;
+  const { card, performance } = detail;
 
   const {
     ohlcv: storedOhlcv,
@@ -156,7 +156,7 @@ export default async function RecommendationDetailPage({
                   ? `$${card.currentPrice.toFixed(2)}`
                   : card.entryPrice != null
                     ? `$${card.entryPrice.toFixed(2)}`
-                    : `$${card.entryRangeLow?.toFixed(2)}-${card.entryRangeHigh?.toFixed(2)}`}
+                    : "—"}
               </dd>
               <dd className="mt-0.5 text-[10px] text-slate-400">
                 {new Intl.DateTimeFormat("ko-KR", {
@@ -172,9 +172,7 @@ export default async function RecommendationDetailPage({
             <div className="rounded-lg bg-emerald-50 p-3">
               <dt className="text-slate-500">목표가</dt>
               <dd className="font-semibold text-emerald-700">
-                {card.targetPrice != null
-                  ? `$${card.targetPrice.toFixed(2)}`
-                  : `$${card.targetRangeLow?.toFixed(2)}-${card.targetRangeHigh?.toFixed(2)}`}
+                {card.targetPrice != null ? `$${card.targetPrice.toFixed(2)}` : "—"}
               </dd>
             </div>
             <div className="rounded-lg bg-slate-50 p-3">
@@ -227,13 +225,6 @@ export default async function RecommendationDetailPage({
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : card.newsRationaleKo ? (
-            <div className="mt-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <h2 className="font-semibold text-blue-950">뉴스 기반 판단 근거</h2>
-              <p className="mt-2 text-sm leading-relaxed text-blue-950">
-                {card.newsRationaleKo}
-              </p>
             </div>
           ) : null}
 
@@ -382,32 +373,6 @@ export default async function RecommendationDetailPage({
           )}
           {ohlcv.length === 0 && (
             <p className="mt-2 text-xs text-slate-400">가격 데이터를 불러올 수 없습니다.</p>
-          )}
-        </section>
-
-        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="font-semibold">근거 스냅샷</h2>
-          {evidence ? (
-            <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <dt className="text-slate-500">뉴스 신호</dt>
-                <dd className="font-semibold">{evidence.newsSignalScore ?? "N/A"}</dd>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <dt className="text-slate-500">거래량 신호</dt>
-                <dd className="font-semibold">{evidence.volumeSignalScore ?? "N/A"}</dd>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <dt className="text-slate-500">커뮤니티 신호</dt>
-                <dd className="font-semibold">{evidence.communitySignalScore ?? "N/A"}</dd>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <dt className="text-slate-500">패턴 태그</dt>
-                <dd className="font-semibold">{evidence.patternTag ?? "N/A"}</dd>
-              </div>
-            </dl>
-          ) : (
-            <p className="mt-2 text-sm text-slate-600">근거 데이터 축적 중입니다.</p>
           )}
         </section>
 

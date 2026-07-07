@@ -12,7 +12,7 @@ const model = {} as LanguageModel;
 
 const basePromptInput: RecommendationPromptInput = {
   riskMode: "balanced",
-  watchlist: [{ ticker: "AAPL", sector: "Technology", priority: 1 }],
+  watchlist: [{ ticker: "AAPL", priority: 1 }],
   marketData: {
     AAPL: {
       ohlcv: [
@@ -68,8 +68,7 @@ const okGeneration = {
       ticker: "AAPL",
       direction: "BUY",
       currentPrice: 197,
-      entryRangeLow: 192,
-      entryRangeHigh: 196,
+      entryPrice: 193,
       targetPrice: 208,
       exitPrice: 202,
       holdDays: 5,
@@ -159,8 +158,6 @@ describe("recommendationGenerationSchema", () => {
           ...okGeneration.variants[2],
           direction: "SELL",
           targetPrice: 180,
-          targetRangeLow: undefined,
-          targetRangeHigh: undefined,
           exitPrice: 195,
         },
       ],
@@ -189,8 +186,6 @@ describe("recommendationGenerationSchema", () => {
           ...okGeneration.variants[2],
           direction: "SELL",
           targetPrice: 180,
-          targetRangeLow: undefined,
-          targetRangeHigh: undefined,
           exitPrice: 190,
         },
       ],

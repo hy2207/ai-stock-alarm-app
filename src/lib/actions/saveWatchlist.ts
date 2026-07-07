@@ -23,7 +23,6 @@ export async function saveWatchlist(
     data: parsed.data.items.map((item, idx) => ({
       userId,
       ticker: item.ticker ?? null,
-      sector: item.sector ?? null,
       priority: idx + 1,
     })),
   });

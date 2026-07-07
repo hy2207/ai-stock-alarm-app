@@ -84,53 +84,32 @@ describe("saveWatchlist", () => {
     });
     expect(mockCreateMany).toHaveBeenCalledWith({
       data: [
-        { userId: "clxuser00000000001", ticker: "AAPL", sector: null, priority: 1 },
+        { userId: "clxuser00000000001", ticker: "AAPL", priority: 1 },
       ],
     });
   });
 
-  it("saves three mixed items", async () => {
+  it("saves three ticker items", async () => {
     mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
     mockDeleteMany.mockResolvedValue({ count: 0 });
     mockCreateMany.mockResolvedValue({ count: 3 });
     const result = await saveWatchlist({
       items: [
         { ticker: "AAPL" },
-        { sector: "Technology" },
+        { ticker: "MSFT" },
         { ticker: "NVDA" },
       ],
     });
     expect(result).toEqual({ success: true });
     expect(mockCreateMany).toHaveBeenCalledWith({
       data: [
-        { userId: "clxuser00000000001", ticker: "AAPL", sector: null, priority: 1 },
-        { userId: "clxuser00000000001", ticker: null, sector: "Technology", priority: 2 },
-        { userId: "clxuser00000000001", ticker: "NVDA", sector: null, priority: 3 },
+        { userId: "clxuser00000000001", ticker: "AAPL", priority: 1 },
+        { userId: "clxuser00000000001", ticker: "MSFT", priority: 2 },
+        { userId: "clxuser00000000001", ticker: "NVDA", priority: 3 },
       ],
     });
   });
 
-  it("GWT: Given one sector item When saving Then stores sector with first priority", async () => {
-    mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
-    mockDeleteMany.mockResolvedValue({ count: 0 });
-    mockCreateMany.mockResolvedValue({ count: 1 });
-
-    const result = await saveWatchlist({
-      items: [{ sector: "Healthcare" }],
-    });
-
-    expect(result).toEqual({ success: true });
-    expect(mockCreateMany).toHaveBeenCalledWith({
-      data: [
-        {
-          userId: "clxuser00000000001",
-          ticker: null,
-          sector: "Healthcare",
-          priority: 1,
-        },
-      ],
-    });
-  });
 
   it("calls revalidatePath after success", async () => {
     mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");

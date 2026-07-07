@@ -72,8 +72,7 @@ const okGeneration = {
       ticker: "AAPL",
       direction: "BUY" as const,
       currentPrice: 197,
-      entryRangeLow: 192,
-      entryRangeHigh: 196,
+      entryPrice: 194,
       targetPrice: 208,
       exitPrice: 202,
       holdDays: 5,
@@ -304,7 +303,7 @@ describe("generateRecommendationsForUser", () => {
     expect(mockGenerateRecommendationCards).toHaveBeenCalledWith({
       promptInput: expect.objectContaining({
         riskMode: "balanced",
-        watchlist: [{ ticker: "AAPL", sector: "Technology", priority: 1 }],
+        watchlist: [{ ticker: "AAPL", priority: 1 }],
       }),
     });
     expect(mockTransaction).toHaveBeenCalledTimes(1);
