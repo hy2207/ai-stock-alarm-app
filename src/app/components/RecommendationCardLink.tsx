@@ -1,5 +1,10 @@
 import type { RecommendationCardOutput } from "@/lib/dto/recommendationCard";
 import { parseNewsItems, parseQuantForecast } from "@/lib/dto/recommendationCard";
+import {
+  forecastChangePct,
+  describeDirection,
+  shortChangeText,
+} from "@/lib/quant/describeForecast";
 import { PostHogEvent } from "./PostHogEvent";
 import { RecommendationActions } from "./RecommendationActions";
 import { PriceChartToggle } from "./PriceChartToggle";
@@ -98,24 +103,32 @@ export function RecommendationCardLink({ card }: { card: RecommendationCardOutpu
         </div>
       </dl>
 
-      {quant && (
-        <div className="mt-3 rounded-lg border border-indigo-100 bg-indigo-50/60 p-3">
-          <div className="flex items-center justify-between gap-2">
+      {quant && (card.currentPrice ?? card.entryPrice) != null && (() => {
+        const changePct = forecastChangePct(
+          quant.expectedPrice,
+          (card.currentPrice ?? card.entryPrice)!,
+        );
+        const dir = describeDirection(changePct);
+        const toneClass =
+          dir.tone === "up"
+            ? "text-emerald-700"
+            : dir.tone === "down"
+              ? "text-rose-600"
+              : "text-slate-600";
+        return (
+          <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-indigo-100 bg-indigo-50/60 px-3 py-2.5">
             <span className="text-xs font-medium text-indigo-900">
-              수치 분석 예상가
+              수치 분석
               <span className="ml-1 font-normal text-indigo-400">
-                ({quant.horizonDays}일 후)
+                · {quant.horizonDays}일 후
               </span>
             </span>
-            <span className="text-sm font-semibold text-indigo-900">
-              ${quant.expectedPrice.toFixed(2)}
+            <span className={`text-sm font-semibold ${toneClass}`}>
+              {dir.arrow} {shortChangeText(changePct)}
             </span>
           </div>
-          <p className="mt-0.5 text-right text-[10px] text-indigo-400">
-            예상 범위 ${quant.lowBand.toFixed(2)} – ${quant.highBand.toFixed(2)}
-          </p>
-        </div>
-      )}
+        );
+      })()}
 
       <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
         {reasonText}
