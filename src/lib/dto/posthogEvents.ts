@@ -28,6 +28,7 @@ export const SERVER_EVENT_NAMES = [
   "push_sent",
   "performance_evaluation_run",
   "recommendations_generated",
+  "m7_forecast_update_run",
 ] as const;
 
 export const ALL_EVENT_NAMES = [

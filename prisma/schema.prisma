@@ -175,3 +175,20 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model ForecastTrustRecord {
+  id          String    @id @default(cuid())
+  ticker      String    // M7: AAPL MSFT GOOGL AMZN NVDA META TSLA
+  targetDate  String    // trading day being predicted ("YYYY-MM-DD" ET)
+  predicted   Float     // expected close
+  bandLow     Float     // ±1σ range lower edge
+  bandHigh    Float     // ±1σ range upper edge
+  actualClose Float?    // filled once the target day's close is known
+  errorPct    Float?    // signed: (actual - predicted) / predicted × 100
+  inBand      Boolean?  // actual close landed inside [bandLow, bandHigh]
+  createdAt   DateTime  @default(now())
+  evaluatedAt DateTime?
+
+  @@unique([ticker, targetDate])
+  @@index([targetDate])
+}
