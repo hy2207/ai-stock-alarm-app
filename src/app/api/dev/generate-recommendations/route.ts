@@ -66,7 +66,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   try {
     const result = await runWithTimeout(generateRecommendationsForUser(userId, { force }));
     if (result.generatedCount > 0) {
-      revalidatePath("/");
+      revalidatePath("/today");
     }
     return NextResponse.json(result);
   } catch (error) {

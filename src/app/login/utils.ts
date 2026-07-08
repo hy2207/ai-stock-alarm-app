@@ -4,11 +4,11 @@ export function getSafeCallbackUrl(
   const rawValue = Array.isArray(value) ? value[0] : value;
 
   if (!rawValue) {
-    return "/";
+    return "/today";
   }
 
   if (!rawValue.startsWith("/") || rawValue.startsWith("//")) {
-    return "/";
+    return "/today";
   }
 
   return rawValue;

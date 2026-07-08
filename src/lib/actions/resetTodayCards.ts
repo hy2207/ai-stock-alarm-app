@@ -33,6 +33,6 @@ export async function resetTodayCards(): Promise<{ success: boolean }> {
     },
   });
 
-  revalidatePath("/");
+  revalidatePath("/today");
   return { success: true };
 }

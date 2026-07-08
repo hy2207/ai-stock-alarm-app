@@ -31,10 +31,10 @@ describe("AUTH-Q01 login page", () => {
   });
 
   it("rejects unsafe or external callback destinations", () => {
-    expect(getSafeCallbackUrl("https://example.com")).toBe("/");
-    expect(getSafeCallbackUrl("//example.com")).toBe("/");
-    expect(getSafeCallbackUrl("javascript:alert(1)")).toBe("/");
-    expect(getSafeCallbackUrl(undefined)).toBe("/");
+    expect(getSafeCallbackUrl("https://example.com")).toBe("/today");
+    expect(getSafeCallbackUrl("//example.com")).toBe("/today");
+    expect(getSafeCallbackUrl("javascript:alert(1)")).toBe("/today");
+    expect(getSafeCallbackUrl(undefined)).toBe("/today");
   });
 
   it("passes the safe callbackUrl to the provider buttons", () => {

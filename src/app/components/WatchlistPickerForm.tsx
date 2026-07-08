@@ -24,7 +24,7 @@ export function WatchlistPickerForm({
   initialSelected = [],
   submitLabel,
   successMessage,
-  redirectTo = "/",
+  redirectTo = "/today",
 }: WatchlistPickerFormProps) {
   const router = useRouter();
   const [selectedItems, setSelectedItems] = useState<string[]>(initialSelected);

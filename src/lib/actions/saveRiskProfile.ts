@@ -26,6 +26,6 @@ export async function saveRiskProfile(formData: FormData) {
     update: { riskMode: parsed.data.riskMode },
   });
 
-  revalidatePath("/");
+  revalidatePath("/today");
   return { success: true as const };
 }

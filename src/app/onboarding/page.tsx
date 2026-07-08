@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
   }
 
   if (await userHasWatchlist(userId)) {
-    redirect("/");
+    redirect("/today");
   }
 
   return (

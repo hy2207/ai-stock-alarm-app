@@ -5,14 +5,18 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "홈" },
+  { href: "/today", label: "오늘 추천" },
   { href: "/archive", label: "추천 이력" },
   { href: "/settings", label: "설정" },
 ] as const;
 
 function isActive(href: string, pathname: string): boolean {
   if (href === "/") {
-    // Card detail pages are reached from home — keep 홈 highlighted there
-    return pathname === "/" || pathname.startsWith("/recommendations");
+    return pathname === "/";
+  }
+  if (href === "/today") {
+    // Card detail pages are reached from 오늘 추천 — keep it highlighted there
+    return pathname === "/today" || pathname.startsWith("/recommendations");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

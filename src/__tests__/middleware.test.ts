@@ -14,6 +14,7 @@ function makeRequest(path: string) {
 
 describe("auth middleware path policy", () => {
   it.each([
+    "/",
     "/login",
     "/api/auth/signin",
     "/api/cron/morning-briefing",
@@ -27,7 +28,7 @@ describe("auth middleware path policy", () => {
     },
   );
 
-  it.each(["/", "/app", "/onboarding", "/archive", "/settings", "/recommendations/rec-1", "/state/error"])(
+  it.each(["/today", "/app", "/onboarding", "/archive", "/settings", "/recommendations/rec-1", "/state/error"])(
     "treats %s as protected",
     (path) => {
       expect(isProtectedPath(path)).toBe(true);
@@ -56,14 +57,14 @@ describe("auth middleware", () => {
     });
   });
 
-  it("GWT: Given unauthenticated home access When middleware runs Then redirects to login with root callbackUrl", async () => {
+  it("GWT: Given unauthenticated /today access When middleware runs Then redirects to login with callbackUrl", async () => {
     getTokenMock.mockResolvedValue(null);
 
-    const response = await middleware(makeRequest("/?from=push"));
+    const response = await middleware(makeRequest("/today?from=push"));
 
     expect(response?.status).toBe(307);
     expect(response?.headers.get("location")).toBe(
-      "https://stockalarm.test/login?callbackUrl=%2F%3Ffrom%3Dpush",
+      "https://stockalarm.test/login?callbackUrl=%2Ftoday%3Ffrom%3Dpush",
     );
   });
 

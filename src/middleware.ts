@@ -15,6 +15,7 @@ const PUBLIC_PATH_PREFIXES = [
 
 const PROTECTED_PATH_PREFIXES = [
   "/app",
+  "/today",
   "/onboarding",
   "/archive",
   "/settings",

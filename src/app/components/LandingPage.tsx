@@ -83,26 +83,37 @@ function SampleCard({
   );
 }
 
-export function LandingPage() {
+interface LandingPageProps {
+  /** When true the shared AppNav is shown above, so the marketing header
+   *  is hidden and CTAs lead to /today instead of /login. */
+  authenticated?: boolean;
+}
+
+export function LandingPage({ authenticated = false }: LandingPageProps) {
+  const ctaHref = authenticated ? "/today" : "/login";
+  const primaryCtaLabel = authenticated ? "오늘 추천 보기" : "무료로 시작하기";
+
   return (
     <main className="min-h-screen bg-slate-50 text-slate-950">
-      {/* Nav */}
-      <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5">
-        <Image
-          src="/brand/stockalarm-logo.png"
-          alt="StockAlarm"
-          width={120}
-          height={90}
-          className="h-9 w-auto"
-          priority
-        />
-        <Link
-          href="/login"
-          className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-        >
-          로그인
-        </Link>
-      </header>
+      {/* Marketing header — guests only (AppNav covers authenticated users) */}
+      {!authenticated && (
+        <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5">
+          <Image
+            src="/brand/stockalarm-logo.png"
+            alt="StockAlarm"
+            width={120}
+            height={90}
+            className="h-9 w-auto"
+            priority
+          />
+          <Link
+            href="/login"
+            className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          >
+            로그인
+          </Link>
+        </header>
+      )}
 
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-4 py-14 text-center">
@@ -125,17 +136,19 @@ export function LandingPage() {
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
-            href="/login"
+            href={ctaHref}
             className="w-full rounded-xl bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
           >
-            무료로 시작하기
+            {primaryCtaLabel}
           </Link>
-          <Link
-            href="/login"
-            className="w-full rounded-xl border border-slate-200 bg-white px-8 py-3.5 text-base font-medium text-slate-700 hover:bg-slate-50 sm:w-auto"
-          >
-            로그인
-          </Link>
+          {!authenticated && (
+            <Link
+              href="/login"
+              className="w-full rounded-xl border border-slate-200 bg-white px-8 py-3.5 text-base font-medium text-slate-700 hover:bg-slate-50 sm:w-auto"
+            >
+              로그인
+            </Link>
+          )}
         </div>
         <p className="mt-3 text-xs text-slate-400">Google 계정 1초 연결 · 카드 발급까지 2분</p>
       </section>
@@ -179,10 +192,10 @@ export function LandingPage() {
           TSLA, NVDA, AAPL 등 최대 3종목을 등록하면 매일 아침 카드가 발급됩니다.
         </p>
         <Link
-          href="/login"
+          href={ctaHref}
           className="mt-6 inline-block rounded-xl bg-blue-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-500"
         >
-          무료로 시작하기
+          {primaryCtaLabel}
         </Link>
       </section>
 

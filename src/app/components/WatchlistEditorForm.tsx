@@ -91,7 +91,7 @@ export function WatchlistEditorForm({ initialSelected, top50 }: WatchlistEditorF
         await resetTodayCards();
         toast.success("관심 종목이 저장되었습니다. 추천 카드를 새로 생성합니다.");
       }
-      router.push("/");
+      router.push("/today");
     } catch {
       toast.error("저장 중 오류가 발생했습니다.");
     } finally {
@@ -203,7 +203,7 @@ export function WatchlistEditorForm({ initialSelected, top50 }: WatchlistEditorF
           disabled={selected.length === 0 || isSubmitting}
           className="bg-blue-600 hover:bg-blue-700"
         >
-          {isSubmitting ? "저장 중…" : isDirty ? "저장 후 홈으로" : "홈으로"}
+          {isSubmitting ? "저장 중…" : isDirty ? "저장 후 오늘 추천으로" : "오늘 추천으로"}
         </Button>
       </div>
     </div>
