@@ -1,13 +1,14 @@
 /**
- * Statistical price forecast from daily close prices — no LLM involved.
+ * Statistical price forecast from daily bars — no LLM involved.
  *
- * Component lookbacks (agreed criteria):
- *   - Trend (point forecast): last TREND_WINDOW trading days, so the forecast
- *     tracks the current price regime. Holt double exponential smoothing and
- *     linear regression, averaged as an ensemble.
- *   - Volatility (±band): up to VOL_WINDOW trading days of log returns with
- *     EWMA weighting (RiskMetrics λ=0.94) — longer window stabilises the band
- *     while EWMA still weights recent moves.
+ * Components:
+ *   - Point forecast: Holt double exponential smoothing + linear regression
+ *     ensemble over the last TREND_WINDOW trading days.
+ *   - ±Band (calibrated): conformal prediction — the band half-width is the
+ *     80% quantile of this series' own recent walk-forward 1-day point
+ *     errors, scaled by √horizon. Distribution-free, so fat tails and regime
+ *     shifts are absorbed automatically. Falls back to an EWMA σ band when
+ *     there are not enough walk-forward samples yet.
  *   - Below MIN_POINTS valid closes, no forecast is produced (null).
  */
 
@@ -19,21 +20,36 @@ const HOLT_ALPHA = 0.5;
 const HOLT_BETA = 0.3;
 const EWMA_LAMBDA = 0.94;
 
+/** Conformal calibration: target coverage and minimum error samples. */
+const CONFORMAL_COVERAGE = 0.8;
+const CONFORMAL_MIN_SAMPLES = 5;
+/** Normal quantile for 80% two-sided coverage — sizes the σ fallback/floor. */
+const Z_80 = 1.28;
+
+/** Daily bar input. OHLC fields are optional (used by range-based vol). */
+export interface ForecastBar {
+  close: number;
+  open?: number | null;
+  high?: number | null;
+  low?: number | null;
+}
+
 export interface PriceForecast {
   /** Ensemble point forecast at horizonDays. */
   expectedPrice: number;
-  /** expectedPrice − 1σ (≈68% band lower edge). */
+  /** Calibrated band lower edge (~80% empirical coverage). */
   lowBand: number;
-  /** expectedPrice + 1σ (≈68% band upper edge). */
+  /** Calibrated band upper edge (~80% empirical coverage). */
   highBand: number;
   /** Regression slope as % of last close per trading day. */
   trendSlopePctPerDay: number;
   /** Regression fit quality 0–1 (1 = perfectly linear trend). */
   trendR2: number;
-  /** EWMA daily volatility of log returns, in %. */
+  /** Daily volatility of log returns, in % (EWMA). */
   dailyVolatilityPct: number;
   horizonDays: number;
-  method: "holt+linreg";
+  /** Band source: conformal (error-calibrated) or sigma fallback. */
+  method: string;
 }
 
 function round2(n: number): number {
@@ -106,25 +122,60 @@ export function ewmaDailyVolatility(closes: number[], lambda = EWMA_LAMBDA): num
   return Math.sqrt(variance);
 }
 
+/** Ensemble point forecast over the trend window (Holt + linreg average). */
+export function ensemblePointForecast(closes: number[], horizon: number): number {
+  const trendCloses = closes.slice(-TREND_WINDOW);
+  const holt = holtForecast(trendCloses, horizon);
+  const { forecast: linreg } = linearTrendForecast(trendCloses, horizon);
+  return (holt + linreg) / 2;
+}
+
+/**
+ * Walk-forward 1-day point-forecast errors over this series, as fractions
+ * of the actual close. Feeds the conformal band calibration.
+ */
+export function walkForwardAbsErrors(closes: number[]): number[] {
+  const errors: number[] = [];
+  for (let i = MIN_POINTS; i < closes.length; i++) {
+    const predicted = ensemblePointForecast(closes.slice(0, i), 1);
+    if (!Number.isFinite(predicted) || predicted <= 0) continue;
+    errors.push(Math.abs(predicted - closes[i]) / closes[i]);
+  }
+  return errors;
+}
+
+/** Conformal quantile: the ⌈(n+1)·q⌉-th order statistic. */
+export function conformalQuantile(samples: number[], coverage: number): number {
+  const sorted = [...samples].sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.ceil((sorted.length + 1) * coverage) - 1);
+  return sorted[Math.max(0, idx)];
+}
+
+function toBars(input: ForecastBar[] | number[]): ForecastBar[] {
+  return input.map((v) => (typeof v === "number" ? { close: v } : v));
+}
+
 /**
  * Forecast the price `horizonDays` trading days ahead.
  *
- * @param closes daily close prices, oldest → newest (calendar gaps are fine —
- *   indices are treated as consecutive trading days)
+ * @param input daily bars (or plain closes), oldest → newest
  * @returns forecast, or null when there is not enough usable data
  */
 export function forecastPrice(
-  closes: number[],
+  input: ForecastBar[] | number[],
   horizonDays: number,
 ): PriceForecast | null {
   if (!Number.isInteger(horizonDays) || horizonDays < 1) return null;
 
-  const valid = closes.filter((c) => Number.isFinite(c) && c > 0);
-  if (valid.length < MIN_POINTS) return null;
+  const bars = toBars(input).filter(
+    (b) => Number.isFinite(b.close) && b.close > 0,
+  );
+  if (bars.length < MIN_POINTS) return null;
 
-  const trendCloses = valid.slice(-TREND_WINDOW);
-  const volCloses = valid.slice(-VOL_WINDOW);
-  const lastClose = valid[valid.length - 1];
+  const closes = bars.map((b) => b.close);
+  const trendCloses = closes.slice(-TREND_WINDOW);
+  const volCloses = closes.slice(-VOL_WINDOW);
+  const lastClose = closes[closes.length - 1];
 
   const holt = holtForecast(trendCloses, horizonDays);
   const { forecast: linreg, slope, r2 } = linearTrendForecast(trendCloses, horizonDays);
@@ -134,16 +185,34 @@ export function forecastPrice(
   if (!Number.isFinite(expectedPrice) || expectedPrice <= 0) return null;
 
   const dailyVol = ewmaDailyVolatility(volCloses);
-  const horizonSigma = dailyVol * Math.sqrt(horizonDays);
+
+  // ── Band: conformal calibration from this series' own recent errors ──────
+  // σ floor targets the same 80% coverage (z=1.28 under normality); the
+  // conformal quantile can only widen it, never narrow below the floor —
+  // small early samples underestimate tail risk.
+  const errors = walkForwardAbsErrors(closes.slice(-VOL_WINDOW - MIN_POINTS));
+  const sigmaFloor = Z_80 * dailyVol * Math.sqrt(horizonDays);
+  let halfWidth: number;
+  let method: string;
+
+  if (errors.length >= CONFORMAL_MIN_SAMPLES) {
+    const conformal =
+      conformalQuantile(errors, CONFORMAL_COVERAGE) * Math.sqrt(horizonDays);
+    halfWidth = Math.max(conformal, sigmaFloor);
+    method = "ensemble+conformal80";
+  } else {
+    halfWidth = sigmaFloor;
+    method = "ensemble+sigma80";
+  }
 
   return {
     expectedPrice: round2(expectedPrice),
-    lowBand: round2(expectedPrice * (1 - horizonSigma)),
-    highBand: round2(expectedPrice * (1 + horizonSigma)),
+    lowBand: round2(expectedPrice * (1 - halfWidth)),
+    highBand: round2(expectedPrice * (1 + halfWidth)),
     trendSlopePctPerDay: round3((slope / lastClose) * 100),
     trendR2: round3(Math.max(0, Math.min(1, r2))),
     dailyVolatilityPct: round3(dailyVol * 100),
     horizonDays,
-    method: "holt+linreg",
+    method,
   };
 }

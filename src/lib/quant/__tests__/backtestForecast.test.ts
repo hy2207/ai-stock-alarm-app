@@ -59,7 +59,7 @@ describe("backtestForecast", () => {
     }
   });
 
-  it("reports band coverage: gently noisy trend stays inside the ±1σ range", () => {
+  it("reports band coverage: gently noisy trend stays inside the calibrated range", () => {
     // Mild alternating noise around a trend — realistic and well-covered
     const closes = Array.from(
       { length: 40 },
@@ -76,7 +76,7 @@ describe("backtestForecast", () => {
     // Calm series then a single large jump on the final day
     const closes = [
       ...Array.from({ length: 30 }, (_, i) => 100 + i * 0.1 + (i % 2 === 0 ? 0.2 : -0.2)),
-      140, // ~+37% shock — far outside any ±1σ band
+      140, // ~+37% shock — far outside any calibrated band
     ];
     const result = backtestForecast(series(closes))!;
 

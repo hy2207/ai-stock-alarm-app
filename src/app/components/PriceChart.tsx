@@ -44,9 +44,9 @@ interface ChartDatum {
   close?: number;
   /** Future forecast line value. */
   forecast?: number;
-  /** Future ±1σ range. */
+  /** Future calibrated range. */
   band?: [number, number];
-  /** Past predicted ±1σ range for that date. */
+  /** Past predicted (calibrated) range for that date. */
   predBand?: [number, number];
   /** Close value repeated only on out-of-band days (drives the ✕ marker). */
   missClose?: number;
@@ -326,7 +326,7 @@ export function PriceChart({
             />
           )}
 
-          {/* Future ±1σ forecast band */}
+          {/* Future calibrated forecast band */}
           {hasForecast && (
             <Area
               type="linear"

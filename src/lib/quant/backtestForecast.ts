@@ -6,7 +6,7 @@ import { forecastPrice } from "./forecastPrice";
  * For each historical date t, the model is fitted only on closes up to t−1
  * and asked to predict date t (1 trading day ahead). The user-facing trust
  * metric is band coverage: how often the actual close landed inside the
- * predicted ±1σ range. Point-error metrics (MAPE, direction) are kept for
+ * predicted range. Point-error metrics (MAPE, direction) are kept for
  * internal use but are not shown as primary UI — daily noise makes point
  * error look bad even when the model is behaving correctly.
  */
@@ -16,7 +16,7 @@ export interface BacktestPoint {
   date: string;
   /** 1-day-ahead point prediction made with data up to the previous day. */
   predicted: number;
-  /** Predicted ±1σ range for the day. */
+  /** Predicted (calibrated) range for the day. */
   bandLow: number;
   bandHigh: number;
   actual: number;

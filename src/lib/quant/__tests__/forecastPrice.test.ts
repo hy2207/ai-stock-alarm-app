@@ -119,7 +119,7 @@ describe("forecastPrice — volatility band", () => {
   it("reports metadata fields", () => {
     const f = forecastPrice(linearSeries(100, 0.5, 30), 4)!;
     expect(f.horizonDays).toBe(4);
-    expect(f.method).toBe("holt+linreg");
+    expect(f.method).toMatch(/^ensemble\+(conformal80|sigma)$/);
     expect(f.dailyVolatilityPct).toBeGreaterThanOrEqual(0);
   });
 });

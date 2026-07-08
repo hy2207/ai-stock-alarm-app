@@ -116,7 +116,7 @@ describe("persistRecommendationGeneration", () => {
       expect(quantForecast).not.toBeNull();
       expect(quantForecast.horizonDays).toBe(holdDays);
       expect(quantForecast.expectedPrice).toBeGreaterThan(189); // continues uptrend past last close
-      expect(quantForecast.method).toBe("holt+linreg");
+      expect(quantForecast.method).toMatch(/^ensemble\+/);
     }
   });
 
