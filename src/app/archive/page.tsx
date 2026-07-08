@@ -48,8 +48,28 @@ function fmtTrustDate(dateStr: string): string {
   return `${parseInt(m, 10)}/${parseInt(d, 10)}`;
 }
 
+function fmtTrustDateHeading(dateStr: string): string {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString("ko-KR", {
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+    timeZone: "UTC",
+  });
+}
+
 function daysSince(d: Date): number {
   return Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function groupByDate(records: M7TrustRecordView[]): [string, M7TrustRecordView[]][] {
+  const groups = new Map<string, M7TrustRecordView[]>();
+  for (const r of records) {
+    const list = groups.get(r.targetDate) ?? [];
+    list.push(r);
+    groups.set(r.targetDate, list);
+  }
+  // Input is already sorted targetDate desc — Map preserves insertion order
+  return Array.from(groups.entries());
 }
 
 function filterByTab(cards: ArchiveCard[], tab: TabKey): ArchiveCard[] {
@@ -148,12 +168,7 @@ function TrustRecordRow({ record }: { record: M7TrustRecordView }) {
   return (
     <div className={`rounded-lg border px-4 py-3 ${rowTone}`}>
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold">
-          {record.ticker}
-          <span className="ml-1.5 text-xs font-normal text-slate-400">
-            {fmtTrustDate(record.targetDate)}
-          </span>
-        </span>
+        <span className="text-sm font-semibold">{record.ticker}</span>
         {isPending ? (
           <span className="rounded bg-slate-200/70 px-2 py-0.5 text-xs font-medium text-slate-500">
             검증 대기
@@ -408,10 +423,40 @@ async function TrustView({ selectedTicker }: { selectedTicker?: string }) {
             아직 기록이 없습니다. 매일 아침 8시에 자동으로 쌓입니다.
           </p>
         ) : (
-          <div className="mt-4 space-y-2">
-            {displayRecords.map((record) => (
-              <TrustRecordRow key={record.id} record={record} />
-            ))}
+          <div className="mt-4 space-y-5">
+            {groupByDate(displayRecords).map(([date, records]) => {
+              const evaluated = records.filter((r) => r.inBand != null);
+              const hits = evaluated.filter((r) => r.inBand === true).length;
+              return (
+                <div key={date}>
+                  <div className="mb-2 flex items-baseline justify-between border-b border-slate-100 pb-1.5">
+                    <h3 className="text-sm font-semibold text-slate-700">
+                      {fmtTrustDateHeading(date)}
+                    </h3>
+                    {evaluated.length > 0 ? (
+                      <span
+                        className={`text-xs font-medium ${
+                          hits === evaluated.length
+                            ? "text-emerald-600"
+                            : hits === 0
+                              ? "text-rose-500"
+                              : "text-slate-500"
+                        }`}
+                      >
+                        {hits}/{evaluated.length} 적중
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">검증 대기</span>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {records.map((record) => (
+                      <TrustRecordRow key={record.id} record={record} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
