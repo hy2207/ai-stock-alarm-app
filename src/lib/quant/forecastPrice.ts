@@ -7,8 +7,8 @@
  *   - ±Band (calibrated): conformal prediction — the band half-width is the
  *     80% quantile of this series' own recent walk-forward 1-day point
  *     errors, scaled by √horizon. Distribution-free, so fat tails and regime
- *     shifts are absorbed automatically. Falls back to an EWMA σ band when
- *     there are not enough walk-forward samples yet.
+ *     shifts are absorbed automatically. The σ floor uses Yang-Zhang OHLC
+ *     volatility when bars carry OHLC (falling back to close-to-close EWMA).
  *   - Below MIN_POINTS valid closes, no forecast is produced (null).
  */
 
@@ -25,6 +25,8 @@ const CONFORMAL_COVERAGE = 0.8;
 const CONFORMAL_MIN_SAMPLES = 5;
 /** Normal quantile for 80% two-sided coverage — sizes the σ fallback/floor. */
 const Z_80 = 1.28;
+/** Yang-Zhang needs at least this many bars with full OHLC. */
+const YZ_MIN_SAMPLES = 10;
 
 /** Daily bar input. OHLC fields are optional (used by range-based vol). */
 export interface ForecastBar {
@@ -122,6 +124,51 @@ export function ewmaDailyVolatility(closes: number[], lambda = EWMA_LAMBDA): num
   return Math.sqrt(variance);
 }
 
+/**
+ * Yang-Zhang daily volatility from OHLC bars — combines overnight,
+ * open-to-close, and Rogers-Satchell range components. ~8× more sample-
+ * efficient than close-to-close, which matters for our 20–60 day windows.
+ * Returns null when too few bars carry full OHLC data.
+ */
+export function yangZhangDailyVolatility(bars: ForecastBar[]): number | null {
+  const overnight: number[] = [];
+  const openToClose: number[] = [];
+  const rogersSatchell: number[] = [];
+
+  for (let i = 1; i < bars.length; i++) {
+    const b = bars[i];
+    const prevClose = bars[i - 1].close;
+    if (
+      b.open == null || b.high == null || b.low == null ||
+      !(b.open > 0) || !(b.high > 0) || !(b.low > 0) || !(prevClose > 0)
+    ) {
+      continue;
+    }
+    const o = Math.log(b.open / prevClose);
+    const c = Math.log(b.close / b.open);
+    const u = Math.log(b.high / b.open);
+    const d = Math.log(b.low / b.open);
+    overnight.push(o);
+    openToClose.push(c);
+    rogersSatchell.push(u * (u - c) + d * (d - c));
+  }
+
+  const n = overnight.length;
+  if (n < YZ_MIN_SAMPLES) return null;
+
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const sampleVar = (a: number[]) => {
+    const m = mean(a);
+    return a.reduce((sum, x) => sum + (x - m) * (x - m), 0) / (a.length - 1);
+  };
+
+  const k = 0.34 / (1.34 + (n + 1) / (n - 1));
+  const variance =
+    sampleVar(overnight) + k * sampleVar(openToClose) + (1 - k) * mean(rogersSatchell);
+
+  return variance > 0 ? Math.sqrt(variance) : null;
+}
+
 /** Ensemble point forecast over the trend window (Holt + linreg average). */
 export function ensemblePointForecast(closes: number[], horizon: number): number {
   const trendCloses = closes.slice(-TREND_WINDOW);
@@ -184,7 +231,9 @@ export function forecastPrice(
   // A non-positive forecast means the trend extrapolation broke down
   if (!Number.isFinite(expectedPrice) || expectedPrice <= 0) return null;
 
-  const dailyVol = ewmaDailyVolatility(volCloses);
+  const volBars = bars.slice(-VOL_WINDOW);
+  const yzVol = yangZhangDailyVolatility(volBars);
+  const dailyVol = yzVol ?? ewmaDailyVolatility(volCloses);
 
   // ── Band: conformal calibration from this series' own recent errors ──────
   // σ floor targets the same 80% coverage (z=1.28 under normality); the
@@ -199,10 +248,10 @@ export function forecastPrice(
     const conformal =
       conformalQuantile(errors, CONFORMAL_COVERAGE) * Math.sqrt(horizonDays);
     halfWidth = Math.max(conformal, sigmaFloor);
-    method = "ensemble+conformal80";
+    method = yzVol != null ? "ensemble+conformal80+yz" : "ensemble+conformal80";
   } else {
     halfWidth = sigmaFloor;
-    method = "ensemble+sigma80";
+    method = yzVol != null ? "ensemble+sigma80+yz" : "ensemble+sigma80";
   }
 
   return {

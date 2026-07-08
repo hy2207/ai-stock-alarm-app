@@ -1,4 +1,4 @@
-import { forecastPrice } from "./forecastPrice";
+import { forecastPrice, type ForecastBar } from "./forecastPrice";
 
 /**
  * Rolling walk-forward backtest of the statistical forecast.
@@ -43,8 +43,12 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+export interface BacktestHistoryBar extends ForecastBar {
+  date: string;
+}
+
 export function backtestForecast(
-  history: { date: string; close: number }[],
+  history: BacktestHistoryBar[],
 ): BacktestResult | null {
   const points: BacktestPoint[] = [];
   let directionHits = 0;
@@ -55,7 +59,7 @@ export function backtestForecast(
   for (let i = 1; i < history.length; i++) {
     // Fit only on data available before date i (forecastPrice enforces
     // its own 20-point minimum and returns null below it)
-    const fitted = forecastPrice(closes.slice(0, i), 1);
+    const fitted = forecastPrice(history.slice(0, i), 1);
     if (!fitted) continue;
 
     const predicted = fitted.expectedPrice;

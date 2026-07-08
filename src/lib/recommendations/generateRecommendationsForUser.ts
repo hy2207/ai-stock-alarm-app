@@ -435,20 +435,25 @@ export async function generateRecommendationsForUser(
 
     // Daily closes for the statistical forecast — DB-first (150 calendar
     // days ≈ 3 months of trading days); forecast is optional on failure.
-    let closes: number[] | undefined;
+    let priceBars: { open: number; high: number; low: number; close: number }[] | undefined;
     try {
       await syncPriceHistory(targetTicker.ticker);
       const stored = await getStoredPriceHistory(targetTicker.ticker, 150);
-      closes = stored.map((p) => p.close);
+      priceBars = stored.map((p) => ({
+        open: p.open,
+        high: p.high,
+        low: p.low,
+        close: p.close,
+      }));
     } catch {
-      closes = undefined;
+      priceBars = undefined;
     }
 
     await replaceTodaysTickerCards(userId, targetTicker.ticker);
     await persistRecommendationGeneration({
       userId,
       generation,
-      closes,
+      closes: priceBars,
     });
     generatedCount += 1;
   }

@@ -3,15 +3,15 @@ import type { RecommendationCard as PrismaRecommendationCard } from "@prisma/cli
 import {
   recommendationCardCreateSchema,
 } from "@/lib/dto/recommendationCard";
-import { forecastPrice } from "@/lib/quant/forecastPrice";
+import { forecastPrice, type ForecastBar } from "@/lib/quant/forecastPrice";
 import type { RecommendationGeneration } from "./generateRecommendationCards";
 
 interface PersistRecommendationGenerationInput {
   userId: string;
   generation: RecommendationGeneration;
-  /** Daily closes (oldest → newest) for the generation's ticker.
+  /** Daily bars or closes (oldest → newest) for the generation's ticker.
    *  When provided, a statistical quantForecast is stored per variant. */
-  closes?: number[];
+  closes?: ForecastBar[] | number[];
   now?: Date;
 }
 

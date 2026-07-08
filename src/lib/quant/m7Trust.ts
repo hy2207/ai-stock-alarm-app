@@ -83,7 +83,13 @@ export async function runM7ForecastUpdate(): Promise<M7UpdateSummary> {
     const existing = await prisma.forecastTrustRecord.count({ where: { ticker } });
     if (existing === 0) {
       const bt = backtestForecast(
-        history.map((p) => ({ date: p.date, close: p.close })),
+        history.map((p) => ({
+          date: p.date,
+          open: p.open,
+          high: p.high,
+          low: p.low,
+          close: p.close,
+        })),
       );
       if (bt) {
         for (const p of bt.points) {
@@ -132,7 +138,10 @@ export async function runM7ForecastUpdate(): Promise<M7UpdateSummary> {
     }
 
     // ── 3. Snapshot a forecast for the next trading day ────────────────────
-    const forecast = forecastPrice(history.map((p) => p.close), 1);
+    const forecast = forecastPrice(
+      history.map((p) => ({ open: p.open, high: p.high, low: p.low, close: p.close })),
+      1,
+    );
     if (!forecast) {
       summary.errors.push(`${ticker}: not enough data to forecast`);
       continue;

@@ -4,6 +4,8 @@ import {
   holtForecast,
   linearTrendForecast,
   ewmaDailyVolatility,
+  yangZhangDailyVolatility,
+  type ForecastBar,
 } from "../forecastPrice";
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
@@ -173,5 +175,42 @@ describe("ewmaDailyVolatility", () => {
     expect(ewmaDailyVolatility(calmThenWild)).toBeGreaterThan(
       ewmaDailyVolatility(wildThenCalm),
     );
+  });
+});
+
+describe("yangZhangDailyVolatility", () => {
+  function bar(close: number, spreadPct: number): ForecastBar {
+    // Symmetric intraday range around the close
+    return {
+      open: close * (1 - spreadPct / 200),
+      high: close * (1 + spreadPct / 100),
+      low: close * (1 - spreadPct / 100),
+      close,
+    };
+  }
+
+  it("returns null when bars carry no OHLC", () => {
+    const bars = Array.from({ length: 30 }, (_, i) => ({ close: 100 + i }));
+    expect(yangZhangDailyVolatility(bars)).toBeNull();
+  });
+
+  it("returns null below the minimum OHLC sample count", () => {
+    const bars = Array.from({ length: 8 }, () => bar(100, 1));
+    expect(yangZhangDailyVolatility(bars)).toBeNull();
+  });
+
+  it("wider intraday ranges produce higher volatility at identical closes", () => {
+    const closes = Array.from({ length: 30 }, (_, i) => 100 + (i % 2 === 0 ? 0.5 : -0.5));
+    const narrow = yangZhangDailyVolatility(closes.map((c) => bar(c, 0.5)))!;
+    const wide = yangZhangDailyVolatility(closes.map((c) => bar(c, 4)))!;
+    expect(wide).toBeGreaterThan(narrow);
+  });
+
+  it("captures intraday risk that close-to-close misses", () => {
+    // Flat closes but violent intraday swings
+    const bars = Array.from({ length: 30 }, () => bar(100, 5));
+    const yz = yangZhangDailyVolatility(bars)!;
+    const c2c = ewmaDailyVolatility(bars.map((b) => b.close));
+    expect(yz).toBeGreaterThan(c2c);
   });
 });

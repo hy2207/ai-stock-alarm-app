@@ -34,7 +34,13 @@ export async function GET(
   // days than the displayed window); points are filtered to displayed dates.
   const fullHistory = await getStoredPriceHistory(ticker, 150);
   const backtestResult = backtestForecast(
-    fullHistory.map((p) => ({ date: p.date, close: p.close })),
+    fullHistory.map((p) => ({
+      date: p.date,
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+    })),
   );
   const displayedDates = new Set(ohlcv.map((p) => p.date));
 

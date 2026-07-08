@@ -72,7 +72,13 @@ export default async function RecommendationDetailPage({
   // Walk-forward backtest over full stored history, filtered to chart dates
   const fullHistory = await getStoredPriceHistory(card.ticker, 150).catch(() => []);
   const backtestResult = backtestForecast(
-    fullHistory.map((p) => ({ date: p.date, close: p.close })),
+    fullHistory.map((p) => ({
+      date: p.date,
+      open: p.open,
+      high: p.high,
+      low: p.low,
+      close: p.close,
+    })),
   );
   const displayedDates = new Set(storedOhlcv.map((p) => p.date));
   const backtestPoints = backtestResult
