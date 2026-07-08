@@ -9,6 +9,7 @@ const RATE_LIMIT_RETRY_MS = 65_000;
 
 interface GenerationSummary {
   generatedCount?: number;
+  skippedCount?: number;
   validationErrors?: string[];
   externalApiErrors?: string[];
   message?: string;
@@ -55,6 +56,14 @@ export function TodayCardAutoLoader() {
           return;
         }
 
+        // Cards already exist for today (e.g. a previous timed-out request
+        // finished server-side) — just refresh to show them
+        const skipped = data.skippedCount ?? 0;
+        if (skipped > 0 && (data.validationErrors?.length ?? 0) === 0) {
+          router.refresh();
+          return;
+        }
+
         // generatedCount === 0 — no_call from LLM or skipped
         const reason =
           data.validationErrors?.[0] ??
@@ -76,8 +85,9 @@ export function TodayCardAutoLoader() {
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
           setErrorMessage(
-            "추천 생성 요청 시간이 초과됐습니다. 다시 시도해 주세요.",
+            "생성이 오래 걸리고 있어요. 서버에서 계속 진행 중일 수 있어 잠시 후 자동으로 확인합니다.",
           );
+          retryTimer = setTimeout(() => router.refresh(), 20_000);
         } else {
           setErrorMessage("네트워크 오류가 발생했습니다.");
         }
