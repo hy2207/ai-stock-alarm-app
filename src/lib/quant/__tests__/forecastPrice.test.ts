@@ -46,10 +46,12 @@ describe("forecastPrice — input guards", () => {
     expect(forecastPrice([...linearSeries(100, 1, 19), NaN, 0], 3)).toBeNull();
   });
 
-  it("returns null when downtrend extrapolates to a non-positive price", () => {
-    // Steep crash: trend projection goes below zero
+  it("random-walk anchor keeps even a steep crash forecast positive", () => {
     const closes = linearSeries(210, -10, 21); // ends at 10, falling 10/day
-    expect(forecastPrice(closes, 5)).toBeNull();
+    const f = forecastPrice(closes, 5);
+    expect(f).not.toBeNull();
+    expect(f!.expectedPrice).toBeGreaterThan(0);
+    expect(f!.expectedPrice).toBeLessThan(10); // still forecasts a decline
   });
 });
 
@@ -129,10 +131,14 @@ describe("forecastPrice — volatility band", () => {
 // ── component functions ──────────────────────────────────────────────────────
 
 describe("holtForecast", () => {
-  it("continues a perfect linear trend accurately", () => {
+  it("follows a linear trend with damped extrapolation", () => {
     const closes = linearSeries(100, 2, 21); // ends 140, +2/day
-    // True continuation at t+3 = 146
-    expect(holtForecast(closes, 3)).toBeCloseTo(146, 0);
+    // Damped (φ=0.85): forecast sits between the last close and the
+    // undamped continuation (146), never beyond it
+    const f = holtForecast(closes, 3);
+    expect(f).toBeGreaterThan(140);
+    expect(f).toBeLessThan(146);
+    expect(f).toBeCloseTo(142.5, 0);
   });
 
   it("returns last level for a flat series", () => {
@@ -141,12 +147,13 @@ describe("holtForecast", () => {
 });
 
 describe("linearTrendForecast", () => {
-  it("recovers slope and forecast of an exact line", () => {
+  it("recovers the slope and applies damped extrapolation", () => {
     const closes = linearSeries(50, 1.5, 21); // ends 80
     const { forecast, slope, r2 } = linearTrendForecast(closes, 2);
 
     expect(slope).toBeCloseTo(1.5, 5);
-    expect(forecast).toBeCloseTo(83, 5); // 80 + 2*1.5
+    // Damped: 80 + 1.5·(0.85 + 0.85²) ≈ 82.36 (undamped would be 83)
+    expect(forecast).toBeCloseTo(82.36, 1);
     expect(r2).toBeCloseTo(1, 5);
   });
 

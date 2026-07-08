@@ -2,8 +2,11 @@
  * Statistical price forecast from daily bars — no LLM involved.
  *
  * Components:
- *   - Point forecast: Holt double exponential smoothing + linear regression
- *     ensemble over the last TREND_WINDOW trading days.
+ *   - Point forecast: damped-trend Holt exponential smoothing + linear
+ *     regression (damped extrapolation) ensemble over the last TREND_WINDOW
+ *     trading days, damped (φ=0.85) and shrunk toward the last close
+ *     (w=0.3) — daily prices are near-random-walk, and un-shrunk trend
+ *     extrapolation was the dominant error source on real data.
  *   - ±Band (calibrated): conformal prediction — the band half-width is the
  *     80% quantile of this series' own recent walk-forward 1-day point
  *     errors, scaled by √horizon. Distribution-free, so fat tails and regime
@@ -18,6 +21,13 @@ const MIN_POINTS = 20;
 
 const HOLT_ALPHA = 0.5;
 const HOLT_BETA = 0.3;
+/** Trend damping (Gardner-McKenzie). φ<1 keeps short-run trend but stops
+ *  runaway extrapolation — daily equity drift is mostly noise. */
+const HOLT_PHI = 0.85;
+/** Shrinkage toward the random walk: expected = w·trend + (1−w)·lastClose.
+ *  Daily prices are near-random-walk; validated on stored M7 history where
+ *  full trend weight underperformed the RW baseline. */
+const TREND_WEIGHT = 0.3;
 const EWMA_LAMBDA = 0.94;
 
 /** Conformal calibration: target coverage and minimum error samples. */
@@ -62,23 +72,27 @@ function round3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-/** Holt double exponential smoothing point forecast `horizon` steps ahead. */
+/** Damped-trend Holt exponential smoothing forecast `horizon` steps ahead. */
 export function holtForecast(
   closes: number[],
   horizon: number,
   alpha = HOLT_ALPHA,
   beta = HOLT_BETA,
+  phi = HOLT_PHI,
 ): number {
   let level = closes[0];
   let trend = closes[1] - closes[0];
 
   for (let i = 1; i < closes.length; i++) {
     const prevLevel = level;
-    level = alpha * closes[i] + (1 - alpha) * (level + trend);
-    trend = beta * (level - prevLevel) + (1 - beta) * trend;
+    level = alpha * closes[i] + (1 - alpha) * (level + phi * trend);
+    trend = beta * (level - prevLevel) + (1 - beta) * phi * trend;
   }
 
-  return level + horizon * trend;
+  // Damped horizon: Σ φ^i for i=1..h instead of h
+  let dampedSteps = 0;
+  for (let i = 1; i <= horizon; i++) dampedSteps += Math.pow(phi, i);
+  return level + dampedSteps * trend;
 }
 
 /** Least-squares line fit over closes; forecast + slope + R². */
@@ -106,7 +120,12 @@ export function linearTrendForecast(
   // A perfectly flat series is a perfect fit for the zero-slope line
   const r2 = syy === 0 ? 1 : (sxy * sxy) / (sxx * syy);
 
-  return { forecast: intercept + slope * (n - 1 + horizon), slope, r2 };
+  // Extrapolate with the same damped horizon as Holt so the ensemble
+  // members share one trend philosophy
+  let dampedSteps = 0;
+  for (let i = 1; i <= horizon; i++) dampedSteps += Math.pow(HOLT_PHI, i);
+
+  return { forecast: intercept + slope * (n - 1) + slope * dampedSteps, slope, r2 };
 }
 
 /** EWMA daily volatility (std dev of log returns), RiskMetrics style. */
@@ -169,12 +188,15 @@ export function yangZhangDailyVolatility(bars: ForecastBar[]): number | null {
   return variance > 0 ? Math.sqrt(variance) : null;
 }
 
-/** Ensemble point forecast over the trend window (Holt + linreg average). */
+/** Point forecast: damped Holt + linreg ensemble, shrunk toward the last
+ *  close (random-walk anchor). */
 export function ensemblePointForecast(closes: number[], horizon: number): number {
   const trendCloses = closes.slice(-TREND_WINDOW);
   const holt = holtForecast(trendCloses, horizon);
   const { forecast: linreg } = linearTrendForecast(trendCloses, horizon);
-  return (holt + linreg) / 2;
+  const trendForecast = (holt + linreg) / 2;
+  const lastClose = closes[closes.length - 1];
+  return TREND_WEIGHT * trendForecast + (1 - TREND_WEIGHT) * lastClose;
 }
 
 /**
@@ -224,9 +246,8 @@ export function forecastPrice(
   const volCloses = closes.slice(-VOL_WINDOW);
   const lastClose = closes[closes.length - 1];
 
-  const holt = holtForecast(trendCloses, horizonDays);
-  const { forecast: linreg, slope, r2 } = linearTrendForecast(trendCloses, horizonDays);
-  const expectedPrice = (holt + linreg) / 2;
+  const { slope, r2 } = linearTrendForecast(trendCloses, horizonDays);
+  const expectedPrice = ensemblePointForecast(closes, horizonDays);
 
   // A non-positive forecast means the trend extrapolation broke down
   if (!Number.isFinite(expectedPrice) || expectedPrice <= 0) return null;

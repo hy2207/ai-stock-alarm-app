@@ -24,14 +24,16 @@ describe("backtestForecast", () => {
     expect(result.points[result.points.length - 1].date).toBe("2026-06-26");
   });
 
-  it("is highly accurate on a clean linear trend", () => {
+  it("is accurate on a clean linear trend (damped forecasts trail slightly)", () => {
     const closes = Array.from({ length: 30 }, (_, i) => 100 + i * 2);
     const result = backtestForecast(series(closes))!;
 
-    expect(result.mapePct).toBeLessThan(1); // near-perfect on a straight line
+    // Damping + random-walk shrinkage trade linear-trend accuracy for
+    // robustness on real (near-random-walk) prices
+    expect(result.mapePct).toBeLessThan(1.5);
     expect(result.directionHitRatePct).toBe(100);
     for (const p of result.points) {
-      expect(p.predicted).toBeCloseTo(p.actual, 0);
+      expect(Math.abs(p.predicted - p.actual)).toBeLessThan(2);
     }
   });
 
