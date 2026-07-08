@@ -42,9 +42,8 @@ async function shot(page, name, waitMs = 1200) {
   {
     const ctx = await browser.newContext({ viewport: { width: 430, height: 900 } });
     const pg = await ctx.newPage();
-    await pg.goto(BASE_URL);
-    await pg.waitForLoadState("networkidle");
-    await shot(pg, "landing", 1500);
+    await pg.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+    await shot(pg, "landing", 3000);
     await ctx.close();
   }
 
@@ -62,60 +61,67 @@ async function shot(page, name, waitMs = 1200) {
 
   const page = await context.newPage();
 
-  // ── 1. Home (cards) ───────────────────────────────────────────────────────
-  await page.goto(BASE_URL);
-  await page.waitForLoadState("networkidle");
-  // Wait for cards to render (TodayCardAutoLoader may trigger generate)
-  await page.waitForSelector("article", { timeout: 30_000 }).catch(() => {});
-  await page.waitForTimeout(1500);
+  // ── 1. 오늘 추천 (cards) ──────────────────────────────────────────────────
+  await page.goto(`${BASE_URL}/today`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector("article", { timeout: 60_000 }).catch(() => {});
+  await page.waitForTimeout(2000);
   await page.evaluate(() => window.scrollTo(0, 0));
-  await shot(page, "home", 800);
+  await shot(page, "today", 800);
 
-  // ── 2. Home — news block ──────────────────────────────────────────────────
+  // ── 2. 오늘 추천 — news block ─────────────────────────────────────────────
   const newsBlock = page.locator(".bg-blue-50").first();
   if (await newsBlock.count()) {
     await newsBlock.scrollIntoViewIfNeeded();
-    await shot(page, "home-news", 600);
+    await shot(page, "today-news", 600);
   } else {
-    console.log("⚠  news block not found — skipping home-news.png");
+    console.log("⚠  news block not found — skipping today-news.png");
   }
 
-  // ── 3 & 4. Detail + detail news ───────────────────────────────────────────
-  await page.goto(BASE_URL);
-  await page.waitForLoadState("networkidle");
-  await page.waitForSelector('a[href^="/recommendations/"]', { timeout: 15_000 }).catch(() => {});
-  const detailHref = await page.locator('a[href^="/recommendations/"]').first().getAttribute("href").catch(() => null);
+  // ── 3 & 4. Detail: scenario forecast + chart overlay ─────────────────────
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(400);
+  const detailHref = await page
+    .locator('a[href^="/recommendations/"]')
+    .first()
+    .getAttribute("href")
+    .catch(() => null);
 
   if (detailHref) {
-    await page.goto(BASE_URL + detailHref);
-    await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(1500);
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await shot(page, "detail", 600);
+    await page.goto(BASE_URL + detailHref, { waitUntil: "domcontentloaded" });
+    await page.waitForTimeout(3000);
 
-    const dNews = page.locator(".bg-blue-50").first();
-    if (await dNews.count()) {
-      await dNews.scrollIntoViewIfNeeded();
-      await shot(page, "detail-news", 600);
+    const forecastSection = page.locator("text=일 후 전망").first();
+    if (await forecastSection.count()) {
+      await forecastSection.scrollIntoViewIfNeeded();
+      await shot(page, "detail-forecast", 800);
+    }
+
+    const chartSection = page.locator("text=가격 추이").first();
+    if (await chartSection.count()) {
+      await chartSection.scrollIntoViewIfNeeded();
+      await shot(page, "detail-chart", 3000); // let recharts settle
     }
   } else {
     console.log("⚠  no detail link found — skipping detail shots");
   }
 
-  // ── 5. Settings hub ───────────────────────────────────────────────────────
-  await page.goto(BASE_URL + "/settings");
-  await page.waitForLoadState("networkidle");
-  await shot(page, "settings", 1000);
+  // ── 5. AI 예측 정확도 (archive trust view) ────────────────────────────────
+  await page.goto(`${BASE_URL}/archive`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(3000);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await shot(page, "archive-trust", 800);
 
-  // ── 6. Watchlist: top of page ─────────────────────────────────────────────
-  await page.goto(BASE_URL + "/settings/watchlist");
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(1500);
+  // ── 6. Settings hub ───────────────────────────────────────────────────────
+  await page.goto(`${BASE_URL}/settings`, { waitUntil: "domcontentloaded" });
+  await shot(page, "settings", 2000);
+
+  // ── 7. Watchlist: top of page ─────────────────────────────────────────────
+  await page.goto(`${BASE_URL}/settings/watchlist`, { waitUntil: "domcontentloaded" });
+  await page.waitForTimeout(2500);
   await page.evaluate(() => window.scrollTo(0, 0));
   await shot(page, "settings-watchlist", 600);
 
-  // ── 7. Watchlist: search dropdown ─────────────────────────────────────────
-  // Remove one chip so the search input becomes enabled (maxReached=false)
+  // ── 8. Watchlist: search dropdown ─────────────────────────────────────────
   const removeBtn = page.locator('button[aria-label$=" 제거"]').first();
   if (await removeBtn.count()) {
     await removeBtn.click();
@@ -125,19 +131,10 @@ async function shot(page, name, waitMs = 1200) {
   if (await searchInput.count()) {
     await searchInput.click();
     await searchInput.fill("APPL");
-    await page.waitForTimeout(800);
+    await page.waitForTimeout(900);
     await shot(page, "settings-watchlist-search", 400);
-    await searchInput.fill("");
-    await page.waitForTimeout(300);
   } else {
-    console.log("⚠  search input still disabled — skipping search screenshot");
-  }
-
-  // ── 8. Watchlist: top-50 grid ─────────────────────────────────────────────
-  const grid = page.locator(".grid").first();
-  if (await grid.count()) {
-    await grid.scrollIntoViewIfNeeded();
-    await shot(page, "settings-watchlist-grid", 600);
+    console.log("⚠  search input disabled — skipping search screenshot");
   }
 
   await browser.close();

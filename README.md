@@ -7,17 +7,17 @@
 
 ## 스크린샷
 
-| 랜딩 페이지 | 홈 — 의사결정 카드 | 홈 — 뉴스 기반 근거 |
+| 랜딩 페이지 | 오늘 추천 | 뉴스 기반 근거 |
 |:---:|:---:|:---:|
-| ![랜딩](public/screenshots/landing.png) | ![홈](public/screenshots/home.png) | ![뉴스](public/screenshots/home-news.png) |
+| ![랜딩](public/screenshots/landing.png) | ![오늘 추천](public/screenshots/today.png) | ![뉴스](public/screenshots/today-news.png) |
 
-| 카드 상세 | 카드 상세 — 뉴스 링크 | 설정 허브 |
+| 카드 상세 — 전망 시나리오 | 가격 차트 — 예측 검증 | AI 예측 정확도 |
 |:---:|:---:|:---:|
-| ![상세](public/screenshots/detail.png) | ![상세뉴스](public/screenshots/detail-news.png) | ![설정](public/screenshots/settings.png) |
+| ![전망](public/screenshots/detail-forecast.png) | ![차트](public/screenshots/detail-chart.png) | ![정확도](public/screenshots/archive-trust.png) |
 
-| 관심 종목 편집 | 종목 검색 | 시총 50위 그리드 |
+| 설정 허브 | 관심 종목 편집 | 종목 검색 |
 |:---:|:---:|:---:|
-| ![관심종목](public/screenshots/settings-watchlist.png) | ![검색](public/screenshots/settings-watchlist-search.png) | ![그리드](public/screenshots/settings-watchlist-grid.png) |
+| ![설정](public/screenshots/settings.png) | ![관심종목](public/screenshots/settings-watchlist.png) | ![검색](public/screenshots/settings-watchlist-search.png) |
 
 ---
 
