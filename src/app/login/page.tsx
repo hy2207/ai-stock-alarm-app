@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -30,7 +31,14 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           </a>
         </div>
         <section className="mb-6 space-y-3 text-center">
-          <p className="text-sm font-medium text-slate-500">AI Stock Alarm</p>
+          <Image
+            src="/brand/stockalarm-logo.png"
+            alt="StockAlarm"
+            width={180}
+            height={135}
+            className="mx-auto h-24 w-auto"
+            priority
+          />
           <h1 className="text-2xl font-semibold tracking-tight">
             추천을 보려면 로그인이 필요합니다
           </h1>

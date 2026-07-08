@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const SAMPLE_CARDS = [
   {
@@ -87,7 +88,14 @@ export function LandingPage() {
     <main className="min-h-screen bg-slate-50 text-slate-950">
       {/* Nav */}
       <header className="mx-auto flex max-w-3xl items-center justify-between px-4 py-5">
-        <p className="text-sm font-semibold tracking-tight">AI Stock Alarm</p>
+        <Image
+          src="/brand/stockalarm-logo.png"
+          alt="StockAlarm"
+          width={120}
+          height={90}
+          className="h-9 w-auto"
+          priority
+        />
         <Link
           href="/login"
           className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
@@ -98,7 +106,15 @@ export function LandingPage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-4 py-14 text-center">
-        <p className="text-sm font-medium text-blue-600">Decision Layer · 미국 주식</p>
+        <Image
+          src="/brand/stockalarm-logo.png"
+          alt="StockAlarm — AI로 읽는 주가 흐름"
+          width={240}
+          height={180}
+          className="mx-auto h-32 w-auto"
+          priority
+        />
+        <p className="mt-4 text-sm font-medium text-blue-600">Decision Layer · 미국 주식</p>
         <h1 className="mt-3 text-4xl font-bold tracking-tight leading-tight">
           오늘 살지, 팔지, 기다릴지<br />
           <span className="text-blue-600">3분 안에 정하세요</span>
