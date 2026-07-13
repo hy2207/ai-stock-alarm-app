@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type State = "loading" | "failed" | "rate_limited";
+type State = "loading" | "waiting" | "failed" | "rate_limited";
 
 const RATE_LIMIT_RETRY_MS = 65_000;
 
@@ -14,9 +14,18 @@ interface GenerationSummary {
   externalApiErrors?: string[];
   message?: string;
   error?: string;
+  stage?: string;
 }
 
-const TIMEOUT_MS = 55_000;
+// Slightly longer than the server's 90s timeout so its structured
+// generation_timeout response arrives instead of a client-side abort
+const TIMEOUT_MS = 95_000;
+
+// Generation keeps running server-side after a timeout response — poll by
+// refreshing; once cards are persisted the server component replaces this
+// loader entirely
+const POLL_INTERVAL_MS = 15_000;
+const MAX_POLLS = 6;
 
 export function TodayCardAutoLoader() {
   const router = useRouter();
@@ -28,6 +37,26 @@ export function TodayCardAutoLoader() {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let pollTimer: ReturnType<typeof setInterval> | undefined;
+
+    function pollWhileServerFinishes() {
+      setErrorMessage(
+        "생성이 오래 걸리고 있어요. 서버에서 계속 진행 중이라 완료되는 대로 자동으로 표시합니다.",
+      );
+      setState("waiting");
+      let polls = 0;
+      pollTimer = setInterval(() => {
+        polls += 1;
+        router.refresh();
+        if (polls >= MAX_POLLS) {
+          clearInterval(pollTimer);
+          setErrorMessage(
+            "생성이 예상보다 오래 걸리고 있어요. 잠시 후 다시 시도해 주세요.",
+          );
+          setState("failed");
+        }
+      }, POLL_INTERVAL_MS);
+    }
 
     async function run() {
       try {
@@ -41,6 +70,10 @@ export function TodayCardAutoLoader() {
         const data = (await res.json().catch(() => ({}))) as GenerationSummary;
 
         if (!res.ok) {
+          if (data.stage === "generation_timeout") {
+            pollWhileServerFinishes();
+            return;
+          }
           setErrorMessage(
             data.message ??
               data.error ??
@@ -84,14 +117,11 @@ export function TodayCardAutoLoader() {
         setState("failed");
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") {
-          setErrorMessage(
-            "생성이 오래 걸리고 있어요. 서버에서 계속 진행 중일 수 있어 잠시 후 자동으로 확인합니다.",
-          );
-          retryTimer = setTimeout(() => router.refresh(), 20_000);
+          pollWhileServerFinishes();
         } else {
           setErrorMessage("네트워크 오류가 발생했습니다.");
+          setState("failed");
         }
-        setState("failed");
       } finally {
         clearTimeout(timer);
       }
@@ -102,6 +132,7 @@ export function TodayCardAutoLoader() {
       controller.abort();
       clearTimeout(timer);
       if (retryTimer) clearTimeout(retryTimer);
+      if (pollTimer) clearInterval(pollTimer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
@@ -116,6 +147,18 @@ export function TodayCardAutoLoader() {
         <p className="text-xs text-slate-400">
           무료 AI 사용량이 분당으로 제한되어 있어요. 기다리시면 자동으로 처리됩니다.
         </p>
+      </div>
+    );
+  }
+
+  if (state === "waiting") {
+    return (
+      <div className="mt-6 flex flex-col items-center gap-3 text-center">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+          <span className="max-w-xs">{errorMessage}</span>
+        </div>
+        <p className="text-xs text-slate-400">15초마다 자동으로 확인합니다.</p>
       </div>
     );
   }

@@ -63,7 +63,7 @@ describe("POST /api/dev/generate-recommendations", () => {
       "clxuserid00000000000001",
       { force: false },
     );
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/today");
   });
 
   it("passes force=true when requested", async () => {
@@ -112,7 +112,7 @@ describe("POST /api/dev/generate-recommendations", () => {
       const { POST } = await import("../route");
       const pending = POST(makeRequest());
 
-      await vi.advanceTimersByTimeAsync(56_000);
+      await vi.advanceTimersByTimeAsync(91_000);
       const response = await pending;
 
       expect(response.status).toBe(500);

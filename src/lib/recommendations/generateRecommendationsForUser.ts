@@ -413,23 +413,28 @@ export async function generateRecommendationsForUser(
   externalApiErrors.push(...marketErrors);
   let generatedCount = 0;
 
-  for (const targetTicker of targetTickers) {
-    const generation = await generateRecommendationCards({
-      promptInput: {
-        riskMode,
-        watchlist: [targetTicker],
-        marketData,
-        newsSignals,
-      },
-    });
+  // LLM calls run in parallel — sequentially they stack up to ~50s per
+  // ticker (25s timeout × 2 attempts) and blow past the 60s route budget
+  // with 2-3 tickers. Concurrency is bounded by MAX_DAILY_CARDS (3),
+  // within the free-tier 5 RPM Gemini quota. Persistence below stays
+  // sequential to avoid exhausting the Prisma connection pool.
+  const generations = await Promise.all(
+    targetTickers.map(async (targetTicker) => ({
+      targetTicker,
+      generation: await generateRecommendationCards({
+        promptInput: {
+          riskMode,
+          watchlist: [targetTicker],
+          marketData,
+          newsSignals,
+        },
+      }),
+    })),
+  );
 
+  for (const { targetTicker, generation } of generations) {
     if (generation.status === "no_call") {
       validationErrors.push(`${targetTicker.ticker}: ${generation.reason}`);
-      // Quota is per-minute and shared across tickers — calling the next
-      // ticker would fail the same way while burning more of the window
-      if (generation.failureReason === "rate_limit") {
-        break;
-      }
       continue;
     }
 

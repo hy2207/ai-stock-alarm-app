@@ -4,9 +4,12 @@ import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { generateRecommendationsForUser } from "@/lib/recommendations/generateRecommendationsForUser";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+// Matches the cron route — generation may legitimately exceed 60s, and a
+// killed function loses work that runWithTimeout deliberately lets finish
+// in the background after responding to the client.
+export const maxDuration = 300;
 
-const DEV_GENERATION_TIMEOUT_MS = 55_000;
+const DEV_GENERATION_TIMEOUT_MS = 90_000;
 
 class DevGenerationTimeoutError extends Error {
   constructor() {

@@ -242,7 +242,7 @@ describe("generateRecommendationsForUser", () => {
     expect(mockGenerateRecommendationCards).not.toHaveBeenCalled();
   });
 
-  it("reports Finnhub configuration errors without calling Gemini in production", async () => {
+  it("uses Yahoo Finance fallback when Finnhub token is missing in production", async () => {
     vi.stubEnv("FINNHUB_API_KEY", "");
     vi.stubEnv("NODE_ENV", "production");
 
@@ -253,11 +253,12 @@ describe("generateRecommendationsForUser", () => {
       "clxuserid00000000000001",
     );
 
+    expect(mockFetchFinnhubCandle).not.toHaveBeenCalled();
+    expect(mockFetchYahooChart).toHaveBeenCalledWith("AAPL");
+    expect(result.generatedCount).toBe(1);
     expect(result.externalApiErrors).toContain(
-      "FINNHUB_API_KEY is not configured. Set it in your environment.",
+      "Finnhub candle (AAPL): FINNHUB_API_KEY is not configured. Using Yahoo Finance fallback.",
     );
-    expect(result.generatedCount).toBe(0);
-    expect(mockGenerateRecommendationCards).not.toHaveBeenCalled();
   });
 
   it("uses Yahoo Finance fallback when Finnhub token is missing outside production", async () => {
