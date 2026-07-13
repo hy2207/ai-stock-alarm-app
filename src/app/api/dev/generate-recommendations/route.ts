@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { waitUntil } from "@vercel/functions";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { generateRecommendationsForUser } from "@/lib/recommendations/generateRecommendationsForUser";
 
@@ -66,13 +67,21 @@ export async function POST(request: Request): Promise<NextResponse> {
     // no body — use default
   }
 
+  const task = generateRecommendationsForUser(userId, { force });
+
   try {
-    const result = await runWithTimeout(generateRecommendationsForUser(userId, { force }));
+    const result = await runWithTimeout(task);
     if (result.generatedCount > 0) {
       revalidatePath("/today");
     }
     return NextResponse.json(result);
   } catch (error) {
+    if (error instanceof DevGenerationTimeoutError) {
+      // Without waitUntil, Vercel suspends the function once the response
+      // is sent and the in-flight generation never persists its cards.
+      // Keeping it alive lets the client's refresh polling pick them up.
+      waitUntil(task.catch(() => undefined));
+    }
     return NextResponse.json(
       {
         error: "Internal server error",

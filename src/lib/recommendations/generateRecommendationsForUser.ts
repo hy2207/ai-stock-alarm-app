@@ -405,12 +405,14 @@ export async function generateRecommendationsForUser(
 
   const finnhubToken = getFinnhubApiKey();
 
+  const marketStart = Date.now();
   const [{ marketData, newsSignals, externalApiErrors: marketErrors }, riskMode] =
     await Promise.all([
       collectMarketContext(watchlist, finnhubToken),
       loadRiskMode(userId),
     ]);
   externalApiErrors.push(...marketErrors);
+  const llmStart = Date.now();
   let generatedCount = 0;
 
   // LLM calls run in parallel — sequentially they stack up to ~50s per
@@ -431,6 +433,7 @@ export async function generateRecommendationsForUser(
       }),
     })),
   );
+  const persistStart = Date.now();
 
   for (const { targetTicker, generation } of generations) {
     if (generation.status === "no_call") {
@@ -462,6 +465,16 @@ export async function generateRecommendationsForUser(
     });
     generatedCount += 1;
   }
+
+  // Stage timings surface in Vercel logs — which stage blew the time
+  // budget is otherwise invisible once the route has already timed out
+  console.log("[recommendations] generation timing", {
+    marketContextMs: llmStart - marketStart,
+    llmMs: persistStart - llmStart,
+    persistMs: Date.now() - persistStart,
+    tickers: targetTickers.length,
+    generatedCount,
+  });
 
   return {
     generatedCount,

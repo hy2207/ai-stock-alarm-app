@@ -31,6 +31,10 @@ interface YahooChartResponse {
 
 const BASE_URL = "https://query1.finance.yahoo.com/v8/finance/chart";
 
+// A hung Yahoo request must not stall recommendation generation past the
+// route's time budget — fail fast and let callers use stored data instead
+const FETCH_TIMEOUT_MS = 10_000;
+
 async function parseYahooResponse(
   res: Response,
   ticker: string,
@@ -94,6 +98,7 @@ export async function fetchYahooChart(
     const res = await fetch(url, {
       next: { revalidate: 3600 },
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     return parseYahooResponse(res, ticker);
   } catch (err) {
@@ -116,6 +121,7 @@ export async function fetchYahooChartByPeriod(
     const res = await fetch(url, {
       cache: "no-store",
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     return parseYahooResponse(res, ticker);
   } catch (err) {

@@ -30,6 +30,10 @@ interface FinnhubNewsItem {
 
 const FINNHUB_BASE = "https://finnhub.io/api/v1";
 
+// A hung Finnhub request must not stall recommendation generation past the
+// route's time budget — fail fast and fall back to Yahoo / skip news
+const FETCH_TIMEOUT_MS = 10_000;
+
 /**
  * Fetch OHLCV candle data for a ticker from Finnhub.
  * Uses Next.js fetch with a 1-hour revalidation window.
@@ -45,6 +49,7 @@ export async function fetchFinnhubCandle(
     const res = await fetch(url, {
       next: { revalidate: 3600 },
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!res.ok) {
@@ -103,6 +108,7 @@ export async function fetchFinnhubNews(
     const res = await fetch(url, {
       next: { revalidate: 1800 },
       headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
 
     if (!res.ok) {
