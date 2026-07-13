@@ -17,7 +17,8 @@
 
 const TREND_WINDOW = 21; // ~1 month of trading days
 const VOL_WINDOW = 63; // ~3 months of trading days
-const MIN_POINTS = 20;
+/** Exported so UI can explain why a forecast is missing (e.g. new listings). */
+export const MIN_POINTS = 20;
 
 const HOLT_ALPHA = 0.5;
 const HOLT_BETA = 0.3;

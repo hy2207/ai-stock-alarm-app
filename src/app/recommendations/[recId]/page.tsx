@@ -8,6 +8,7 @@ import { getRecommendationDetail } from "@/lib/queries/getRecommendationDetail";
 import { syncPriceHistory } from "@/lib/market-data/priceSync";
 import { getStoredPriceHistory } from "@/lib/market-data/storePriceHistory";
 import { backtestForecast } from "@/lib/quant/backtestForecast";
+import { MIN_POINTS } from "@/lib/quant/forecastPrice";
 import { parseNewsItems, parseQuantForecast } from "@/lib/dto/recommendationCard";
 import {
   forecastChangePct,
@@ -343,6 +344,29 @@ export default async function RecommendationDetailPage({
             </section>
           );
         })()}
+
+        {/* Forecast empty state — new listings don't have enough history yet */}
+        {!quant && fullHistory.length > 0 && fullHistory.length < MIN_POINTS && (
+          <section className="mt-4 rounded-lg border border-indigo-100 bg-white p-6 shadow-sm">
+            <h2 className="font-semibold">수치 예측 준비 중</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              거래 데이터가 {fullHistory.length}거래일 쌓였어요. 통계 예측은
+              최소 {MIN_POINTS}거래일 데이터가 필요해서, 신규 상장 종목은
+              데이터가 쌓이는 대로 자동으로 제공됩니다.
+            </p>
+            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-indigo-400"
+                style={{
+                  width: `${Math.round((fullHistory.length / MIN_POINTS) * 100)}%`,
+                }}
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400">
+              {fullHistory.length} / {MIN_POINTS} 거래일
+            </p>
+          </section>
+        )}
 
         {/* Price chart section */}
         <section className="mt-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
