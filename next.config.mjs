@@ -16,7 +16,8 @@ const securityHeaders = [
     key: "Content-Security-Policy",
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://cdn.onesignal.com https://onesignal.com",
+      // api.onesignal.com in script-src: the SDK loads its sync endpoint JSONP-style
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com",
       "worker-src 'self' blob: https://cdn.onesignal.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
