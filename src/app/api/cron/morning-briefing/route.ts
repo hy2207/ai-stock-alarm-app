@@ -30,8 +30,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json(result);
     }
 
-    // OneSignal credentials
-    const appId = process.env.ONESIGNAL_APP_ID;
+    // OneSignal credentials — the client SDK uses the NEXT_PUBLIC_ name,
+    // so fall back to it rather than requiring a duplicate env var
+    const appId =
+      process.env.ONESIGNAL_APP_ID ?? process.env.NEXT_PUBLIC_ONESIGNAL_APP_ID;
     const apiKey = process.env.ONESIGNAL_REST_API_KEY;
 
     if (!appId || !apiKey) {
@@ -41,10 +43,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Batch push to all consenting users via external_user_ids
+    // Batch push targeted by external_id (our DB user id, linked by the
+    // client via OneSignal.login). include_aliases is the current API;
+    // include_external_user_ids is deprecated on new OneSignal apps.
     const body = {
       app_id: appId,
-      include_external_user_ids: users.map((u) => u.id),
+      include_aliases: { external_id: users.map((u) => u.id) },
+      target_channel: "push",
       contents: {
         en: "Your morning briefing is ready – check today's recommendations.",
       },
@@ -54,17 +59,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       ios_badgeCount: 1,
     };
 
-    const oneSignalRes = await fetch(
-      "https://onesignal.com/api/v1/notifications",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Key ${apiKey}`,
-        },
-        body: JSON.stringify(body),
+    const oneSignalRes = await fetch("https://api.onesignal.com/notifications", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Key ${apiKey}`,
       },
-    );
+      body: JSON.stringify(body),
+    });
 
     const oneSignalData = await oneSignalRes.json();
     const isSuccess = oneSignalRes.ok && oneSignalData.id != null;

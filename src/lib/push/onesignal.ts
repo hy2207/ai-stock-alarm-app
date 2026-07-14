@@ -3,6 +3,7 @@ declare global {
     OneSignalDeferred?: unknown[];
     OneSignal?: {
       init: (config: Record<string, unknown>) => Promise<void>;
+      login: (externalId: string) => Promise<void>;
       User: {
         PushSubscription: {
           getIdAsync: () => Promise<string | undefined>;
@@ -24,7 +25,7 @@ function getSafariWebId(): string | undefined {
   return process.env.NEXT_PUBLIC_ONESIGNAL_SAFARI_WEB_ID;
 }
 
-export function initOneSignal(): void {
+export function initOneSignal(externalUserId?: string): void {
   if (initialized || typeof window === "undefined") return;
   const appId = getAppId();
   if (!appId) return;
@@ -39,6 +40,11 @@ export function initOneSignal(): void {
       config.safari_web_id = safariWebId;
     }
     await OneSignal.init(config);
+    // The morning-briefing cron targets users by external_id (our DB user
+    // id) — without this link every send reaches zero devices
+    if (externalUserId) {
+      await OneSignal.login(externalUserId);
+    }
   });
 
   initialized = true;

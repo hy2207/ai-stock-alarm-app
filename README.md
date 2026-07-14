@@ -55,7 +55,7 @@
 | LLM | Gemini 2.5 Flash via Vercel AI SDK (`@ai-sdk/google`) |
 | Market Data | Yahoo Finance (OHLCV, 1mo, 종목 검색) · Finnhub (뉴스) |
 | Analytics | PostHog (client + server) |
-| Push | OneSignal Web Push *(현재 비활성 — PUSH_DISABLED)* |
+| Push | OneSignal Web Push (아침 브리핑 크론 발송) |
 | Deployment | Vercel (Fluid Compute + Cron) |
 
 ---
@@ -71,7 +71,7 @@
 | `/archive` | AI 예측 정확도 (M7 검증 기록) + 내 추천 기록 탭 |
 | `/settings` | 설정 허브 (프로필 수정 / 알림 설정 / 관심 종목) |
 | `/settings/profile` | 표시 이름·타임존 수정 |
-| `/settings/notifications` | 푸시 알림 설정 *(준비 중)* |
+| `/settings/notifications` | 푸시 알림 설정 (아침 브리핑 동의 토글) |
 | `/settings/watchlist` | 관심 종목 수정 (검색 + 시총 50위 그리드) |
 
 ---
@@ -253,8 +253,8 @@ cp .env.example .env.local
 | `FINNHUB_API_KEY` | Finnhub 뉴스 API 키 (선택 — 없으면 뉴스 신호 생략) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | PostHog 프로젝트 API 키 |
 | `NEXT_PUBLIC_POSTHOG_HOST` | PostHog 호스트 |
-| `NEXT_PUBLIC_ONESIGNAL_APP_ID` | OneSignal 앱 ID *(현재 비활성)* |
-| `ONESIGNAL_REST_API_KEY` | OneSignal REST API 키 *(현재 비활성)* |
+| `NEXT_PUBLIC_ONESIGNAL_APP_ID` | OneSignal 앱 ID |
+| `ONESIGNAL_REST_API_KEY` | OneSignal REST API 키 |
 | `CRON_SECRET` | Cron 핸들러 인증 시크릿 |
 
 > `FINNHUB_API_KEY`가 없으면 Yahoo Finance가 가격 데이터 폴백으로 사용됩니다.  

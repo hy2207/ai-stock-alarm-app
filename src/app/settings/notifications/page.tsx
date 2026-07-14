@@ -2,12 +2,19 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUserId } from "@/lib/auth/getServerSession";
 import { Disclaimer } from "@/app/components/Disclaimer";
+import { PushConsentToggle } from "@/app/components/PushConsentToggle";
+import { prisma } from "@/lib/prisma";
 
 export default async function NotificationsSettingsPage() {
   const userId = await getCurrentUserId();
   if (!userId) {
     redirect("/login?callbackUrl=/settings/notifications");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { consentPush: true },
+  });
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 text-slate-950">
@@ -25,23 +32,8 @@ export default async function NotificationsSettingsPage() {
             브라우저 푸시 알림을 허용하면 매일 아침 브리핑을 받을 수 있습니다.
           </p>
 
-          {/* PUSH_DISABLED: replace this block with <PushConsentToggle> when OneSignal is configured */}
-          <div className="mt-6 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-4">
-            <div>
-              <p className="text-sm font-medium text-slate-700">아침 브리핑 푸시 알림</p>
-              <p className="mt-0.5 text-xs text-slate-500">매일 오전 8시 추천 카드 알림</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">준비 중</span>
-              <button
-                type="button"
-                disabled
-                aria-label="알림 설정 (준비 중)"
-                className="relative inline-flex h-6 w-11 cursor-not-allowed items-center rounded-full bg-slate-200 opacity-50"
-              >
-                <span className="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white shadow" />
-              </button>
-            </div>
+          <div className="mt-6 rounded-lg border border-slate-100 bg-slate-50 p-4">
+            <PushConsentToggle initialConsent={user?.consentPush ?? false} />
           </div>
         </section>
 
