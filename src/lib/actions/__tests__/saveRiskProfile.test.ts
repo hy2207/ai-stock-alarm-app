@@ -110,6 +110,6 @@ describe("saveRiskProfile", () => {
     mockGetCurrentUserId.mockResolvedValue("clxuser00000000001");
     mockUpsert.mockResolvedValue({} as never);
     await saveRiskProfile(createFormData("balanced"));
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/today");
   });
 });

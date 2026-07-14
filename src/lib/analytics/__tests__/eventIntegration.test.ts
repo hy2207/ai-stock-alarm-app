@@ -33,6 +33,8 @@ const requiredServerEvents = [
   "llm_call_failed",
   "push_sent",
   "performance_evaluation_run",
+  "recommendations_generated",
+  "m7_forecast_update_run",
 ] as const;
 
 describe("PostHog event integration contract", () => {
@@ -43,8 +45,8 @@ describe("PostHog event integration contract", () => {
     }
   });
 
-  it("GWT: Given SRS server events When validating taxonomy Then all 4 events are accepted", () => {
-    expect(SERVER_EVENT_NAMES).toHaveLength(4);
+  it("GWT: Given SRS server events When validating taxonomy Then all 6 events are accepted", () => {
+    expect(SERVER_EVENT_NAMES).toHaveLength(6);
     for (const eventName of requiredServerEvents) {
       expect(serverEventNameSchema.parse(eventName)).toBe(eventName);
     }

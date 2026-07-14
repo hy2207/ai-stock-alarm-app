@@ -116,6 +116,6 @@ describe("saveWatchlist", () => {
     mockDeleteMany.mockResolvedValue({ count: 0 });
     mockCreateMany.mockResolvedValue({ count: 1 });
     await saveWatchlist({ items: [{ ticker: "AAPL" }] });
-    expect(mockRevalidatePath).toHaveBeenCalledWith("/");
+    expect(mockRevalidatePath).toHaveBeenCalledWith("/today");
   });
 });

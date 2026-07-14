@@ -129,7 +129,7 @@ describe("gemini module (LLM-Q01)", () => {
         const mod = await importFreshGemini();
 
         expect(mod.getGeminiModel()).toBe(mockModel);
-        expect(mockProvider).toHaveBeenCalledWith("gemini-2.0-flash-001");
+        expect(mockProvider).toHaveBeenCalledWith("gemini-2.5-flash");
       },
     );
   });
@@ -141,7 +141,7 @@ describe("gemini module (LLM-Q01)", () => {
         const mod = await importFreshGemini();
 
         expect(mod.getGeminiModel()).toBe(mockModel);
-        expect(mockProvider).toHaveBeenCalledWith("gemini-2.0-flash-001");
+        expect(mockProvider).toHaveBeenCalledWith("gemini-2.5-flash");
       },
     );
   });

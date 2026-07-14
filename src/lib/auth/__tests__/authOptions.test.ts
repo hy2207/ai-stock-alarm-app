@@ -30,8 +30,13 @@ describe("authOptions", () => {
     expect(authOptions.adapter).toBeDefined();
   });
 
-  it("has two OAuth providers", () => {
-    expect(authOptions.providers).toHaveLength(2);
+  it("always includes Google; Kakao only when its env vars are configured", () => {
+    const ids = authOptions.providers.map((provider) => provider.id);
+    expect(ids).toContain("google");
+    const kakaoConfigured = Boolean(
+      process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET,
+    );
+    expect(ids.includes("kakao")).toBe(kakaoConfigured);
   });
 
   it("uses JWT session strategy", () => {

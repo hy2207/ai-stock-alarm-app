@@ -65,7 +65,7 @@ describe("subscribePush", () => {
 
   it("no-ops when OneSignal is not initialised", async () => {
     const { subscribePush } = await import("../onesignal");
-    await expect(subscribePush()).resolves.toBeUndefined();
+    await expect(subscribePush()).resolves.toBe(false);
   });
 });
 
@@ -83,7 +83,7 @@ describe("unsubscribePush", () => {
 
   it("no-ops when OneSignal is not initialised", async () => {
     const { unsubscribePush } = await import("../onesignal");
-    await expect(unsubscribePush()).resolves.toBeUndefined();
+    await expect(unsubscribePush()).resolves.toBe(false);
   });
 });
 

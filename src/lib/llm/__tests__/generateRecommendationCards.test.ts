@@ -342,12 +342,11 @@ describe("generateRecommendationCards", () => {
         model,
         system: expect.stringContaining("Decision Layer"),
         prompt: expect.stringContaining("SELECTED RISK MODE: balanced"),
-        maxOutputTokens: 1_600,
+        maxOutputTokens: 4_000,
         providerOptions: {
           google: {
             thinkingConfig: {
-              thinkingLevel: "minimal",
-              includeThoughts: false,
+              thinkingBudget: 0,
             },
           },
         },

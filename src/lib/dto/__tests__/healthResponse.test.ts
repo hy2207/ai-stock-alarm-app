@@ -7,6 +7,7 @@ const validPayload = {
     finnhub: 5,
   },
   nullRate: 1.2,
+  db: { connected: true, latencyMs: 12 },
 };
 
 describe("healthResponseSchema", () => {
@@ -21,6 +22,7 @@ describe("healthResponseSchema", () => {
     const payload = {
       freshness: { yahooFinance: null, finnhub: null },
       nullRate: 100,
+      db: { connected: false, latencyMs: null },
     };
     const result = healthResponseSchema.parse(payload);
     expect(result.freshness.yahooFinance).toBeNull();
@@ -61,6 +63,15 @@ describe("healthResponseSchema", () => {
   it("rejects missing nullRate field", () => {
     const { success } = healthResponseSchema.safeParse({
       freshness: { yahooFinance: 0, finnhub: 0 },
+      db: { connected: true, latencyMs: 1 },
+    });
+    expect(success).toBe(false);
+  });
+
+  it("rejects missing db field", () => {
+    const { success } = healthResponseSchema.safeParse({
+      freshness: { yahooFinance: 0, finnhub: 0 },
+      nullRate: 0,
     });
     expect(success).toBe(false);
   });
@@ -70,6 +81,7 @@ describe("healthResponseSchema", () => {
     const payload: Inferred = {
       freshness: { yahooFinance: 1, finnhub: null },
       nullRate: 0,
+      db: { connected: true, latencyMs: null },
     };
     expect(payload).toBeDefined();
   });
