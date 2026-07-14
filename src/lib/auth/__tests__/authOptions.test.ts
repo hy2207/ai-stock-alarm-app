@@ -31,7 +31,11 @@ describe("authOptions", () => {
   });
 
   it("always includes Google; Kakao only when its env vars are configured", () => {
-    const ids = authOptions.providers.map((provider) => provider.id);
+    // v5 Provider union includes function-style providers without a static
+    // id; ours are all config objects, so narrow before reading id
+    const ids = authOptions.providers.map((provider) =>
+      "id" in provider ? provider.id : null,
+    );
     expect(ids).toContain("google");
     const kakaoConfigured = Boolean(
       process.env.KAKAO_CLIENT_ID && process.env.KAKAO_CLIENT_SECRET,

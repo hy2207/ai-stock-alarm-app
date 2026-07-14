@@ -1,8 +1,16 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { NextAuthOptions, TokenSet } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import GoogleProvider, { GoogleProfile } from "next-auth/providers/google";
 import KakaoProvider, { KakaoProfile } from "next-auth/providers/kakao";
 import { prisma } from "../prisma";
+
+type RefreshedTokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: number;
+  expires_in?: number;
+  error?: string;
+};
 
 const JWT_REFRESH_THRESHOLD_SEC = 5 * 60; // refresh when less than 5 minutes remain
 
@@ -55,7 +63,7 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
       body: params,
     });
 
-    const refreshed: TokenSet & { error?: string } = await response.json();
+    const refreshed: RefreshedTokenResponse = await response.json();
 
     if (!response.ok || refreshed.error) {
       return { ...token, error: "RefreshAccessTokenError" };
@@ -82,8 +90,11 @@ async function refreshAccessToken(token: ExtendedToken): Promise<ExtendedToken> 
   }
 }
 
-export const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
+  // Auth.js v5 reads AUTH_SECRET by default; keep the v4 env name working
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  trustHost: true,
   pages: {
     signIn: "/login",
   },

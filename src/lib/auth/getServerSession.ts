@@ -1,8 +1,7 @@
-import { getServerSession } from "next-auth";
-import { authOptions } from "./authOptions";
+import { auth } from "./nextAuth";
 
 export async function getAuthSession() {
-  return getServerSession(authOptions);
+  return auth();
 }
 
 export async function getCurrentUserId(): Promise<string | null> {
