@@ -54,6 +54,7 @@ describe("auth middleware", () => {
     expect(getTokenMock).toHaveBeenCalledWith({
       req: expect.any(NextRequest),
       secret: "test-nextauth-secret",
+      secureCookie: true,
     });
   });
 

@@ -44,9 +44,13 @@ export default async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // v5 getToken defaults secureCookie to false (no env detection like v4),
+  // so on https it would look for "authjs.session-token" while the browser
+  // holds "__Secure-authjs.session-token" — derive it from the request
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+    secureCookie: request.nextUrl.protocol === "https:",
   });
 
   if (token?.sub && !token.error) {

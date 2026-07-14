@@ -28,6 +28,7 @@ const securityHeaders = [
         "https://app.posthog.com",
         "https://onesignal.com",
         "https://api.onesignal.com",
+        "https://cdn.onesignal.com",
         "https://accounts.google.com",
         "https://oauth2.googleapis.com",
       ].join(" "),
