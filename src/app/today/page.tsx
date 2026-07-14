@@ -9,13 +9,14 @@ import { PostHogEvent } from "@/app/components/PostHogEvent";
 import { RiskModeRecommendationList } from "@/app/components/RiskModeRecommendationList";
 
 interface TodayPageProps {
-  searchParams?: {
+  searchParams?: Promise<{
     from?: string;
     utm_source?: string;
-  };
+  }>;
 }
 
-export default async function TodayPage({ searchParams }: TodayPageProps) {
+export default async function TodayPage(props: TodayPageProps) {
+  const searchParams = await props.searchParams;
   const userId = await getCurrentUserId();
 
   // Middleware guards this route, but double-check for safety

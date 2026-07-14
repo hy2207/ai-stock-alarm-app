@@ -323,11 +323,12 @@ function RecordCard({ card }: { card: ArchiveCard }) {
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
-export default async function ArchivePage({
-  searchParams,
-}: {
-  searchParams?: { view?: string; tab?: string; ticker?: string };
-}) {
+export default async function ArchivePage(
+  props: {
+    searchParams?: Promise<{ view?: string; tab?: string; ticker?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const view: ViewKey = searchParams?.view === "history" ? "history" : "trust";
 
   return (
