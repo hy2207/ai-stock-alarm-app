@@ -10,10 +10,8 @@ function fmtDateKo(dateStr: string): string {
   return `${parseInt(m, 10)}/${parseInt(d, 10)}`;
 }
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { ticker: string } },
-): Promise<NextResponse> {
+export async function GET(_req: NextRequest, props: { params: Promise<{ ticker: string }> }): Promise<NextResponse> {
+  const params = await props.params;
   const ticker = params.ticker.toUpperCase();
 
   if (!/^[A-Z]{1,10}$/.test(ticker)) {

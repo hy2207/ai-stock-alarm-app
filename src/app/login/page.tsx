@@ -10,13 +10,14 @@ import { LoginProviderButtons } from "./LoginProviderButtons";
 import { getSafeCallbackUrl } from "./utils";
 
 type LoginPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     callbackUrl?: string | string[];
     returnTo?: string | string[];
-  };
+  }>;
 };
 
-export default function LoginPage({ searchParams }: LoginPageProps) {
+export default async function LoginPage(props: LoginPageProps) {
+  const searchParams = await props.searchParams;
   const callbackUrl = getSafeCallbackUrl(
     searchParams?.callbackUrl ?? searchParams?.returnTo,
   );

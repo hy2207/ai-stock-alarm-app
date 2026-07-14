@@ -20,9 +20,9 @@ import {
 } from "@/lib/quant/describeForecast";
 
 interface RecommendationDetailPageProps {
-  params: {
+  params: Promise<{
     recId: string;
-  };
+  }>;
 }
 
 function outcomeLabel(hitFlag: boolean | null) {
@@ -38,9 +38,8 @@ const CONFIDENCE_LABELS = {
 } as const;
 
 
-export default async function RecommendationDetailPage({
-  params,
-}: RecommendationDetailPageProps) {
+export default async function RecommendationDetailPage(props: RecommendationDetailPageProps) {
+  const params = await props.params;
   const detail = await getRecommendationDetail(params.recId);
 
   if (!detail) {
