@@ -19,7 +19,7 @@ const securityHeaders = [
       // api.onesignal.com in script-src: the SDK loads its sync endpoint JSONP-style
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com",
       "worker-src 'self' blob: https://cdn.onesignal.com",
-      "style-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://onesignal.com https://cdn.onesignal.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self'",
       [
