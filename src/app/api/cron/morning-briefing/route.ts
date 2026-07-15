@@ -69,7 +69,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
 
     const oneSignalData = await oneSignalRes.json();
-    const isSuccess = oneSignalRes.ok && oneSignalData.id != null;
+    // OneSignal returns 200 with id: "" (+ errors) when nothing was
+    // delivered, e.g. "All included players are not subscribed" — an
+    // empty id must count as failure, not success
+    const isSuccess =
+      oneSignalRes.ok &&
+      typeof oneSignalData.id === "string" &&
+      oneSignalData.id.length > 0;
     const sent = isSuccess ? scheduled : 0;
     const failed = isSuccess ? 0 : scheduled;
     const invalidExternalUserIds = Array.isArray(oneSignalData.invalid_external_user_ids)
